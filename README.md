@@ -154,7 +154,7 @@ You'll see the main menu:
 
 ```
 ╔══════════════════════════════════════════╗
-║   GoodWork Forensic Consulting           ║
+║   Forensic Consulting           ║
 ║   AI-Powered Case Management             ║
 ╠══════════════════════════════════════════╣
 ║  [INVESTIGATION]                         ║
