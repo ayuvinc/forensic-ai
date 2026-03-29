@@ -1,4 +1,4 @@
-# GoodWork Forensic Consulting Framework
+# Forensic Consulting Framework
 
 A Claude-powered AI system that simulates a full forensic consulting firm — Junior Analyst → Project Manager → Partner — running entirely in your terminal. Every case, draft, and output is saved locally with a full audit trail.
 
