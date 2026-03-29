@@ -1,0 +1,27 @@
+{
+  "plugin_id": "partner",
+  "role": "partner",
+  "plugin_type": "agent",
+  "version": "1.0.0",
+  "enabled": true,
+  "supported_workflows": [
+    "investigation_report",
+    "frm_risk_register",
+    "policy_sop",
+    "training_material",
+    "client_proposal",
+    "proposal_deck"
+  ],
+  "input_schema": "schemas.artifacts.JuniorDraft",
+  "output_schema": "schemas.artifacts.ApprovalDecision",
+  "required_tools": [
+    "regulatory_lookup",
+    "read_excerpt",
+    "read_section"
+  ],
+  "model_preference": "sonnet",
+  "max_turns": 6,
+  "timeout_seconds": 180,
+  "revision_capable": false,
+  "artifact_type": "partner_approval"
+}

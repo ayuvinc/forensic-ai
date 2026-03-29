@@ -1,0 +1,17 @@
+{
+  "plugin_id": "regulator",
+  "role": "persona",
+  "plugin_type": "persona",
+  "version": "1.0.0",
+  "enabled": true,
+  "supported_workflows": ["persona_review"],
+  "input_schema": "",
+  "output_schema": "schemas.artifacts.PersonaReviewOutput",
+  "required_tools": ["regulatory_lookup"],
+  "model_preference": "sonnet",
+  "max_turns": 4,
+  "timeout_seconds": 90,
+  "revision_capable": false,
+  "artifact_type": "persona_regulator_review",
+  "persona_perspective": "UAE Regulator — CBUAE/DFSA/ADGM/SCA citation verification, jurisdiction"
+}

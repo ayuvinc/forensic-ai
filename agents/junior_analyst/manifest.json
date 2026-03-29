@@ -1,0 +1,32 @@
+{
+  "plugin_id": "junior_analyst",
+  "role": "junior",
+  "plugin_type": "agent",
+  "version": "1.0.0",
+  "enabled": true,
+  "supported_workflows": [
+    "investigation_report",
+    "frm_risk_register",
+    "policy_sop",
+    "training_material",
+    "client_proposal",
+    "proposal_deck"
+  ],
+  "input_schema": "schemas.case.CaseIntake",
+  "output_schema": "schemas.artifacts.JuniorDraft",
+  "required_tools": [
+    "search_web",
+    "regulatory_lookup",
+    "sanctions_check",
+    "company_lookup",
+    "read_excerpt",
+    "read_pages",
+    "read_section",
+    "find_relevant_docs"
+  ],
+  "model_preference": "haiku",
+  "max_turns": 10,
+  "timeout_seconds": 180,
+  "revision_capable": true,
+  "artifact_type": "junior_output"
+}

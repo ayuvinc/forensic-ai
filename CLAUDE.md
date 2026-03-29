@@ -1,5 +1,99 @@
 # GoodWork Forensic Consulting Framework — CLAUDE.md
 
+---
+
+## FIRST RUN PROTOCOL — Read This Before Anything Else
+
+**On every session start, run this check silently before doing anything else:**
+
+```
+CHECK: Does a file named `.env` exist in the current directory?
+```
+
+### If `.env` does NOT exist → FIRST_RUN mode
+
+Greet the user warmly and immediately run the guided setup wizard. Do not wait for them to ask. Say something like:
+
+> "Welcome to GoodWork Forensic Consulting Framework. It looks like this is your first time here — let me get you set up. This takes about 5 minutes."
+
+Then walk through these steps one at a time, waiting for the user to confirm each one before moving on:
+
+**Step 1 — Check Python**
+Run: `python3 --version`
+- If Python 3.11+ → tell the user they're good, continue
+- If older or missing → tell them to install from python.org and wait for them to confirm before continuing
+
+**Step 2 — Create and activate virtual environment**
+Tell the user to run:
+```
+python3 -m venv venv
+source venv/bin/activate      # macOS/Linux
+venv\Scripts\activate         # Windows
+```
+Ask them to confirm it worked (they'll see `(venv)` in their prompt).
+
+**Step 3 — Install dependencies**
+Tell the user to run:
+```
+pip install -r requirements.txt
+```
+Wait for them to confirm it completed without errors.
+
+**Step 4 — Get API keys**
+Tell them they need two keys:
+1. `ANTHROPIC_API_KEY` from console.anthropic.com → API Keys → Create Key
+2. `TAVILY_API_KEY` from app.tavily.com → free account → dashboard
+
+Ask them to get both keys before continuing. Wait.
+
+**Step 5 — Create .env file**
+Tell them to run:
+```
+cp .env.example .env          # macOS/Linux
+copy .env.example .env        # Windows
+```
+Then open `.env` in any text editor and paste their keys:
+```
+ANTHROPIC_API_KEY=sk-ant-...
+TAVILY_API_KEY=tvly-...
+```
+Tell them to save the file and confirm.
+
+**Step 6 — Verify**
+Run:
+```
+python3 -c "import anthropic, rich, pydantic; print('Dependencies OK')"
+```
+If it prints `Dependencies OK` → setup is complete.
+
+**Step 7 — Launch**
+Tell them to run `python run.py` and they're ready to go.
+
+Offer to explain any menu option before they start.
+
+---
+
+### If `.env` EXISTS → RETURNING_USER mode
+
+Do not run the setup wizard. Load the session normally. Proceed with whatever the user asks.
+
+---
+
+## Knowledge Base Router
+
+Before designing or building any workflow, consult the relevant knowledge file:
+
+| Topic | File |
+|-------|------|
+| FRM framework, modules, scoping, architecture | `knowledge/frm/frm_framework.md` |
+| FRM research sources and regulatory references | `knowledge/frm/sources.md` |
+| Investigation types, methodology, report structure | `knowledge/investigation/investigation_framework.md` |
+| Investigation research sources | `knowledge/investigation/sources.md` |
+
+These files contain deep research from prior sessions. Do not re-research topics already covered here — load the knowledge file instead.
+
+---
+
 ## Project Summary
 A Claude-powered AI system that simulates a forensic consulting firm's internal hierarchy.
 Runs as a styled CLI app (`python run.py`) backed by the Claude API + Tavily for research.

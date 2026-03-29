@@ -1,0 +1,17 @@
+{
+  "plugin_id": "lawyer",
+  "role": "persona",
+  "plugin_type": "persona",
+  "version": "1.0.0",
+  "enabled": true,
+  "supported_workflows": ["persona_review"],
+  "input_schema": "",
+  "output_schema": "schemas.artifacts.PersonaReviewOutput",
+  "required_tools": [],
+  "model_preference": "sonnet",
+  "max_turns": 3,
+  "timeout_seconds": 60,
+  "revision_capable": false,
+  "artifact_type": "persona_lawyer_review",
+  "persona_perspective": "Legal Counsel — privilege, admissibility, litigation risk"
+}
