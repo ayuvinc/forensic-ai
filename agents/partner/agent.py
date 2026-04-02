@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from core.agent_base import BaseAgent
 from core.hook_engine import HookEngine
@@ -13,6 +14,11 @@ from schemas.plugins import AgentHandoff
 
 from . import prompts
 from . import tools as agent_tools
+
+logger = logging.getLogger(__name__)
+
+# Workflows that require evidence-chain validation before approval
+_EVIDENCE_CHAIN_WORKFLOWS = frozenset(["investigation_report", "expert_witness_report"])
 
 
 class Partner:
@@ -59,6 +65,10 @@ class Partner:
 
         output = self._parse_output(result["text"])
 
+        # C-03a: Evidence-chain validation before allowing approval
+        if self._workflow in _EVIDENCE_CHAIN_WORKFLOWS:
+            output = self._enforce_evidence_chains(output, context)
+
         # Persist via post-hooks
         hook_context = {
             **context,
@@ -80,6 +90,65 @@ class Partner:
             turn_count=len(result["tool_calls"]),
             tool_calls_made=[tc["tool"] for tc in result["tool_calls"]],
         )
+
+    def _enforce_evidence_chains(self, output: dict, context: dict) -> dict:
+        """Validate finding chains against evidence items. Override approval if any chain fails.
+
+        No-op when evidence_items or finding_chains are absent (non-document cases).
+        """
+        evidence_items = context.get("evidence_items", [])
+        finding_chains_raw = output.get("finding_chains", [])
+
+        if not evidence_items or not finding_chains_raw:
+            return output
+
+        from tools.evidence.evidence_classifier import EvidenceClassifier
+        from schemas.evidence import FindingChain, EvidenceItem
+
+        classifier = EvidenceClassifier()
+
+        # Deserialise if raw dicts
+        chains = []
+        for fc in finding_chains_raw:
+            if isinstance(fc, FindingChain):
+                chains.append(fc)
+            elif isinstance(fc, dict):
+                try:
+                    chains.append(FindingChain(**fc))
+                except Exception:
+                    continue
+
+        items = []
+        for ei in evidence_items:
+            if isinstance(ei, EvidenceItem):
+                items.append(ei)
+            elif isinstance(ei, dict):
+                try:
+                    items.append(EvidenceItem(**ei))
+                except Exception:
+                    continue
+
+        if not chains or not items:
+            return output
+
+        failed_ids = []
+        for chain in chains:
+            if not classifier.validate_finding_chain(chain, items):
+                failed_ids.append(chain.finding_id)
+
+        if failed_ids and output.get("approved", False):
+            logger.warning(
+                "Evidence chain validation failed for findings: %s — overriding approval",
+                failed_ids,
+            )
+            output["approved"] = False
+            output["revision_requested"] = True
+            output["revision_reason"] = (
+                f"Evidence chain validation failed: finding(s) {failed_ids} reference "
+                "LEAD_ONLY or INADMISSIBLE evidence. Revise findings to use only PERMISSIBLE evidence."
+            )
+
+        return output
 
     def _parse_output(self, text: str) -> dict:
         import re

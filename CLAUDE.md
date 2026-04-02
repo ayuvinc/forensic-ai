@@ -1,5 +1,17 @@
 # GoodWork Forensic Consulting Framework — CLAUDE.md
 
+## Session Handoff
+
+- Session status: CLOSED
+- Active task: none
+- Active persona: none
+- Last updated: 2026-04-02 21:49:32 +0530 — closeout by Codex
+- Session summary: Closeout recorded with Session 3 framed as T06-T10 complete; T11-T14 remain next; two review findings carried forward into handoff.
+
+## Use Case Note
+
+This note was added by Codex. The repo has a credible use case as an internal forensic-consulting copilot for structured casework, not as a general-purpose chat product. The strongest fit is the combination of guided intake, local case artifacts, audit trail, bounded document handling, and multi-stage review for higher-risk deliverables. The main product risk is boundary clarity: the repo currently mixes full-pipeline reviewed workflows with assisted single-pass generators. That split is acceptable only if the UI and docs make the difference explicit so users do not confuse assisted output with partner-reviewed output. Aditya wants to address this problem explicitly in the product framing and workflow design. For this product, provenance, state consistency, and evidence-chain enforcement matter more than feature count.
+
 ---
 
 ## FIRST RUN PROTOCOL — Read This Before Anything Else

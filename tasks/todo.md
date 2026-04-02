@@ -1,12 +1,12 @@
 # TODO
 
 ## SESSION STATE
-- Status: CLOSED
-- Session ID: 003
+- Status: OPEN
+- Session ID: 004
 - Sprint ID: sprint-03
-- Last Session Summary: Sprint-02 QA gate QR-01..15 all PASS. External findings F-EXT-01..03 resolved (case persistence, Arabic wiring, DocumentManager). Codex review findings C-01..07 logged to todo. Proposal QA items PQA-01..12 logged. Pricing gap PGP-01..02 logged. .gitignore created. Test cases cleaned. channel.md and CODEX_REVIEW.md reset for next session.
-- Opened At: 2026-03-29
-- Closed At: 2026-03-29
+- Last Session Summary: Sprint-03 close — full framework (57 modules), QA gate QR-01..15 PASS, external findings F-EXT-01..03 resolved, codex findings C-01..07 logged, proposal QA items PQA-01..12 and pricing gap PGP-01..02 logged.
+- Opened At: 2026-04-02
+- Closed At:
 
 ---
 
@@ -122,13 +122,15 @@ EvidenceClassifier.validate_finding_chain() exists and partner prompts instruct 
 but no runtime call enforces it in the partner agent path. If the model ignores the instruction,
 inadmissible evidence can enter approved findings silently.
 
-- [ ] C-03a In agents/partner/agent.py: after partner produces ApprovalDecision, call
-      EvidenceClassifier.validate_finding_chain() on all FindingChain items in the output before
-      allowing approved=True — raise HookVetoError if any chain fails
-- [ ] C-03b Add a post-hook "enforce_evidence_chain" to the partner stage in orchestrator for
-      investigation_report workflow — runs after partner output, before final persist
-- [ ] C-03c Add QR check: QR-16 — partner approval blocked when finding chain contains
-      LEAD_ONLY or INADMISSIBLE evidence items
+- [x] C-03a Partner agent: _enforce_evidence_chains() overrides approved=True when FindingChain
+      references LEAD_ONLY/INADMISSIBLE evidence (agents/partner/agent.py) — session 004
+- [x] C-03b Post-hook enforce_evidence_chain added to POST_HOOKS (position 2, between
+      validate_schema and persist_artifact) — HookVetoError on bad chain (hooks/post_hooks.py) — session 004
+- [x] C-03c Evidence items threaded via closure in partner_fn; _build_evidence_items() converts
+      DocumentEntry→EvidenceItem (workflows/investigation_report.py) — session 004
+- [x] C-03d QR-16: 7/7 sub-checks PASS — validate_finding_chain rejects LEAD_ONLY, hook vetoes
+      bad approval, passes approved=False, passes PERMISSIBLE, no-op for FRM, no-op without
+      evidence_items, agent-level override works — session 004
 
 #### C-04 (Low) — DocumentManager is present but not first-class in the user journey
 Files: tools/document_manager.py, run.py, workflows/investigation_report.py:59, frm_risk_register.py:60
@@ -191,6 +193,7 @@ Current QA (QR-01..15) is static analysis + unit-level mocks. No end-to-end scri
 - [x] QR-13 FRM workflow structure — 8 modules, dependency enforcement, RiskItem extraction
 - [x] QR-14 Document manager bounded retrieval — read_excerpt ≤8k, small docs full, read_pages ≤60k
 - [x] QR-15 Evidence classifier — LEAD_ONLY classification, FindingChain validation
+- [x] QR-16 Evidence chain enforcement — partner approval blocked on LEAD_ONLY/INADMISSIBLE (7/7 sub-checks PASS, session 004)
 
 ---
 

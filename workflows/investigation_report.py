@@ -20,6 +20,7 @@ from core.orchestrator import Orchestrator
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FinalDeliverable
 from schemas.case import CaseIntake
+from schemas.evidence import EvidenceItem
 from tools.document_manager import DocumentManager
 from tools.file_tools import write_final_report, append_audit_event
 
@@ -84,9 +85,11 @@ def run_investigation_workflow(
     if expert_witness:
         console.print("  [yellow]Expert witness standard will be applied (ACFE-compliant).[/yellow]")
 
-    # Document processing
+    # Document processing + evidence item extraction
+    evidence_items: list[dict] = []
     if document_manager:
         _process_case_documents(document_manager, inv_type, console, on_progress)
+        evidence_items = _build_evidence_items(document_manager)
 
     # Build enriched description
     enriched_description = (
@@ -112,6 +115,7 @@ def run_investigation_workflow(
         return pm(j_output, ctx)
 
     def partner_fn(pm_output, ctx):
+        ctx["evidence_items"] = evidence_items
         return partner(pm_output, ctx)
 
     orch = Orchestrator(
@@ -278,3 +282,41 @@ def _render_investigation_report(
     ]
 
     return "\n".join(lines)
+
+
+def _build_evidence_items(doc_manager: DocumentManager) -> list[dict]:
+    """Convert registered documents to EvidenceItem dicts for chain validation.
+
+    Each DocumentEntry becomes one EvidenceItem. Permissibility carries over from
+    the document's provenance classification. Returns serialised dicts so they
+    travel cleanly through the context dict.
+    """
+    index = doc_manager.get_index()
+    items = []
+    for doc in index.documents:
+        if doc.is_duplicate:
+            continue
+        item = EvidenceItem(
+            evidence_id=doc.doc_id,
+            case_id=doc.case_id,
+            source_doc_id=doc.doc_id,
+            source_excerpt=doc.summary or "",
+            evidence_type=_map_doc_type(doc.doc_type),
+            description=f"{doc.filename} ({doc.doc_type})",
+            permissibility=doc.permissibility,
+            provenance=doc.provenance,
+            usability="report_citable" if doc.permissibility == "permissible" else "usable_lead",
+        )
+        items.append(item.model_dump())
+    return items
+
+
+def _map_doc_type(doc_type: str) -> str:
+    """Map DocumentEntry.doc_type to EvidenceItem.evidence_type literal."""
+    mapping = {
+        "email": "email",
+        "excel_data": "excel_data",
+        "interview_transcript": "interview",
+        "attachment": "attachment",
+    }
+    return mapping.get(doc_type, "document")

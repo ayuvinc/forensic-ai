@@ -19,6 +19,16 @@ A Claude-powered AI system that simulates a full forensic consulting firm — Ju
 | 9 | Case Tracker | View status of all open and closed cases |
 | 10 | Browse SOPs | Read saved policies and procedures |
 
+### Workflow Modes
+
+The framework has two workflow modes:
+
+**Full Pipeline (Options 2, 6)** — Multi-agent review: Junior Analyst drafts, Project Manager reviews and may request revisions, Partner gives final approval. Includes state machine tracking, revision loops, evidence-chain validation, artifact versioning, and full audit trail. Supports resume if interrupted.
+
+**Assisted Generation (Options 4, 5, 7, 8)** — Single-model generation with regulatory citations where applicable. Produces a complete deliverable in one pass. Includes artifact persistence and audit trail. No multi-agent review or revision loops.
+
+Options 1, 9, 10 are utilities. Option 3 (Persona Review) is a standalone review tool that can be applied to any deliverable.
+
 ---
 
 ## Before You Start — What You Need

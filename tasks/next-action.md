@@ -1,35 +1,25 @@
 # NEXT ACTION
 
+## SESSION
+CLOSED
+
 ## NEXT_PERSONA
-junior-dev
+implementation-agent
 
-## TASK
-Resolve external findings (persistence, Arabic, DocumentManager) and prepare for smoke test.
-API keys are NOT required during development — smoke test will be run separately when keys are ready.
+## NEXT_TASK
+T11-T14
 
-## CONTEXT
-Sprint-02 QA gate passed (QR-01..15 all PASS). Codebase is structurally complete (57 modules).
-Three external findings from Final Feedback review are now resolved in this sprint.
+## CARRY_FORWARD_CONTEXT
+- Session 3 is closed with T06-T10 treated as complete.
+- The next execution slice is T11, T12, T13, T14.
+- Carry forward review finding 1: compute/import derived state from source data instead of persisting duplicate mutable state.
+- Carry forward review finding 2: topbar/reset behavior must clear stale UI/session state on import, route change, or session restart.
+- Preserve awareness of offline build limitations during closeout and validation work.
 
-### Resolved This Session
-- F-EXT-01 (Medium): Case persistence fixed — all guided intake paths (options 2–8) now call
-  `_persist_intake()` which writes intake.json + state.json atomically.
-- F-EXT-02 (Medium): Arabic README claims corrected — Arabic is now correctly documented as
-  generated when `language=ar` is selected. `generate_arabic` context flag wired into
-  investigation and FRM workflows.
-- F-EXT-03 (Low): DocumentManager wiring fixed — options 2 and 6 now instantiate
-  DocumentManager and pass it to workflows. Graceful fallback to None if init fails.
+## BLOCKERS_AND_ENV_LIMITATIONS
+- Network-restricted environment prevented any online/dependency-backed validation during closeout.
+- Optional validation commands were not run as part of this handoff.
+- Existing repo worktree was already dirty; closeout touched handoff files only.
 
-## Pre-Conditions for Smoke Test (deferred — do NOT block development on these)
-- B-01: .env file with real ANTHROPIC_API_KEY and TAVILY_API_KEY
-- B-02: `pip install -r requirements.txt` completes without errors
-
-## SMOKE TEST ACCEPTANCE CRITERIA (run when keys are ready)
-- [ ] S3-01 .env created with ANTHROPIC_API_KEY and TAVILY_API_KEY set
-- [ ] S3-02 `pip install -r requirements.txt` completes without errors
-- [ ] S3-03 `python run.py` reaches the 10-item Rich menu
-- [ ] S3-04 Firm profile wizard completes, firm_profile/firm_profile.json written
-- [ ] S3-05 FRM Risk Register (Option 6) completes for a test client → cases/{id}/final_report.en.md written
-- [ ] S3-06 audit_log.jsonl has events for each pipeline stage
-- [ ] S3-07 Resume: interrupt mid-run, restart, orchestrator detects and resumes
-- [ ] S3-08 intake.json present in cases/{id}/ for all workflow paths (verify fix F-EXT-01)
+## HANDOFF_NOTE
+Closeout was performed by Codex. The next session should pick up from T11-T14 using the carry-forward review findings above, not the stale in-repo “session 004 open” state.

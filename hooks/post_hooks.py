@@ -4,11 +4,13 @@ Each hook: (payload: dict, context: dict) -> dict
 Raise HookVetoError to block persistence.
 
 Order:
-  1. validate_schema     — blocking: output must match expected Pydantic model
-  2. persist_artifact    — atomic write to cases/{id}/{agent}.v{N}.json
-  3. append_audit_event  — append one line to audit_log.jsonl
-  4. extract_citations   — merge new citations into citations_index.json
-  5. render_markdown     — write human-readable .md alongside the JSON artifact
+  1.  validate_schema          — blocking: output must match expected Pydantic model
+  1b. enforce_evidence_chain   — blocking: partner approval requires permissible evidence chains
+  2.  persist_artifact         — atomic write to cases/{id}/{agent}.v{N}.json
+  3.  append_audit_event       — append one line to audit_log.jsonl
+  4.  extract_citations        — merge new citations into citations_index.json
+  5.  render_markdown          — write human-readable .md alongside the JSON artifact
+  6.  generate_arabic_version  — off by default; enabled when context["generate_arabic"] = True
 """
 
 import json
@@ -37,6 +39,78 @@ def validate_schema(payload: dict, context: dict) -> dict:
         schema_cls(**payload.get("output", payload))
     except ValidationError as e:
         raise HookVetoError("validate_schema", str(e))
+    return payload
+
+
+# ── 1b. enforce_evidence_chain (defense-in-depth) ────────────────────────────
+
+# Workflows where finding chains must be validated before persisting approval
+_EVIDENCE_CHAIN_WORKFLOWS = frozenset(["investigation_report", "expert_witness_report"])
+
+
+def enforce_evidence_chain(payload: dict, context: dict) -> dict:
+    """Block partner approval if finding chains reference non-permissible evidence.
+
+    Only activates when:
+      - context["workflow"] is an evidence-chain workflow
+      - context["agent"] == "partner"
+      - evidence_items are present in context
+      - finding_chains are present in output
+    Otherwise passes through silently (FRM, proposal, etc. unaffected).
+    """
+    workflow = context.get("workflow", "")
+    agent = context.get("agent", "")
+
+    if workflow not in _EVIDENCE_CHAIN_WORKFLOWS or agent != "partner":
+        return payload
+
+    output = payload.get("output", payload)
+    evidence_items_raw = context.get("evidence_items", [])
+    finding_chains_raw = output.get("finding_chains", [])
+
+    if not evidence_items_raw or not finding_chains_raw:
+        return payload
+
+    from tools.evidence.evidence_classifier import EvidenceClassifier
+    from schemas.evidence import FindingChain, EvidenceItem
+
+    classifier = EvidenceClassifier()
+
+    chains = []
+    for fc in finding_chains_raw:
+        if isinstance(fc, FindingChain):
+            chains.append(fc)
+        elif isinstance(fc, dict):
+            try:
+                chains.append(FindingChain(**fc))
+            except Exception:
+                continue
+
+    items = []
+    for ei in evidence_items_raw:
+        if isinstance(ei, EvidenceItem):
+            items.append(ei)
+        elif isinstance(ei, dict):
+            try:
+                items.append(EvidenceItem(**ei))
+            except Exception:
+                continue
+
+    if not chains or not items:
+        return payload
+
+    failed_ids = []
+    for chain in chains:
+        if not classifier.validate_finding_chain(chain, items):
+            failed_ids.append(chain.finding_id)
+
+    if failed_ids and output.get("approved", False):
+        raise HookVetoError(
+            "enforce_evidence_chain",
+            f"Finding chain(s) {failed_ids} contain non-permissible evidence "
+            "(LEAD_ONLY or INADMISSIBLE). Partner approval blocked."
+        )
+
     return payload
 
 
@@ -189,10 +263,11 @@ def generate_arabic_version(payload: dict, context: dict) -> dict:
 
 # ── Ordered list for HookEngine registration ─────────────────────────────────
 POST_HOOKS = [
-    ("validate_schema",        validate_schema),
-    ("persist_artifact",       persist_artifact),
-    ("append_audit_event",     append_audit_event_hook),
-    ("extract_citations",      extract_citations),
-    ("render_markdown",        render_markdown),
-    ("generate_arabic_version", generate_arabic_version),
+    ("validate_schema",          validate_schema),
+    ("enforce_evidence_chain",   enforce_evidence_chain),
+    ("persist_artifact",         persist_artifact),
+    ("append_audit_event",       append_audit_event_hook),
+    ("extract_citations",        extract_citations),
+    ("render_markdown",          render_markdown),
+    ("generate_arabic_version",  generate_arabic_version),
 ]
