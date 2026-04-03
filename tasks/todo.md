@@ -1,12 +1,14 @@
 # TODO
 
 ## SESSION STATE
-- Status: OPEN
-- Session ID: 004
-- Sprint ID: sprint-03
-- Last Session Summary: Sprint-03 close — full framework (57 modules), QA gate QR-01..15 PASS, external findings F-EXT-01..03 resolved, codex findings C-01..07 logged, proposal QA items PQA-01..12 and pricing gap PGP-01..02 logged.
-- Opened At: 2026-04-02
-- Closed At:
+
+```
+Status:         CLOSED
+Active task:    none
+Active persona: none
+Blocking issue: none
+Last updated:   Session 004 close (2026-04-02) — normalized by remediation
+```
 
 ---
 
