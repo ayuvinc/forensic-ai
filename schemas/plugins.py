@@ -56,6 +56,7 @@ class PluginManifest(BaseModel):
     model_preference: Literal["haiku", "sonnet", "opus"] = "haiku"
     max_turns: int = 10
     timeout_seconds: int = 120
+    max_tokens: int = 8192
     revision_capable: bool = False
     artifact_type: str = "output"     # canonical artifact_type for this agent's output
     persona_perspective: Optional[str] = None
@@ -68,6 +69,7 @@ class PluginManifest(BaseModel):
             model_preference=self.model_preference,
             max_turns=self.max_turns,
             timeout_seconds=self.timeout_seconds,
+            max_tokens=self.max_tokens,
             required_tools=self.required_tools,
             revision_capable=self.revision_capable,
             supported_workflows=self.supported_workflows,

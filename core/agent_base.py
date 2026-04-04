@@ -40,6 +40,7 @@ class AgentManifest:
     required_tools: list[str]
     revision_capable: bool = False
     supported_workflows: list[str] = field(default_factory=list)
+    max_tokens: int = 8192
 
 
 # ── Errors ────────────────────────────────────────────────────────────────────
@@ -175,7 +176,7 @@ class BaseAgent:
         """Call Anthropic API with exponential backoff retry."""
         kwargs = dict(
             model=self.model,
-            max_tokens=4096,
+            max_tokens=getattr(self.manifest, "max_tokens", 8192),
             system=system_prompt,
             messages=messages,
         )
