@@ -118,15 +118,19 @@ class JuniorAnalyst:
                 pass
             return None
 
-        # 1. Code block: ```json ... ``` or ``` ... ```
-        code_block = re.search(r'```(?:json)?\s*(\{.*?\})\s*```', text, re.DOTALL)
+        # 1. Code block: extract everything between ``` fences, then find outermost { }
+        code_block = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
         if code_block:
-            result = _try_parse(code_block.group(1))
-            if result:
-                return result
+            block_content = code_block.group(1)
+            # Find outermost { } within the code block (greedy inside fence)
+            inner = re.search(r'\{[\s\S]*\}', block_content)
+            if inner:
+                result = _try_parse(inner.group())
+                if result:
+                    return result
 
-        # 2. Greedy {.*} — last resort
-        match = re.search(r'\{.*\}', text, re.DOTALL)
+        # 2. Greedy {.*} across entire response — last resort
+        match = re.search(r'\{[\s\S]*\}', text)
         if match:
             result = _try_parse(match.group())
             if result:

@@ -82,12 +82,28 @@ class ProjectManager:
 
     def _parse_output(self, text: str) -> dict:
         import re
-        match = re.search(r'\{.*\}', text, re.DOTALL)
-        if match:
+
+        def _try_json(s: str):
             try:
-                return json.loads(match.group())
+                return json.loads(s)
             except json.JSONDecodeError:
-                pass
+                return None
+
+        # 1. Code block fence: extract content between ``` markers first
+        code_block = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', text)
+        if code_block:
+            inner = re.search(r'\{[\s\S]*\}', code_block.group(1))
+            if inner:
+                result = _try_json(inner.group())
+                if result is not None:
+                    return result
+
+        # 2. Greedy outermost { } across full response
+        match = re.search(r'\{[\s\S]*\}', text)
+        if match:
+            result = _try_json(match.group())
+            if result is not None:
+                return result
         return {
             "revision_requested": False,
             "review_summary": text[:500],
