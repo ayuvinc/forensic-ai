@@ -11,6 +11,16 @@ Planning session with Maher — validate 3-level scope hierarchy, confirm top 3 
 draft intake questionnaire structures (8–12 questions each), review knowledge file scope, design chaining UX.
 Run /ba then /architect. This gates Phases 10–12.
 
+PLANNING AGENDA ADDITIONS (from Session 009 close):
+1. Zero-information draft design: define "content floor" per workflow — what the engine produces when
+   consultant provides no documents and minimal intake. E.g. FRM → industry-baseline risks from knowledge file.
+   Every workflow must return a usable starting-point draft, never a blank deliverable.
+   Design question: for each scope type (FRM, Investigation, Policy, Proposal, Transaction Testing, etc.)
+   what are the 5–15 baseline items the engine can always populate from domain knowledge alone?
+2. Apply same principle to investigations: if no documents, engine drafts from publicly known facts +
+   asks targeted questions to fill gaps. Partner/PM review still applies.
+3. Context limit hygiene: sessions must close before 80% context. Check at session-open.
+
 ## CARRY_FORWARD_CONTEXT
 - Session 009 closed. Smoke test PASSED (Option 4 — Whistleblower Policy). Word output wired in.
 - 4 bugs fixed: doc tool filter, has_documents() guard, JSON code-block parsing, doc manager hallucination guard.

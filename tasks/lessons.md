@@ -8,6 +8,21 @@ Categories: ARCH | CODE | PROCESS | TOOLING | RESEARCH
 
 ## Entries
 
+[2026-04-04] [ARCH] Zero-information drafts are a core product requirement, not an edge case. If a consultant
+provides no client documents and no detailed intake, the engine must still produce a usable starting-point draft
+by (a) asking clarifying questions OR (b) populating with industry-baseline risks/findings from its knowledge base.
+The FRM risk register for a fintech with no documents should return ~10 baseline AML/KYC risks from RBI/PMLA
+framework — not 0 risks. This applies to all workflows: investigation report, policy/SOP, proposal, FRM.
+Design principle: "starting point draft even with zero client information" must be explicit in every agent
+system prompt and every knowledge file. Consultant then adds/removes/adjusts. Engine is never allowed to
+return a blank deliverable when it has domain knowledge to draw on. Add to planning: define baseline
+content floor per workflow type.
+
+[2026-04-04] [PROCESS] Session context limit (87%) — check context usage at session-open and session-close;
+if approaching limit mid-session, close and open a new session rather than compressing context further.
+High-context sessions risk losing carry-forward detail. Mitigation: keep sessions focused on one sprint goal;
+do not mix smoke tests + scope expansion + bug fixes in one session.
+
 [2026-04-04] [CODE] Policy/SOP prompt produces strong 8/10 first draft (near enterprise-grade per external review) but
 misses 8 predictable gaps: (1) anonymous complaint handling protocol, (2) retaliation investigation mechanism +
 disciplinary matrix, (3) evidence handling / forensics / chain of custody, (4) SLA for closure communication to

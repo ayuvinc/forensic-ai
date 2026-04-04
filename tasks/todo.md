@@ -528,6 +528,30 @@ Scope hierarchy design:
 
 ---
 
+### Phase 13 — Zero-Information Draft Design (GATED on planning session)
+
+**Core principle:** Engine must produce a usable starting-point draft even with zero client documents
+and minimal intake. Never return a blank deliverable when domain knowledge exists.
+
+Design: each workflow has a "content floor" — baseline items populated from knowledge file when
+consultant provides no evidence. Consultant adds/removes/adjusts from this baseline.
+
+- [ ] ZID-00 Planning: define content floor per workflow (5–15 baseline items each)
+      Scope: FRM, Investigation, Policy/SOP, Proposal, Transaction Testing, Due Diligence, Sanctions
+- [ ] ZID-01 FRM: if findings=[] after junior run → inject industry-baseline risks from knowledge file
+      before PM review (not as final answer — as starting point for consultant review)
+- [ ] ZID-02 Investigation: if no documents registered → system prompt instructs junior to draft from
+      publicly known typologies + generate open_questions list for consultant to answer
+- [ ] ZID-03 Policy/SOP: if minimal intake → draft from regulatory framework defaults + flag gaps
+      (already partially working — knowledge/policy_sop/ KF-00 will improve this)
+- [ ] ZID-04 All agent system prompts: add explicit instruction "never return empty findings/risks —
+      populate with industry baseline if no client-specific evidence is available, clearly labelled
+      as BASELINE (unverified) for consultant review"
+- [ ] ZID-05 Session context hygiene: session-open checks must warn if context approaching limit;
+      close sessions before 80% to preserve carry-forward fidelity
+
+---
+
 ## COMPLETED TASKS
 
 ### Sprint-09 (Smoke Test + Scope Expansion — Session 009)
