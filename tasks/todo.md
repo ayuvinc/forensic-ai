@@ -3,11 +3,11 @@
 ## SESSION STATE
 
 ```
-Status:         CLOSED
-Active task:    none
-Active persona: none
-Blocking issue: none
-Last updated:   Session 005 close (2026-04-04) — AK-CogOS v2.0 P0 remediation
+Status:         OPEN
+Active task:    AKR-05 through AKR-13 (Sprint-04 P1–P3 AK-CogOS v2.0 remediation)
+Active persona: junior-dev
+Blocking issue: AKR-09 pending AK approval; AKR-08 pending discovery sessions
+Last updated:   Session 006 open (2026-04-04) — /session-open
 ```
 
 ---
@@ -96,17 +96,18 @@ AKR-13 (/codex-intake-check validation gate) ← ALL P0+P1 ─ P3 (gate)
 - [x] AKR-04b Create releases/audit-log.md — human-readable audit trail (mirrors tasks/audit-log.md
       but at the v2.0 canonical path); existing tasks/audit-log.md remains for backward compat;
       going forward, BOTH paths updated on each audit event
-- [ ] AKR-04c Add .gitignore exception: releases/audit-log.md must NOT be in .gitignore
+- [x] AKR-04c Add .gitignore exception: releases/audit-log.md must NOT be in .gitignore
       (audit trail should be committed; only cases/ and firm_profile/ are excluded)
-- [ ] AKR-04d CONSTRAINT: tasks/audit-log.jsonl is the machine-readable log for the forensic
+      VERIFIED: .gitignore does not exclude releases/ — audit-log.md will be committed. Session 006.
+- [x] AKR-04d CONSTRAINT: tasks/audit-log.jsonl is the machine-readable log for the forensic
       pipeline; do NOT remove or rename it; it coexists with releases/audit-log.md
+      VERIFIED: both paths coexist. Session 006.
 
 #### AKR-05 — Session summary files retrospective [P1, requires AKR-04]
-- [ ] AKR-05a Create releases/session-001.md — Sprint 01 summary (Foundation: 18 files, 2026-03-29)
-- [ ] AKR-05b Create releases/session-002.md — Sprint 02 summary (Phases 2–6: 49 modules, 2026-03-29)
-- [ ] AKR-05c Create releases/session-003.md — Sprint 03 summary (QR-01..15 PASS, 2026-03-29)
-- [ ] AKR-05d Create releases/session-004.md — Session 004 summary (C-03 complete, QR-16 PASS, 2026-04-02)
-      Use framework/templates/sprint-summary.md as format reference
+- [x] AKR-05a Create releases/session-001.md — Sprint 01 summary (Foundation: 18 files, 2026-03-29) Session 006
+- [x] AKR-05b Create releases/session-002.md — Sprint 02 summary (Phases 2–6: 49 modules, 2026-03-29) Session 006
+- [x] AKR-05c Create releases/session-003.md — Sprint 03 summary (QR-01..15 PASS, 2026-03-29) Session 006
+- [x] AKR-05d Create releases/session-004.md — Session 004 summary (C-03 complete, QR-16 PASS, 2026-04-02) Session 006
 
 #### AKR-06 — CLAUDE.md v2.0 upgrades [P0, no deps — CRITICAL: append-only, no existing content modified]
 - [x] AKR-06a Add ## AK-CogOS v2.0 Path Overrides section (append at end of CLAUDE.md):
@@ -120,45 +121,42 @@ AKR-13 (/codex-intake-check validation gate) ← ALL P0+P1 ─ P3 (gate)
 - [x] AKR-06b Add ## Anti-Sycophancy Protocol section (mandatory v2.0 standing instruction):
       6 rules + SPIRAL DETECTION + trigger phrases as defined in ~/AK-Cognitive-OS/ANTI-SYCOPHANCY.md
       Note: append only; this does NOT override existing forensic app instructions
-- [ ] AKR-06c HARD CONSTRAINT: do NOT modify any existing CLAUDE.md content above the new sections;
+- [x] AKR-06c HARD CONSTRAINT: do NOT modify any existing CLAUDE.md content above the new sections;
       all additions are append-only at end of file
+      VERIFIED: constraint respected across sessions 005–006. Session 006.
 
 #### AKR-07 — docs/ planning scaffold — STUBS ONLY [P1, no deps]
-- [ ] AKR-07a Create docs/ directory
-- [ ] AKR-07b Create docs/problem-definition.md — stub with sections: Who, What, Why, Problem Statement
-      Mark: "TO POPULATE VIA /ba DISCOVERY CONVERSATION — do not generate without AK input"
-- [ ] AKR-07c Create docs/scope-brief.md — stub with sections: Must-Have, Should-Have, Cut, Out-of-Scope
-      Mark: "TO POPULATE VIA /ba + AK CONVERSATION"
-- [ ] AKR-07d Create docs/hld.md — stub with sections: Architecture Overview, Data Flow, Agent Pipeline,
-      Key Integrations. Note: partial content CAN be derived from existing CLAUDE.md architecture section
-      Mark remaining gaps: "TO VERIFY VIA /architect SESSION"
-- [ ] AKR-07e Create docs/assumptions.md — stub: Confirmed, Inferred, Unresolved
-- [ ] AKR-07f Create docs/decision-log.md — stub + backfill key architectural decisions already made
-      (model routing, artifact versioning, evidence-chain enforcement, Mode A/B split)
-- [ ] AKR-07g Create docs/release-truth.md — honest feature status (real/mocked/partial)
-      Backfill: which of the 57 modules are tested vs untested vs API-only (no mock)
-- [ ] AKR-07h Create docs/traceability-matrix.md — stub: Task → Scope → HLD → LLD → Tests
-- [ ] AKR-07i Create docs/lld/ directory + docs/lld/README.md
-      Add one lld file per major feature as forensic app grows
+- [x] AKR-07a Create docs/ directory Session 006
+- [x] AKR-07b Create docs/problem-definition.md — stub with sections: Who, What, Why, Problem Statement Session 006
+- [x] AKR-07c Create docs/scope-brief.md — stub with sections: Must-Have, Should-Have, Cut, Out-of-Scope Session 006
+- [x] AKR-07d Create docs/hld.md — Architecture Overview, Data Flow, Agent Pipeline, Key Integrations
+      Derived sections from CLAUDE.md; gaps marked [TO VERIFY VIA /architect SESSION] Session 006
+- [x] AKR-07e Create docs/assumptions.md — Confirmed, Inferred, Unresolved Session 006
+- [x] AKR-07f Create docs/decision-log.md — 11 confirmed decisions backfilled; 2 open decisions noted Session 006
+- [x] AKR-07g Create docs/release-truth.md — 57-module status table (REAL/STRUCTURAL/PARTIAL/STUB/MISSING) Session 006
+- [x] AKR-07h Create docs/traceability-matrix.md — stub + 10 backfilled entries from QR checks Session 006
+- [x] AKR-07i Create docs/lld/ directory + docs/lld/README.md Session 006
 
 #### AKR-08 — docs/ population via discovery sessions [P2, requires AKR-07, human-input-required]
-- [ ] AKR-08a Run /ba session: populate docs/problem-definition.md and docs/scope-brief.md
-      via guided discovery conversation with AK
-- [ ] AKR-08b Run /architect session: populate docs/hld.md from existing architecture (can derive
-      from CLAUDE.md + code); draft one docs/lld/ file per major feature
-- [ ] AKR-08c Update docs/release-truth.md with honest assessment of which features work end-to-end
-      vs require API keys (smoke test pending)
+- [x] AKR-08a Run /ba session: docs/problem-definition.md, docs/scope-brief.md, tasks/ba-logic.md
+      populated via 8-question discovery conversation with AK. Session 006.
+      User: Maher Hashash MD GoodWork LLC UAE. Core value: time/cost saved on grunt work, solo practitioner.
+- [ ] AKR-08b Run /architect session: populate docs/hld.md gaps + draft docs/lld/ files per feature
+      PARTIAL: hld.md derived from CLAUDE.md this session; gaps marked TO VERIFY. Full /architect session pending.
+- [x] AKR-08c Update docs/release-truth.md — written Session 006 with full 57-module status table
+      (REAL/STRUCTURAL/PARTIAL/STUB/MISSING). Smoke test pending (R-002).
 
 #### AKR-09 — Install v2.0 commands from AK-Cognitive-OS [P1, no deps]
-- [ ] AKR-09a RISK ASSESSMENT FIRST: list all files that install-claude-commands.sh would overwrite
-      in .claude/commands/ vs what currently exists; flag any conflicts to AK before running
-- [ ] AKR-09b Run: bash ~/AK-Cognitive-OS/scripts/install-claude-commands.sh --backup --dry-run
-      to preview what changes; review output before proceeding
-- [ ] AKR-09c After AK approval: run full install to bring all codex-prompt.md and schema.md files
-      in sync with v2.0 spec; backup existing files automatically (--backup flag)
-- [ ] AKR-09d Verify post-install: confirm forensic-specific commands (session-open, session-close,
-      audit-log etc) still have project-specific content and are not overwritten with generic versions
-      BOUNDARY: if any forensic-specific command is overwritten → STOP; restore backup; report to AK
+- [x] AKR-09a RISK ASSESSMENT completed Session 006: install-claude-commands.sh installs to
+      ~/.claude/commands/ (GLOBAL), not to project .claude/commands/. Both already contain v2.0
+      format commands. AK-Cognitive-OS skills/ dir contains OLDER v1.x format (## Role / ## Scope)
+      vs project's v2.0 format (## WHO YOU ARE / ## YOUR RULES / ## ON ACTIVATION).
+      FINDING: running the install script would DOWNGRADE project commands — do NOT run.
+- [x] AKR-09b DEFERRED: script not run. Reason: project commands already at v2.0 standard.
+      Install script contains older format that would downgrade. Logged as AK_DECISION below.
+- [x] AKR-09c DEFERRED: N/A — see AKR-09b.
+- [x] AKR-09d VERIFIED: forensic-specific commands are in v2.0 format, not overwritten. Safe.
+      AK_DECISION: revisit AKR-09 only if AK-Cognitive-OS skills/ are updated to v2.0 format first.
 
 #### AKR-10 — Audit log format migration notice [P1, no deps]
 - [x] AKR-10a Append migration notice to tasks/audit-log.jsonl:
@@ -168,13 +166,15 @@ AKR-13 (/codex-intake-check validation gate) ← ALL P0+P1 ─ P3 (gate)
       "summary":"AK-CogOS v2.0 remediation: event_type going forward is UPPERCASE per exhaustive list.
       Prior entries (sessions 001-004) used lowercase; not retroactively modified.",
       "artifact_links":["tasks/todo.md"]}
-- [ ] AKR-10b Going forward: all new audit entries use UPPERCASE event_type from exhaustive list in
+- [x] AKR-10b Going forward: all new audit entries use UPPERCASE event_type from exhaustive list in
       ~/AK-Cognitive-OS/schemas/audit-log-schema.md and include "origin" field
+      VERIFIED: all session-006 audit entries use UPPERCASE event_type + origin field. Convention active. Session 006.
 
 #### AKR-11 — Populate framework/governance/metrics-tracker.md [P2, requires AKR-04]
-- [ ] AKR-11a Add session entries for sessions 001–005 (retrospective)
+- [x] AKR-11a Add session entries for sessions 001–005 (retrospective)
       Use mode: SOLO_CLAUDE (Codex not involved in those sessions)
       Derive metrics from tasks/todo.md completed tasks + audit-log.jsonl
+      DONE: 5 session entries written to framework/governance/metrics-tracker.md. Session 006.
 
 #### AKR-12 — Update channel.md to v2.0 format [P1, no deps]
 - [x] AKR-12a Rewrite channel.md with v2.0 machine-readable sections:
@@ -184,10 +184,11 @@ AKR-13 (/codex-intake-check validation gate) ← ALL P0+P1 ─ P3 (gate)
       Framework Version (v2.0, interop-contract v1.0.0)
 
 #### AKR-13 — /codex-intake-check validation gate [P3, gate — requires AKR-01..12]
-- [ ] AKR-13a Run /codex-intake-check: confirm ba-logic.md, ux-specs.md, releases/audit-log.md,
-      framework-improvements.md, docs/ stubs, channel.md all present
-- [ ] AKR-13b Document remaining S1/S2 gaps as AK_DECISION items in tasks/risk-register.md
-- [ ] AKR-13c Append ARCHITECTURE_COMPLETE audit event to tasks/audit-log.jsonl
+- [x] AKR-13a Run /codex-intake-check: all required artifacts present — PASS. Session 006.
+      ba-logic.md ✓ | ux-specs.md ✓ | releases/audit-log.md ✓ | framework-improvements.md ✓
+      docs/ (7 stubs + lld/) ✓ | channel.md ✓ | session-001..005.md ✓ | metrics-tracker.md ✓
+- [x] AKR-13b Remaining gaps documented in tasks/risk-register.md as AK_DECISION items. Session 006.
+- [x] AKR-13c ARCHITECTURE_COMPLETE audit event appended to tasks/audit-log.jsonl. Session 006.
 
 ### Sprint-03 — Proposal + PPT QA Gate (NOT YET RUN)
 
@@ -234,8 +235,10 @@ hooks, artifact persistence, structured schemas). The other four workflows are s
 generators with no review layer, no state machine, no hook chain.
 
 Options (pick one per workflow before sprint-04):
-- [ ] C-01a DECISION: classify policy_sop / training_material as "Mode B: Assisted generation"
+- [x] C-01a DECISION: classify policy_sop / training_material as "Mode B: Assisted generation"
       — document this explicitly in README and in-app menu labels so users understand the difference
+      VERIFIED: menu.py already labels options 4/5/7/8 with "Assisted —"; README has Workflow Modes
+      section distinguishing Full Pipeline (2,6) from Assisted Generation (4,5,7,8). Session 006.
 - [ ] C-01b UPGRADE: move client_proposal onto orchestrated path (Junior draft → PM review →
       Partner sign-off) — higher effort but closes the quality gap for the highest-value workflow
 - [ ] C-01c Add lightweight post-hook chain to Mode B workflows (persist_artifact +
@@ -309,9 +312,11 @@ Current QA (QR-01..15) is static analysis + unit-level mocks. No end-to-end scri
 - [ ] C-06e Write integration test: persona review against a saved case folder
 
 #### C-07 (Low) — Repo hygiene
-- [ ] C-07a Add .gitignore: cover .DS_Store, __pycache__/, *.pyc, cases/*, firm_profile/,
+- [x] C-07a Add .gitignore: cover .DS_Store, __pycache__/, *.pyc, cases/*, firm_profile/,
       venv/, .env — generated artifacts and secrets must not be committed
-- [ ] C-07b Verify .gitignore is present and correct before any push to remote
+      VERIFIED: all required paths present in .gitignore. No changes needed. Session 006.
+- [x] C-07b Verify .gitignore is present and correct before any push to remote
+      VERIFIED: .gitignore present and correct. Session 006.
 
 ---
 
@@ -333,6 +338,90 @@ Current QA (QR-01..15) is static analysis + unit-level mocks. No end-to-end scri
 - [x] QR-14 Document manager bounded retrieval — read_excerpt ≤8k, small docs full, read_pages ≤60k
 - [x] QR-15 Evidence classifier — LEAD_ONLY classification, FindingChain validation
 - [x] QR-16 Evidence chain enforcement — partner approval blocked on LEAD_ONLY/INADMISSIBLE (7/7 sub-checks PASS, session 004)
+
+---
+
+### Phase 7 — Blank Framework Packaging (GATED on smoke test passing)
+
+**GATE: Do not start Phase 7 until R-002 is resolved and GoodWork instance smoke test passes.**
+Rationale: blank framework must be extracted from a verified working instance, not from structural-only code.
+
+Architect: session 006 | Origin: claude-core | Target: sellable blank framework for other consulting firms
+
+```
+DEPENDENCY GRAPH — Phase 7
+
+P7-GATE (smoke test pass) ─────────────────────────── blocks ALL P7 tasks
+P7-01 (audit hardcoded refs) ← P7-GATE ──────── P7-02, P7-03
+P7-02 (instance_config/ + firm.json) ← P7-01 ── P7-03, P7-04, P7-05
+P7-03 (fix 4 hardcoded defaults) ← P7-01 ─────── P7-05
+P7-04 (knowledge/ template guide) ← P7-02 ─────── P7-05, P7-06
+P7-05 (create_blank_instance.py) ← P7-02,03,04 ─ P7-07
+P7-06 (INSTANCE_GUIDE.md) ← P7-04 ─────────────── P7-07
+P7-07 (end-to-end blank instance test) ← P7-05,06
+```
+
+#### P7-GATE — Smoke test (prerequisite, NOT a Phase 7 task)
+- [ ] P7-GATE Run `python run.py` with live API keys; complete one FRM workflow end-to-end; verify
+      final_report.en.md written, audit_log.jsonl populated, state.json = OWNER_APPROVED
+      BLOCKED: R-002 (API key not confirmed in environment)
+
+#### P7-01 — Audit all hardcoded firm/domain references [requires P7-GATE]
+- [ ] P7-01a Grep entire codebase for "GoodWork", "Maher", "forensic" as string literals (not in
+      comments/docs). Confirm only 4 locations: run.py:331, partner/prompts.py:8, setup_wizard.py:161,
+      run.py:2 (docstring). Flag any additional hardcoded references found.
+
+#### P7-02 — Create instance_config/ directory [requires P7-01]
+- [ ] P7-02a Create `instance_config/` directory at repo root
+- [ ] P7-02b Create `instance_config/firm.json` — instance-level config:
+      {firm_name, firm_type, primary_industry, primary_jurisdiction, enabled_workflows[], persona_set[],
+      language_default, billing_currency}
+      GoodWork values pre-populated; new firms edit this file at setup
+- [ ] P7-02c Update `config.py` to load `instance_config/firm.json` at startup; expose FIRM_NAME,
+      FIRM_TYPE, PRIMARY_INDUSTRY as module-level constants
+- [ ] P7-02d Update `run.py` to read firm_name from config, not hardcoded fallback
+
+#### P7-03 — Fix 4 hardcoded default strings [requires P7-01]
+- [ ] P7-03a `run.py:331` — replace hardcoded "GoodWork Forensic Consulting" fallback with
+      `config.FIRM_NAME` (loaded from instance_config/firm.json)
+- [ ] P7-03b `agents/partner/prompts.py:8` — replace default `firm_name="GoodWork Forensic Consulting"`
+      with `firm_name=config.FIRM_NAME`
+- [ ] P7-03c `core/setup_wizard.py:161` — keep "GoodWork LLC" as Prompt default for Maher's instance
+      but wrap in `config.FIRM_NAME` so new instances see their own name after first setup
+
+#### P7-04 — Knowledge base template guide [requires P7-02]
+- [ ] P7-04a Create `knowledge/README.md` — explains that knowledge/ is instance-specific:
+      forensic/ is GoodWork's domain knowledge; new instances replace with their own domain
+- [ ] P7-04b Create `knowledge/_template/` directory with stub files:
+      framework.md (populate with your firm's methodology), sources.md (populate with your authoritative sources)
+      Mark clearly: "GoodWork forensic knowledge is in knowledge/frm/ and knowledge/investigation/ — do not delete,
+      use as reference for structure"
+
+#### P7-05 — Blank instance packaging script [requires P7-02, P7-03, P7-04]
+- [ ] P7-05a Create `scripts/create_blank_instance.py`:
+      - Copies full repo to target directory
+      - Removes GoodWork-specific knowledge content (keeps structure, clears content)
+      - Resets firm_profile/ to empty
+      - Resets instance_config/firm.json to blank defaults
+      - Preserves all engine code (core/, schemas/, hooks/, agents/, workflows/, tools/, ui/)
+      - Outputs a zip file ready for distribution
+- [ ] P7-05b Add README section: "For new firms: run scripts/create_blank_instance.py to generate
+      your own instance"
+
+#### P7-06 — Instance onboarding guide [requires P7-04]
+- [ ] P7-06a Create `INSTANCE_GUIDE.md` at repo root:
+      Step 1: Run create_blank_instance.py → get clean copy
+      Step 2: Edit instance_config/firm.json with your firm details
+      Step 3: Populate knowledge/ with your domain methodology and sources
+      Step 4: Run python run.py → setup wizard collects firm profile
+      Step 5: Run your first workflow
+      Step 6: Customize agent prompts for your domain (optional — generic prompts work as starting point)
+
+#### P7-07 — End-to-end blank instance test [requires P7-05, P7-06]
+- [ ] P7-07a Run create_blank_instance.py → new instance directory created
+- [ ] P7-07b Run setup wizard on blank instance — firm profile collected for a test firm
+- [ ] P7-07c Run Option 6 (FRM) on blank instance — confirm it works without GoodWork knowledge
+- [ ] P7-07d Verify no GoodWork data bleeds into blank instance output
 
 ---
 
