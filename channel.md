@@ -1,18 +1,29 @@
 # CHANNEL — Session Broadcast
 
 ## Current State
-- Current phase: session closed
-- Sessions completed: 001, 002, 003
-- Last closed: 2026-04-02
-- Last agent run: 2026-04-02 21:49:32 +0530 — Codex closeout
-- Framework status: handoff updated; build/pipeline queue moved to NEXT
+- Framework version: AK-CogOS v2.0 (Feb 2026) | interop-contract v1.0.0
+- Status: OPEN (Session 005)
+- Sessions completed: 001, 002, 003, 004
+- Last closed: 2026-04-02 (Session 004)
+- Last agent run: 2026-04-04 — architect (session 005, sprint-04)
+- Mode: SOLO_CLAUDE
 
-## Closeout Summary
-- Session 3 treated as complete through T06-T10.
-- T11-T14 are the next planned slice.
-- Two review findings were carried forward for the next session: derive state on import instead of duplicating mutable state, and reset topbar state on navigation/session transitions.
+## Active Sprint
+- Sprint ID: sprint-04
+- Objective: AK-CogOS v2.0 Remediation
+- Tasks in flight: AKR-01 through AKR-13
+- Blocking items: AKR-08 requires human discovery conversation with AK before docs/ can be populated
+- AKR-09 requires AK approval after --dry-run before install script executes
 
-## Pipeline / Build Queue
-- Status: NEXT
-- Next queue: T11, T12, T13, T14
-- Environment note: offline closeout only; optional build validation not run during this handoff
+## Pipeline Queue
+- Status: IN PROGRESS
+- Next queue: AKR-01, AKR-02, AKR-03, AKR-04, AKR-06, AKR-10, AKR-12 (all P0/P1, parallel-safe)
+- After P0/P1: AKR-05, AKR-07, AKR-09 (P1 sequential)
+- After P1: AKR-08, AKR-11 (P2, human-input-gated)
+- Gate: AKR-13 (/codex-intake-check) after all P0/P1 complete
+
+## Architect Output — Sprint-04 Task Graph
+- run_id: architect-005-sprint-04-2026-04-04T00:00:00Z
+- Status: PASS
+- Artifacts written: tasks/todo.md (Sprint-04 task graph), channel.md
+- Next action: Run /junior-dev on AKR-01..04, AKR-06, AKR-10, AKR-12 (parallel P0/P1 group)

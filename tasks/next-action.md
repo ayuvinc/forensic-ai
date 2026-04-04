@@ -4,22 +4,26 @@
 CLOSED
 
 ## NEXT_PERSONA
-implementation-agent
+junior-dev
 
 ## NEXT_TASK
-T11-T14
+AKR-05 through AKR-13 (Sprint-04 P1-P3 AK-CogOS v2.0 remediation)
 
 ## CARRY_FORWARD_CONTEXT
-- Session 3 is closed with T06-T10 treated as complete.
-- The next execution slice is T11, T12, T13, T14.
-- Carry forward review finding 1: compute/import derived state from source data instead of persisting duplicate mutable state.
-- Carry forward review finding 2: topbar/reset behavior must clear stale UI/session state on import, route change, or session restart.
-- Preserve awareness of offline build limitations during closeout and validation work.
+- Session 005 closed with AK-CogOS v2.0 P0 complete (7 artifacts created/updated).
+- P1-P3 tasks are next: AKR-05 (session summaries), AKR-07 (docs/ stubs), AKR-09 (command install
+  — REQUIRES dry-run + AK approval BEFORE live run), AKR-10 (metrics), AKR-12 (already done).
+- AKR-09 is HIGH RISK: run install-claude-commands.sh --dry-run first, show AK the diff, get explicit
+  approval before live run. Never skip the pre-flight.
+- Sprint-03 items (PQA-01..12, PGP-01..02, C-01..C-07 open items) remain deferred — do not start
+  until sprint-04 AK-CogOS remediation (P1 minimum) is complete.
+- docs/ planning artifacts (AKR-07, AKR-08) require discovery conversations with AK — stubs only until then.
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Network-restricted environment prevented any online/dependency-backed validation during closeout.
-- Optional validation commands were not run as part of this handoff.
-- Existing repo worktree was already dirty; closeout touched handoff files only.
+- AKR-09 blocked until AK approves post-dry-run diff.
+- AKR-08 (docs/ population) blocked on /ba + /architect discovery sessions with AK.
+- R-002: Anthropic API key not confirmed in this environment — smoke test still pending.
 
 ## HANDOFF_NOTE
-Closeout was performed by Codex. The next session should pick up from T11-T14 using the carry-forward review findings above, not the stale in-repo “session 004 open” state.
+Session 005 closed by claude-core. P0 remediation done. Next session starts with /session-open
+then /junior-dev on AKR-05, AKR-07, AKR-09 (dry-run only), AKR-11 in parallel.

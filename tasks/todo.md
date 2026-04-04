@@ -7,7 +7,7 @@ Status:         CLOSED
 Active task:    none
 Active persona: none
 Blocking issue: none
-Last updated:   Session 004 close (2026-04-02) — normalized by remediation
+Last updated:   Session 005 close (2026-04-04) — AK-CogOS v2.0 P0 remediation
 ```
 
 ---
@@ -51,6 +51,143 @@ P6-04 (zip+README) ← P6-03
 ---
 
 ## PENDING TASKS
+
+### Sprint-04 — AK-CogOS v2.0 Remediation (Session 005, 2026-04-04)
+
+Architect: session 005 | Origin: claude-core | Target: AK-CogOS v2.0 (Feb 2026)
+Source spec: ~/AK-Cognitive-OS — git 508be8b "feat(v2.0.0): conversation-first, artifact-driven development"
+
+```
+DEPENDENCY GRAPH — Sprint-04 AK-CogOS v2.0 Remediation
+
+AKR-01 (ba-logic.md) ──────────────────────────────────── P0, independent
+AKR-02 (ux-specs.md) ──────────────────────────────────── P0, independent
+AKR-03 (framework-improvements.md) ────────────────────── P0, independent
+AKR-04 (releases/ directory) ──────────── AKR-05, AKR-11 ─ P0, independent
+AKR-05 (session-N.md retrospective) ← AKR-04 ──────────── P1
+AKR-06 (CLAUDE.md v2.0 upgrades) ──────────────────────── P0, independent
+AKR-07 (docs/ planning scaffold — stubs only) ─── AKR-08 ─ P1, independent
+AKR-08 (docs/ discovery: BA+architect sessions) ← AKR-07 ─ P2, human-input-required
+AKR-09 (install v2.0 commands from AK-CogOS) ──────────── P1, independent [RISK: may overwrite]
+AKR-10 (audit-log.jsonl format migration notice) ──────── P1, independent
+AKR-11 (framework/governance metrics populate) ← AKR-04 ── P2
+AKR-12 (channel.md v2.0 format) ───────────────────────── P1, independent
+AKR-13 (/codex-intake-check validation gate) ← ALL P0+P1 ─ P3 (gate)
+```
+
+#### AKR-01 — Create tasks/ba-logic.md [P0, no deps — BLOCKS all skills]
+- [x] AKR-01a Create tasks/ba-logic.md — v2.0 stub, sections: Business Logic Decisions,
+      Acceptance Rules, Data Rules, Edge Cases, Open Decisions
+      Header: "# BA Logic — GoodWork Forensic AI / Stub — populate via /ba discovery session"
+
+#### AKR-02 — Create tasks/ux-specs.md [P0, no deps — BLOCKS /codex-intake-check]
+- [x] AKR-02a Create tasks/ux-specs.md — v2.0 stub, sections: UX Flows, Interaction Rules,
+      Terminal UI Components, Mobile Constraints (N/A — CLI only), Open UX Decisions
+      Header: "# UX Specs — GoodWork Forensic AI / Stub — populate via /ux session"
+      Note: project is CLI, not web — UX section covers Rich terminal UI conventions only
+
+#### AKR-03 — Create framework-improvements.md [P0, no deps — BLOCKS /framework-delta-log]
+- [x] AKR-03a Create framework-improvements.md at repo root
+      Format: append-only log; each entry has date, origin, improvement description
+      `/framework-delta-log` appends here at every session close; never delete entries
+
+#### AKR-04 — Create releases/ directory [P0, no deps — v2.0 canonical audit location]
+- [x] AKR-04a Create releases/ directory
+- [x] AKR-04b Create releases/audit-log.md — human-readable audit trail (mirrors tasks/audit-log.md
+      but at the v2.0 canonical path); existing tasks/audit-log.md remains for backward compat;
+      going forward, BOTH paths updated on each audit event
+- [ ] AKR-04c Add .gitignore exception: releases/audit-log.md must NOT be in .gitignore
+      (audit trail should be committed; only cases/ and firm_profile/ are excluded)
+- [ ] AKR-04d CONSTRAINT: tasks/audit-log.jsonl is the machine-readable log for the forensic
+      pipeline; do NOT remove or rename it; it coexists with releases/audit-log.md
+
+#### AKR-05 — Session summary files retrospective [P1, requires AKR-04]
+- [ ] AKR-05a Create releases/session-001.md — Sprint 01 summary (Foundation: 18 files, 2026-03-29)
+- [ ] AKR-05b Create releases/session-002.md — Sprint 02 summary (Phases 2–6: 49 modules, 2026-03-29)
+- [ ] AKR-05c Create releases/session-003.md — Sprint 03 summary (QR-01..15 PASS, 2026-03-29)
+- [ ] AKR-05d Create releases/session-004.md — Session 004 summary (C-03 complete, QR-16 PASS, 2026-04-02)
+      Use framework/templates/sprint-summary.md as format reference
+
+#### AKR-06 — CLAUDE.md v2.0 upgrades [P0, no deps — CRITICAL: append-only, no existing content modified]
+- [x] AKR-06a Add ## AK-CogOS v2.0 Path Overrides section (append at end of CLAUDE.md):
+      audit_log: tasks/audit-log.jsonl (machine) + releases/audit-log.md (human)
+      ba_logic: tasks/ba-logic.md
+      ux_specs: tasks/ux-specs.md
+      channel: channel.md
+      framework_improvements: framework-improvements.md
+      session_summaries: releases/session-N.md
+      planning_docs: docs/
+- [x] AKR-06b Add ## Anti-Sycophancy Protocol section (mandatory v2.0 standing instruction):
+      6 rules + SPIRAL DETECTION + trigger phrases as defined in ~/AK-Cognitive-OS/ANTI-SYCOPHANCY.md
+      Note: append only; this does NOT override existing forensic app instructions
+- [ ] AKR-06c HARD CONSTRAINT: do NOT modify any existing CLAUDE.md content above the new sections;
+      all additions are append-only at end of file
+
+#### AKR-07 — docs/ planning scaffold — STUBS ONLY [P1, no deps]
+- [ ] AKR-07a Create docs/ directory
+- [ ] AKR-07b Create docs/problem-definition.md — stub with sections: Who, What, Why, Problem Statement
+      Mark: "TO POPULATE VIA /ba DISCOVERY CONVERSATION — do not generate without AK input"
+- [ ] AKR-07c Create docs/scope-brief.md — stub with sections: Must-Have, Should-Have, Cut, Out-of-Scope
+      Mark: "TO POPULATE VIA /ba + AK CONVERSATION"
+- [ ] AKR-07d Create docs/hld.md — stub with sections: Architecture Overview, Data Flow, Agent Pipeline,
+      Key Integrations. Note: partial content CAN be derived from existing CLAUDE.md architecture section
+      Mark remaining gaps: "TO VERIFY VIA /architect SESSION"
+- [ ] AKR-07e Create docs/assumptions.md — stub: Confirmed, Inferred, Unresolved
+- [ ] AKR-07f Create docs/decision-log.md — stub + backfill key architectural decisions already made
+      (model routing, artifact versioning, evidence-chain enforcement, Mode A/B split)
+- [ ] AKR-07g Create docs/release-truth.md — honest feature status (real/mocked/partial)
+      Backfill: which of the 57 modules are tested vs untested vs API-only (no mock)
+- [ ] AKR-07h Create docs/traceability-matrix.md — stub: Task → Scope → HLD → LLD → Tests
+- [ ] AKR-07i Create docs/lld/ directory + docs/lld/README.md
+      Add one lld file per major feature as forensic app grows
+
+#### AKR-08 — docs/ population via discovery sessions [P2, requires AKR-07, human-input-required]
+- [ ] AKR-08a Run /ba session: populate docs/problem-definition.md and docs/scope-brief.md
+      via guided discovery conversation with AK
+- [ ] AKR-08b Run /architect session: populate docs/hld.md from existing architecture (can derive
+      from CLAUDE.md + code); draft one docs/lld/ file per major feature
+- [ ] AKR-08c Update docs/release-truth.md with honest assessment of which features work end-to-end
+      vs require API keys (smoke test pending)
+
+#### AKR-09 — Install v2.0 commands from AK-Cognitive-OS [P1, no deps]
+- [ ] AKR-09a RISK ASSESSMENT FIRST: list all files that install-claude-commands.sh would overwrite
+      in .claude/commands/ vs what currently exists; flag any conflicts to AK before running
+- [ ] AKR-09b Run: bash ~/AK-Cognitive-OS/scripts/install-claude-commands.sh --backup --dry-run
+      to preview what changes; review output before proceeding
+- [ ] AKR-09c After AK approval: run full install to bring all codex-prompt.md and schema.md files
+      in sync with v2.0 spec; backup existing files automatically (--backup flag)
+- [ ] AKR-09d Verify post-install: confirm forensic-specific commands (session-open, session-close,
+      audit-log etc) still have project-specific content and are not overwritten with generic versions
+      BOUNDARY: if any forensic-specific command is overwritten → STOP; restore backup; report to AK
+
+#### AKR-10 — Audit log format migration notice [P1, no deps]
+- [x] AKR-10a Append migration notice to tasks/audit-log.jsonl:
+      {"entry_id":"AE-005-001","timestamp_utc":"2026-04-04T00:00:00Z","session_id":"005",
+      "sprint_id":"sprint-04","agent":"architect","actor":"architect","event_type":"FRAMEWORK_DELTA_LOGGED",
+      "origin":"claude-core","status":"PASS",
+      "summary":"AK-CogOS v2.0 remediation: event_type going forward is UPPERCASE per exhaustive list.
+      Prior entries (sessions 001-004) used lowercase; not retroactively modified.",
+      "artifact_links":["tasks/todo.md"]}
+- [ ] AKR-10b Going forward: all new audit entries use UPPERCASE event_type from exhaustive list in
+      ~/AK-Cognitive-OS/schemas/audit-log-schema.md and include "origin" field
+
+#### AKR-11 — Populate framework/governance/metrics-tracker.md [P2, requires AKR-04]
+- [ ] AKR-11a Add session entries for sessions 001–005 (retrospective)
+      Use mode: SOLO_CLAUDE (Codex not involved in those sessions)
+      Derive metrics from tasks/todo.md completed tasks + audit-log.jsonl
+
+#### AKR-12 — Update channel.md to v2.0 format [P1, no deps]
+- [x] AKR-12a Rewrite channel.md with v2.0 machine-readable sections:
+      Current State (Status, Sessions completed, Last closed, Last agent run)
+      Pipeline Queue (Status, Next queue, Mode)
+      Active Sprint (sprint_id, tasks, blocking_items)
+      Framework Version (v2.0, interop-contract v1.0.0)
+
+#### AKR-13 — /codex-intake-check validation gate [P3, gate — requires AKR-01..12]
+- [ ] AKR-13a Run /codex-intake-check: confirm ba-logic.md, ux-specs.md, releases/audit-log.md,
+      framework-improvements.md, docs/ stubs, channel.md all present
+- [ ] AKR-13b Document remaining S1/S2 gaps as AK_DECISION items in tasks/risk-register.md
+- [ ] AKR-13c Append ARCHITECTURE_COMPLETE audit event to tasks/audit-log.jsonl
 
 ### Sprint-03 — Proposal + PPT QA Gate (NOT YET RUN)
 
