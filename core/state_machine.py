@@ -12,6 +12,7 @@ class CaseStatus(str, Enum):
     OWNER_APPROVED          = "owner_approved"
     OWNER_REJECTED          = "owner_rejected"
     PIPELINE_ERROR          = "pipeline_error"
+    DELIVERABLE_WRITTEN     = "deliverable_written"   # Mode B (Assisted) terminal status
 
 
 VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
@@ -25,7 +26,7 @@ VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.OWNER_REJECTED:          [CaseStatus.JUNIOR_DRAFT_COMPLETE],
 }
 
-TERMINAL_STATUSES = {CaseStatus.OWNER_APPROVED, CaseStatus.PIPELINE_ERROR}
+TERMINAL_STATUSES = {CaseStatus.OWNER_APPROVED, CaseStatus.PIPELINE_ERROR, CaseStatus.DELIVERABLE_WRITTEN}
 
 MAX_REVISION_ROUNDS = {"junior": 3, "pm": 2}
 

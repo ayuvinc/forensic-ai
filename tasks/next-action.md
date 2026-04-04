@@ -1,25 +1,32 @@
 # NEXT ACTION
 
 ## SESSION
-OPEN (Session 006)
+CLOSED
 
 ## NEXT_PERSONA
-session-close
+junior-dev
 
 ## NEXT_TASK
-Close session 006. Sprint-04 complete + BA discovery complete.
+C-06a — Write integration test scaffold: investigation_report happy path (mocked API).
+No API key required. If ANTHROPIC_API_KEY becomes available → run smoke test first (P7-GATE).
 
 ## CARRY_FORWARD_CONTEXT
-- Sprint-04 fully closed: all AKR items done or formally deferred with reason.
-- AKR-13 gate PASSED: all required v2.0 artifacts present.
-- AKR-09 deferred: project commands are already v2.0 format; install script would downgrade.
-- 4 AK_DECISION gaps in risk-register.md (R-006..R-009) — non-blocking, need discovery sessions.
-- Sprint-05 is next: product quality work (C-02, C-04, smoke test, PQA-01..12, PGP-01..02).
-- Sprint-05 is blocked on R-002 (API key) for smoke test, and AK decisions for /ba + /architect.
+- Session 007 closed. Sprint-05 product-quality fixes COMPLETE.
+- 7 tasks completed: C-01c, C-02a/b, C-04a/b, C-05a/b. 10 files changed.
+- ba-logic.md updated: C-02a Open Decision resolved; case ID format corrected.
+- DELIVERABLE_WRITTEN is now the terminal status for Mode B workflows (choices 4,5,7,8).
+- Document ingestion is now first-class in the user journey (new_case_intake + run.py choices 2+6).
+- Mode B workflows now write artifact + audit event — audit trail is consistent across all 10 menu options.
+- README resume section and case ID format now accurate.
+- Product has still never been live-tested. All 57 modules structural-only.
+- Critical path: ANTHROPIC_API_KEY (R-002, HIGH) → smoke test (P7-GATE) → Phase 7.
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- R-002: API key not confirmed — smoke test still pending.
-- R-006/R-007: docs/ stub content requires /ba + /architect discovery sessions with AK.
+- R-002 (HIGH): ANTHROPIC_API_KEY not set — smoke test, QR-17, PQA/PGP, Phase 7 all blocked.
+- R-009 (HIGH): No smoke test — product quality unverified end-to-end.
+- R-006/R-007: docs/ content requires /architect session (hld.md gaps) — deferred.
+- AKR-08b: /architect LLD session — deferred.
 
 ## HANDOFF_NOTE
-Session 006 achieved full AK-CogOS v2.0 remediation. Run /session-close to finalize, commit, and extract lessons.
+Session 007 closed by session-close. Sprint-05 complete. Next: C-06a integration tests (no API needed)
+or smoke test immediately if API key is available.

@@ -143,7 +143,69 @@ def run_new_case_intake(console: Console) -> Optional[CaseIntake]:
         border_style="green",
     ))
 
+    # C-04b: Offer document ingestion inline after case creation
+    if Confirm.ask("\n  Upload documents to this case now?", default=False):
+        _offer_document_ingestion(console, case_id, case_folder)
+
     return intake
+
+
+def _offer_document_ingestion(console: Console, case_id: str, case_folder: Path) -> None:
+    """Register documents into the case folder at intake time."""
+    try:
+        from tools.document_manager import DocumentManager
+        dm = DocumentManager(case_id)
+    except Exception as e:
+        console.print(f"  [yellow]Document manager unavailable: {e}[/yellow]")
+        return
+
+    _DOC_TYPES = {
+        "1": ("engagement_letter",    "engagement_docs"),
+        "2": ("financial_records",    "evidence/financial_records"),
+        "3": ("email",                "evidence/correspondence"),
+        "4": ("interview_transcript", "evidence/interview_transcripts"),
+        "5": ("contract",             "engagement_docs"),
+        "6": ("corporate_document",   "evidence/corporate_documents"),
+        "7": ("other",                "working_papers"),
+    }
+
+    console.print("  [dim]1=Engagement letter 2=Financial 3=Email "
+                  "4=Transcript 5=Contract 6=Corporate doc 7=Other[/dim]")
+
+    while True:
+        filepath = Prompt.ask("  File path (Enter to finish)", default="")
+        if not filepath.strip():
+            break
+
+        dt_choice = Prompt.ask("  Document type", choices=list(_DOC_TYPES.keys()), default="7")
+        doc_type, default_folder = _DOC_TYPES[dt_choice]
+        folder = Prompt.ask("  Destination folder", default=default_folder)
+
+        try:
+            from schemas.documents import DocumentProvenance
+            provenance = DocumentProvenance(
+                collection_method="consultant_upload",
+                collected_at=datetime.now(timezone.utc),
+                collector_role="consultant",
+                scope_authorized_by="engagement_letter",
+                source_hash="",
+            )
+            if doc_type == "engagement_letter":
+                entry = dm.register_engagement_letter(filepath, provenance)
+            else:
+                entry = dm.register_document(filepath, folder, doc_type, provenance)
+            console.print(f"  [green]Registered: {entry.filename} (doc_id: {entry.doc_id})[/green]")
+        except FileNotFoundError:
+            console.print(f"  [red]File not found: {filepath}[/red]")
+        except Exception as e:
+            console.print(f"  [yellow]Indexing failed ({e})[/yellow]")
+            console.print(
+                f"  [dim]Copy the file to {case_folder / folder} manually; "
+                "it can be referenced in workflows.[/dim]"
+            )
+
+        if not Confirm.ask("  Add another?", default=False):
+            break
 
 
 def _default_folders(workflow: str) -> list[str]:

@@ -216,10 +216,11 @@ This is the flagship feature. Here's exactly what happens:
 
 4. **Output is saved to:**
    ```
-   cases/0001/final_report.en.md   ← English report (always generated)
-   cases/0001/final_report.ar.md   ← Arabic version (generated when language = ar)
-   cases/0001/audit_log.jsonl      ← Full audit trail
+   cases/20260101-A3B4C5/final_report.en.md   ← English report (always generated)
+   cases/20260101-A3B4C5/final_report.ar.md   ← Arabic version (generated when language = ar)
+   cases/20260101-A3B4C5/audit_log.jsonl      ← Full audit trail
    ```
+   *(Case ID format: `{YYYYMMDD}-{6-char ID}`, e.g. `20260101-A3B4C5`)*
 
 The whole process takes 2–4 minutes.
 
@@ -227,20 +228,23 @@ The whole process takes 2–4 minutes.
 
 ## Understanding Your Output Files
 
-Every case gets its own folder under `cases/`:
+Every case gets its own folder under `cases/`. The folder name is your case ID (format: `{YYYYMMDD}-{6-char ID}`):
 
 ```
 cases/
-└── 0001/
+└── 20260101-A3B4C5/
     ├── state.json              ← Current status of the case pipeline
     ├── audit_log.jsonl         ← Every event, timestamped (immutable)
-    ├── citations_index.json    ← All research sources cited
-    ├── junior_output.v1.json   ← Junior Analyst's first draft
-    ├── pm_review.v1.json       ← Project Manager's review notes
-    ├── partner_approval.v1.json← Partner's approval decision
-    ├── final_report.en.md      ← Final English report (open in any editor)
-    └── final_report.ar.md      ← Arabic report (present when language = ar selected)
+    ├── intake.json             ← Case intake data
+    ├── citations_index.json    ← All research sources cited (Full Pipeline only)
+    ├── junior_output.v1.json   ← Junior Analyst draft (Full Pipeline: Options 2, 6)
+    ├── pm_review.v1.json       ← Project Manager review (Full Pipeline: Options 2, 6)
+    ├── partner_approval.v1.json← Partner approval (Full Pipeline: Options 2, 6)
+    ├── final_report.en.md      ← Final English report (all workflows)
+    └── final_report.ar.md      ← Arabic report (generated when language = ar selected)
 ```
+
+*Assisted Generation workflows (Options 4, 5, 7, 8) produce `final_report.en.md`, `state.json`, `audit_log.jsonl`, and a `{workflow}_deliverable.v1.json` metadata file. The multi-agent artifacts (`junior_output`, `pm_review`, `partner_approval`) are only present for Full Pipeline workflows.*
 
 **Opening a report:**
 - macOS: `open cases/0001/final_report.en.md` (opens in default app)
@@ -251,7 +255,9 @@ cases/
 
 ## If Something Gets Interrupted
 
-If the app closes mid-run (power cut, accidental close, etc.), don't worry. The next time you run Option 6 (or whichever workflow was running), it will detect the unfinished case and ask:
+**Resume is available for Options 2 (Investigation Report) and 6 (FRM Risk Register) only.** These run a multi-agent pipeline that checkpoints its state after each stage.
+
+If one of these closes mid-run (power cut, accidental close, etc.), re-run the same option and it will detect the unfinished case and ask:
 
 ```
 Case 0001 is in progress (status: pm_review_complete).
@@ -259,6 +265,8 @@ Resume from where it stopped? [Y/n]
 ```
 
 Press `Y` to continue from where it left off.
+
+**Options 4, 5, 7, and 8** (Assisted Generation — single-pass) do not support resume. If interrupted, re-run the option from the beginning — the previous incomplete run is discarded.
 
 ---
 
@@ -304,7 +312,9 @@ You've used your 1,000 free searches. Either:
 Your terminal doesn't support Arabic. The Arabic report is still saved correctly to `cases/*/final_report.ar.md` — open it in VS Code or a browser instead.
 
 ### "Case stuck / pipeline didn't finish"
-Re-run the same menu option. The orchestrator will detect the partial state and offer to resume.
+**Options 2 and 6:** Re-run the same option. The orchestrator will detect the partial state and offer to resume from where it stopped.
+
+**Options 4, 5, 7, 8:** These complete in one pass — no resume. Re-run the option from the beginning.
 
 ---
 
@@ -347,11 +357,11 @@ Start the app:
 Check your API keys work:
   python3 -c "import anthropic; anthropic.Anthropic().models.list(); print('Anthropic OK')"
 
-View a report:
-  open cases/0001/final_report.en.md        (macOS)
-  start cases\0001\final_report.en.md       (Windows)
+View a report (replace CASE-ID with your actual case ID, e.g. 20260101-A3B4C5):
+  open cases/CASE-ID/final_report.en.md        (macOS)
+  start cases\CASE-ID\final_report.en.md       (Windows)
 
 Reset a broken case (delete and restart):
-  rm -rf cases/0001    (macOS/Linux)
-  rmdir /s cases\0001  (Windows)
+  rm -rf cases/CASE-ID    (macOS/Linux)
+  rmdir /s cases\CASE-ID  (Windows)
 ```

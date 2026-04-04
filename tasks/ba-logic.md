@@ -54,7 +54,7 @@ _What must be true for a feature to be considered done._
 - `firm_profile/` stores Maher's firm credentials, pricing, and T&C — loaded at proposal time, not re-entered
 - Evidence documents registered in `document_manager` are indexed with bounded retrieval — model reads sections on demand, not the whole document on every call
 - Final deliverables: `final_report.en.md` always generated; `final_report.ar.md` generated when language = ar at intake
-- Case IDs are sequential integers, zero-padded to 4 digits (e.g. `0001`, `0042`)
+- Case IDs follow format `{YYYYMMDD}-{6-char alphanumeric}` (e.g. `20260101-A3B4C5`) — generated at intake via uuid4 truncated to 6 chars uppercased
 
 ---
 
@@ -83,4 +83,6 @@ _What must be true for a feature to be considered done._
 → Proposal is the highest-value commercial deliverable. Mode B is faster but has no review layer. Decision pending — see C-01b in tasks/todo.md.
 
 [2026-04-04] What state should Mode B workflows write to state.json on completion?
-→ Currently stays at INTAKE_CREATED. Options: reuse OWNER_APPROVED or create DELIVERABLE_WRITTEN. Decision pending — see C-02a in tasks/todo.md.
+→ RESOLVED Session 007 (2026-04-04): DELIVERABLE_WRITTEN added to CaseStatus enum and TERMINAL_STATUSES.
+  _mark_deliverable_written() called in run.py after choices 4,5,7,8 complete.
+  case_tracker renders DELIVERABLE_WRITTEN as green (terminal). See C-02a in tasks/todo.md.

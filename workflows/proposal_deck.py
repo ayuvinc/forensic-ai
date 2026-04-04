@@ -14,7 +14,7 @@ from rich.prompt import Prompt
 from config import ANTHROPIC_API_KEY, SONNET
 from schemas.case import CaseIntake
 from schemas.presentation import DeckMasterPrompt, DeckStoryboard, SlideSpec
-from tools.file_tools import case_dir
+from tools.file_tools import append_audit_event, case_dir
 
 
 AUDIENCES = {
@@ -83,6 +83,13 @@ def run_proposal_deck_workflow(
         _atomic_write(prompt_path, slide_prompt)
 
     on_progress(f"Slide prompts saved to {cdir}/")
+    append_audit_event(intake.case_id, {
+        "event": "deliverable_generated",
+        "agent": "proposal_deck",
+        "workflow": "proposal_deck",
+        "slides_written": len(storyboard.slides),
+        "status": "ok",
+    })
     return storyboard
 
 

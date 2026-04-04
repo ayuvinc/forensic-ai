@@ -13,7 +13,7 @@ from core.hook_engine import HookEngine
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FinalDeliverable
 from schemas.case import CaseIntake
-from tools.file_tools import write_final_report
+from tools.file_tools import append_audit_event, write_artifact, write_final_report
 
 
 POLICY_TYPES = {
@@ -85,6 +85,22 @@ def run_policy_sop_workflow(
 
     report_path = write_final_report(intake.case_id, content, "en")
     on_progress(f"Document saved → {report_path}")
+
+    write_artifact(intake.case_id, "policy_sop", "deliverable", {
+        "case_id": intake.case_id,
+        "workflow": "policy_sop",
+        "doc_subtype": doc_subtype,
+        "language": intake.language,
+        "report_path": str(report_path),
+        "citation_count": len(reg_citations),
+        "delivery_date": datetime.now(timezone.utc).isoformat(),
+    })
+    append_audit_event(intake.case_id, {
+        "event": "deliverable_generated",
+        "agent": "policy_sop",
+        "workflow": "policy_sop",
+        "status": "ok",
+    })
 
     return FinalDeliverable(
         case_id=intake.case_id,

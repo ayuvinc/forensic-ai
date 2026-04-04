@@ -11,7 +11,7 @@ from rich.prompt import Prompt
 from config import ANTHROPIC_API_KEY, SONNET
 from schemas.artifacts import FinalDeliverable
 from schemas.case import CaseIntake
-from tools.file_tools import write_final_report, case_dir
+from tools.file_tools import append_audit_event, write_artifact, write_final_report, case_dir
 
 
 TRAINING_TOPICS = {
@@ -71,6 +71,22 @@ def run_training_material_workflow(
 
     report_path = write_final_report(intake.case_id, content, "en")
     on_progress(f"Training material saved → {report_path}")
+
+    write_artifact(intake.case_id, "training_material", "deliverable", {
+        "case_id": intake.case_id,
+        "workflow": "training_material",
+        "topic": topic,
+        "target_audience": target_audience,
+        "language": intake.language,
+        "report_path": str(report_path),
+        "delivery_date": datetime.now(timezone.utc).isoformat(),
+    })
+    append_audit_event(intake.case_id, {
+        "event": "deliverable_generated",
+        "agent": "training_material",
+        "workflow": "training_material",
+        "status": "ok",
+    })
 
     return FinalDeliverable(
         case_id=intake.case_id,

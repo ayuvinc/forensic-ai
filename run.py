@@ -115,6 +115,7 @@ def _dispatch(
                 document_manager = DocumentManager(intake.case_id)
             except Exception:
                 pass
+            _run_document_ingestion(document_manager, console)
             with progress.stage("Running investigation report pipeline..."):
                 result = run_investigation_workflow(
                     intake, registry, hook_engine,
@@ -151,6 +152,7 @@ def _dispatch(
                 intake, registry, hook_engine, console=console,
                 on_progress=progress.make_callback(),
             )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
             from ui.display import render_deliverable_summary
             render_deliverable_summary(console, result)
 
@@ -165,6 +167,7 @@ def _dispatch(
             result = run_training_material_workflow(
                 intake, console=console, on_progress=progress.make_callback(),
             )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
             from ui.display import render_deliverable_summary
             render_deliverable_summary(console, result)
 
@@ -198,6 +201,7 @@ def _dispatch(
             document_manager = DocumentManager(intake.case_id)
         except Exception:
             pass
+        _run_document_ingestion(document_manager, console)
 
         with progress.stage(f"Running FRM pipeline for {intake.client_name}..."):
             result = run_frm_workflow(
@@ -221,6 +225,7 @@ def _dispatch(
                 intake, registry, hook_engine, console=console,
                 on_progress=progress.make_callback(),
             )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
             from ui.display import render_deliverable_summary
             render_deliverable_summary(console, result)
 
@@ -236,6 +241,7 @@ def _dispatch(
                 intake, registry, hook_engine, console=console,
                 on_progress=progress.make_callback(),
             )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
 
     elif choice == "9":
         # Case Tracker
@@ -316,6 +322,78 @@ def _persist_intake(intake) -> None:
             "workflow": intake.workflow,
             "client": intake.client_name,
         })
+
+
+def _mark_deliverable_written(case_id: str, workflow: str) -> None:
+    """Transition a Mode B (Assisted) case to DELIVERABLE_WRITTEN terminal status."""
+    from core.state_machine import CaseStatus
+    from tools.file_tools import append_audit_event, read_state, write_state
+
+    state = read_state(case_id) or {}
+    state["status"] = CaseStatus.DELIVERABLE_WRITTEN.value
+    state["last_updated"] = datetime.now(timezone.utc).isoformat()
+    write_state(case_id, state)
+    append_audit_event(case_id, {"event": "deliverable_written", "workflow": workflow})
+
+
+def _run_document_ingestion(document_manager, console: Console) -> None:
+    """Prompt consultant to register case documents before running a workflow.
+
+    Skips silently if document_manager is None (API unavailable).
+    Called in choices 2 (investigation) and 6 (FRM) after intake, before pipeline.
+    """
+    if document_manager is None:
+        return
+
+    from rich.prompt import Confirm, Prompt
+
+    if not Confirm.ask("\n  Upload case documents before running?", default=False):
+        return
+
+    _DOC_TYPES = {
+        "1": ("engagement_letter",    "engagement_docs"),
+        "2": ("financial_records",    "evidence/financial_records"),
+        "3": ("email",                "evidence/correspondence"),
+        "4": ("interview_transcript", "evidence/interview_transcripts"),
+        "5": ("contract",             "engagement_docs"),
+        "6": ("corporate_document",   "evidence/corporate_documents"),
+        "7": ("other",                "working_papers"),
+    }
+
+    console.print("  [dim]Type: 1=Engagement letter 2=Financial 3=Email "
+                  "4=Transcript 5=Contract 6=Corporate doc 7=Other[/dim]")
+
+    while True:
+        filepath = Prompt.ask("  File path (Enter to finish)", default="")
+        if not filepath.strip():
+            break
+
+        dt_choice = Prompt.ask("  Document type", choices=list(_DOC_TYPES.keys()), default="7")
+        doc_type, default_folder = _DOC_TYPES[dt_choice]
+        folder = Prompt.ask("  Destination folder", default=default_folder)
+
+        try:
+            from schemas.documents import DocumentProvenance
+            provenance = DocumentProvenance(
+                collection_method="consultant_upload",
+                collected_at=datetime.now(timezone.utc),
+                collector_role="consultant",
+                scope_authorized_by="engagement_letter",
+                source_hash="",
+            )
+            if doc_type == "engagement_letter":
+                entry = document_manager.register_engagement_letter(filepath, provenance)
+            else:
+                entry = document_manager.register_document(filepath, folder, doc_type, provenance)
+            console.print(f"  [green]Registered: {entry.filename} (doc_id: {entry.doc_id})[/green]")
+        except FileNotFoundError:
+            console.print(f"  [red]File not found: {filepath}[/red]")
+        except Exception as e:
+            console.print(f"  [yellow]Indexing failed ({e})[/yellow]")
+            console.print("  [dim]Copy the file to the case folder manually; it can still be referenced in workflows.[/dim]")
+
+        if not Confirm.ask("  Add another document?", default=False):
+            break
 
 
 def _load_firm_name() -> str:

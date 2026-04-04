@@ -3,11 +3,11 @@
 ## SESSION STATE
 
 ```
-Status:         OPEN
-Active task:    AKR-05 through AKR-13 (Sprint-04 P1–P3 AK-CogOS v2.0 remediation)
-Active persona: junior-dev
-Blocking issue: AKR-09 pending AK approval; AKR-08 pending discovery sessions
-Last updated:   Session 006 open (2026-04-04) — /session-open
+Status:         CLOSED
+Active task:    none
+Active persona: none
+Blocking issue: R-002 (API key) blocks smoke test and Phase 7
+Last updated:   Session 007 close (2026-04-04) — Sprint-05 complete: C-01c+C-02a/b+C-04a/b+C-05a/b done
 ```
 
 ---
@@ -241,8 +241,9 @@ Options (pick one per workflow before sprint-04):
       section distinguishing Full Pipeline (2,6) from Assisted Generation (4,5,7,8). Session 006.
 - [ ] C-01b UPGRADE: move client_proposal onto orchestrated path (Junior draft → PM review →
       Partner sign-off) — higher effort but closes the quality gap for the highest-value workflow
-- [ ] C-01c Add lightweight post-hook chain to Mode B workflows (persist_artifact +
-      append_audit_event at minimum) so audit trail is consistent even without multi-agent review
+- [x] C-01c Added write_artifact + append_audit_event to policy_sop, training_material, client_proposal
+      (before return). Added append_audit_event to proposal_deck (storyboard already persisted via
+      _atomic_write). All 4 Mode B workflows now write a deliverable artifact + audit event. Session 007.
 
 #### C-02 (Medium) — Case lifecycle persistence inconsistency
 Files: workflows/new_case_intake.py:131, ui/guided_intake.py:20, run.py:101, workflows/case_tracker.py:68
@@ -252,10 +253,10 @@ That fixes intake.json and initial state.json. Remaining gap: Mode B workflows (
 training_material, proposal_deck) do not update state.json after completion — case stays at
 INTAKE_CREATED even when deliverable is written.
 
-- [ ] C-02a After each Mode B workflow completes, transition state to a terminal-like status
-      (e.g. OWNER_APPROVED or a new DELIVERABLE_WRITTEN status) so case_tracker shows correct state
-- [ ] C-02b case_tracker (Option 9): verify it discovers and displays all workflow types, not just
-      investigation / FRM cases
+- [x] C-02a Added DELIVERABLE_WRITTEN to CaseStatus enum + TERMINAL_STATUSES. Added
+      _mark_deliverable_written() in run.py, called after choices 4,5,7,8 complete. Session 007.
+- [x] C-02b case_tracker _scan_cases() reads any state.json in cases/; DELIVERABLE_WRITTEN now in
+      CaseStatus enum so it renders as green (terminal) in the table. Verified by code read. Session 007.
 
 #### C-03 (Medium) — Evidence-chain validation is prompt-enforced, not code-enforced
 Files: tools/evidence/evidence_classifier.py:68, schemas/evidence.py:26, agents/partner/agent.py
@@ -281,13 +282,13 @@ NOTE: F-EXT-03 (this session) wired DocumentManager into options 2 and 6 in run.
 Remaining gap: there is no UI entry point for a consultant to actually ingest documents into a
 case. DocumentManager.register_document() exists but is never called from the menu flow.
 
-- [ ] C-04a Add document ingestion step to investigation_report and frm_risk_register intake flows:
-      after case intake, ask "Do you have case documents to upload? (Y/n)" → if Y, prompt for
-      file paths one at a time, call document_manager.register_document() for each
-- [ ] C-04b Add Option 1 extension: after new_case_intake creates folder, offer document ingestion
-      inline ("Upload documents to the case folder now?")
-- [ ] C-04c Add QR check: QR-17 — document ingestion path: register_document() → index written →
-      read_excerpt() returns bounded content
+- [x] C-04a Added _run_document_ingestion() helper in run.py; called for choice 2 (investigation)
+      and choice 6 (FRM) after document_manager created, before pipeline runs. 7-type menu with
+      graceful fallback if API unavailable. Session 007.
+- [x] C-04b Added _offer_document_ingestion() in new_case_intake.py; called after case creation
+      panel with Confirm prompt. Same 7-type menu + graceful fallback. Session 007.
+- [ ] C-04c QR-17 — document ingestion path: register_document() → document_index.json written →
+      read_excerpt() returns bounded content ≤8k chars. Run when API key available (smoke test gate).
 
 #### C-05 (Low) — README and runtime behavior still diverge
 Files: README.md, hooks/post_hooks.py:158
@@ -297,9 +298,11 @@ NOTE: Arabic claims corrected this session (F-EXT-02). Remaining divergences:
   actually support resume via state.json detection
 - README output file table shows final_report.ar.md without conditional note in all examples
 
-- [ ] C-05a Update README resumability section: clarify resume only applies to investigation_report
-      and frm_risk_register (orchestrated workflows); Mode B workflows do not resume
-- [ ] C-05b Audit all README output examples for accuracy against actual written files
+- [x] C-05a README "If Something Gets Interrupted" section rewritten to clarify resume applies to
+      Options 2+6 only; Options 4,5,7,8 single-pass, no resume. Troubleshooting FAQ updated. Session 007.
+- [x] C-05b README output file table updated: case ID format corrected to {YYYYMMDD}-{6-char} pattern;
+      intake.json added; Mode B vs Full Pipeline artifact distinction added; Quick Reference Card
+      corrected from hardcoded 0001 to CASE-ID placeholder. Session 007.
 
 #### C-06 (Low) — No scripted integration tests for actual workflows
 Current QA (QR-01..15) is static analysis + unit-level mocks. No end-to-end scripted tests.
@@ -338,6 +341,9 @@ Current QA (QR-01..15) is static analysis + unit-level mocks. No end-to-end scri
 - [x] QR-14 Document manager bounded retrieval — read_excerpt ≤8k, small docs full, read_pages ≤60k
 - [x] QR-15 Evidence classifier — LEAD_ONLY classification, FindingChain validation
 - [x] QR-16 Evidence chain enforcement — partner approval blocked on LEAD_ONLY/INADMISSIBLE (7/7 sub-checks PASS, session 004)
+- [ ] QR-17 Document ingestion path: _offer_document_ingestion() / _run_document_ingestion() →
+      register_document() → document_index.json written → read_excerpt() returns ≤8k chars.
+      GATED on API key (R-002). Session 007.
 
 ---
 

@@ -22,7 +22,7 @@ from core.hook_engine import HookEngine
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FinalDeliverable
 from schemas.case import CaseIntake
-from tools.file_tools import write_final_report
+from tools.file_tools import append_audit_event, write_artifact, write_final_report
 
 
 FIRM_PROFILE_DIR = BASE_DIR / "firm_profile"
@@ -89,6 +89,21 @@ def run_client_proposal_workflow(
         on_progress(f"Word document saved → {docx_path}")
     except Exception:
         pass
+
+    write_artifact(intake.case_id, "client_proposal", "deliverable", {
+        "case_id": intake.case_id,
+        "workflow": "client_proposal",
+        "prospect_name": prospect_name,
+        "language": intake.language,
+        "report_path": str(report_path),
+        "delivery_date": datetime.now(timezone.utc).isoformat(),
+    })
+    append_audit_event(intake.case_id, {
+        "event": "deliverable_generated",
+        "agent": "client_proposal",
+        "workflow": "client_proposal",
+        "status": "ok",
+    })
 
     # Offer to chain to PPT deck
     if Confirm.ask("\n  Also generate PPT prompt pack for this proposal?", default=False):
