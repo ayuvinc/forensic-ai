@@ -8,6 +8,17 @@ Categories: ARCH | CODE | PROCESS | TOOLING | RESEARCH
 
 ## Entries
 
+[2026-04-04] [ARCH] FRM (and structured assessment workflows) must be designed as GUIDED EXERCISES, not
+one-shot AI generation. Current design asks model to generate the full risk register in one prompt — this
+produces empty or poor output because the model lacks client-specific context. Correct design:
+(1) Show framework/plan first — here are the 8 modules, here is what we will cover in each
+(2) For each module: present risk sub-areas → ask consultant to confirm which apply to this client
+(3) For each risk area: ask about known incidents, existing controls, probability assessment, impact rating
+(4) Model provides structure + regulatory baseline; consultant provides client-specific context
+(5) Co-created output — not AI-generated, but AI-structured with consultant input at each step
+This applies to: FRM Risk Register, Investigation Report, Due Diligence, Transaction Testing.
+Any workflow that produces a structured assessment must follow guided-exercise pattern, not one-shot.
+
 [2026-04-04] [ARCH] Zero-information drafts are a core product requirement, not an edge case. If a consultant
 provides no client documents and no detailed intake, the engine must still produce a usable starting-point draft
 by (a) asking clarifying questions OR (b) populating with industry-baseline risks/findings from its knowledge base.

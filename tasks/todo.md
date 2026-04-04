@@ -528,6 +528,51 @@ Scope hierarchy design:
 
 ---
 
+### Phase 13 — FRM Guided Exercise Redesign (GATED on planning session — HIGHEST PRIORITY)
+
+**Core design shift:** FRM is a structured assessment exercise, not a one-shot generation.
+Model leads consultant through the exercise step by step. Output is co-created, not AI-generated.
+
+Flow design (to be validated with Maher in planning session):
+```
+STEP 1 — Show plan
+  "Here is the FRM scope: Modules 2, 3. Here is what we will cover in each. Ready to start?"
+
+STEP 2 — Per module, per risk sub-area
+  "Module 2 — AML Risk. Sub-area: Customer Due Diligence.
+   Does this apply to ABC Inc? [Y/N/Partial]"
+
+STEP 3 — Per applicable sub-area, gather context
+  "Any known incidents or red flags in this area? (or press Enter to skip)"
+  "What controls currently exist? (or Enter for none known)"
+  "Probability of occurrence (1-5): __"
+  "Impact if it occurs (1-5): __"
+
+STEP 4 — Model generates risk item from consultant input + regulatory baseline
+  Risk item shown: Title, Description, Rating, Owner, Recommendations
+  Consultant: [Approve / Edit / Skip]
+
+STEP 5 — Register assembled from approved items only
+```
+
+Zero-information case: model pre-populates Step 3 with industry-baseline answers, clearly labelled
+BASELINE (unverified) — consultant reviews each one rather than starting from blank.
+
+- [ ] FRM-R-00 Planning gate: validate guided-exercise flow design with Maher
+- [ ] FRM-R-01 New intake: after module selection, present plan summary before starting
+      "We will assess X sub-areas across Y modules. Here is the structure. Proceed?"
+- [ ] FRM-R-02 Per-module loop: for each module, present sub-areas list → consultant confirms scope
+- [ ] FRM-R-03 Per-risk-area: structured question sequence (incident? controls? probability? impact?)
+      Store answers in risk_context dict; pass to model for item generation
+- [ ] FRM-R-04 Model generates risk item from risk_context + regulatory knowledge
+      Output is one RiskItem at a time, not the full register in one call
+- [ ] FRM-R-05 Review loop: show each generated risk item → Approve / Edit / Skip
+      Edits fed back to model for one revision before final acceptance
+- [ ] FRM-R-06 Register assembly: only approved/edited items enter the final register
+- [ ] FRM-R-07 Zero-info mode: if consultant skips all context questions, model pre-fills with
+      industry-baseline answers labelled BASELINE; consultant still reviews each item
+- [ ] FRM-R-08 Apply same guided-exercise pattern to Investigation Report scoping phase
+
 ### Phase 13 — Zero-Information Draft Design (GATED on planning session)
 
 **Core principle:** Engine must produce a usable starting-point draft even with zero client documents

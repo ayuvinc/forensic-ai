@@ -11,7 +11,20 @@ Planning session with Maher — validate 3-level scope hierarchy, confirm top 3 
 draft intake questionnaire structures (8–12 questions each), review knowledge file scope, design chaining UX.
 Run /ba then /architect. This gates Phases 10–12.
 
-PLANNING AGENDA ADDITIONS (from Session 009 close):
+PLANNING AGENDA ADDITIONS (from Session 009 close — PRIORITY 1 FIRST):
+
+0. [PRIORITY 1] FRM guided-exercise redesign — current one-shot generation is fundamentally wrong.
+   Design the FRM as a structured assessment conversation:
+   Step 1: Show plan — "Here are the 8 modules. We will cover X, Y, Z based on your scope."
+   Step 2: Per module — present risk sub-areas, ask which apply to this client/industry
+   Step 3: Per risk area — ask: any known incidents? existing controls? probability (1-5)? impact (1-5)?
+   Step 4: Model generates the risk item from consultant's answers + regulatory baseline
+   Step 5: Consultant reviews each risk item — approve / modify / skip
+   Step 6: Final register assembled from confirmed items
+   Zero-information case: model shows the framework, presents industry-baseline risks as DRAFT,
+   consultant confirms/adjusts each one before it goes into the register.
+   This same pattern applies to: Investigation Report scoping, Due Diligence checklist, Transaction Testing scope.
+   Design question for planning: which steps are conversational vs form-based in Streamlit UI?
 1. Zero-information draft design: define "content floor" per workflow — what the engine produces when
    consultant provides no documents and minimal intake. E.g. FRM → industry-baseline risks from knowledge file.
    Every workflow must return a usable starting-point draft, never a blank deliverable.
