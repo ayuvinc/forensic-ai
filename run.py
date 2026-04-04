@@ -200,6 +200,23 @@ def _dispatch(
         else:
             selected_modules = list(FRM_MODULES.keys())
 
+        # Auto-resolve module dependencies: add any required modules not already selected
+        from workflows.frm_risk_register import MODULE_DEPENDENCIES, FRM_MODULES as _FRM_MODULES
+        added = []
+        changed = True
+        while changed:
+            changed = False
+            for mod in list(selected_modules):
+                for dep in MODULE_DEPENDENCIES.get(mod, []):
+                    if dep not in selected_modules:
+                        selected_modules.insert(0, dep)
+                        added.append(dep)
+                        changed = True
+        if added:
+            added_names = ", ".join(f"{d}. {_FRM_MODULES[d]}" for d in sorted(set(added)))
+            console.print(f"  [yellow]Auto-added required module(s): {added_names}[/yellow]")
+        selected_modules = sorted(set(selected_modules))
+
         document_manager = None
         try:
             from tools.document_manager import DocumentManager
