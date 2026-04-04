@@ -5,9 +5,15 @@ from __future__ import annotations
 from core.tool_registry import ToolRegistry
 
 
-def get_tool_definitions() -> list[dict]:
-    """Return Anthropic tool definitions for PM's allowed tools."""
-    return [
+_DOC_TOOL_NAMES = {"read_excerpt", "read_section"}
+
+
+def get_tool_definitions(document_manager=None) -> list[dict]:
+    """Return Anthropic tool definitions for PM's allowed tools.
+
+    Document tools are only included when a document_manager is provided.
+    """
+    all_tools = [
         {
             "name": "read_excerpt",
             "description": "Read the first N characters of a case document for reference.",
@@ -33,6 +39,9 @@ def get_tool_definitions() -> list[dict]:
             },
         },
     ]
+    if document_manager is None:
+        return [t for t in all_tools if t["name"] not in _DOC_TOOL_NAMES]
+    return all_tools
 
 
 def register_tools(registry: ToolRegistry, document_manager=None) -> None:

@@ -116,10 +116,15 @@ def _dispatch(
             except Exception:
                 pass
             _run_document_ingestion(document_manager, console)
+            active_doc_manager = (
+                document_manager
+                if document_manager and document_manager.has_documents()
+                else None
+            )
             with progress.stage("Running investigation report pipeline..."):
                 result = run_investigation_workflow(
                     intake, registry, hook_engine,
-                    document_manager=document_manager,
+                    document_manager=active_doc_manager,
                     console=console,
                     on_progress=progress.make_callback(),
                 )
@@ -203,10 +208,18 @@ def _dispatch(
             pass
         _run_document_ingestion(document_manager, console)
 
+        # Only pass document_manager to agents if documents are actually registered.
+        # An empty DocumentManager causes agents to hallucinate doc_ids.
+        active_doc_manager = (
+            document_manager
+            if document_manager and document_manager.has_documents()
+            else None
+        )
+
         with progress.stage(f"Running FRM pipeline for {intake.client_name}..."):
             result = run_frm_workflow(
                 intake, selected_modules, registry, hook_engine,
-                document_manager=document_manager,
+                document_manager=active_doc_manager,
                 console=console, on_progress=progress.make_callback(),
             )
 

@@ -138,9 +138,18 @@ def load_envelope(case_id: str, role: str, artifact_type: str) -> Optional[dict]
 
 
 def write_final_report(case_id: str, content: str, language: str = "en") -> Path:
-    """Write final_report.{language}.md atomically."""
+    """Write final_report.{language}.md and final_report.{language}.docx atomically."""
     target = case_dir(case_id) / f"final_report.{language}.md"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)
+
+    # Also generate Word document — graceful skip if python-docx unavailable
+    try:
+        from tools.output_generator import OutputGenerator
+        docx_path = case_dir(case_id) / f"final_report.{language}.docx"
+        OutputGenerator().generate_docx(content, docx_path)
+    except Exception:
+        pass
+
     return target

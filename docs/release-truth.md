@@ -70,7 +70,7 @@ Last updated: Session 006 (2026-04-04).
 | investigation_report.py | A (Full Pipeline) | STRUCTURAL | Evidence chain wired (C-03); no live run |
 | client_proposal.py | B (Assisted) | PARTIAL | Coded; firm profile loading untested; PQA-01..12 not run |
 | proposal_deck.py | B (Assisted) | PARTIAL | Coded; PQA-07..12 not run |
-| policy_sop.py | B (Assisted) | STRUCTURAL | Coded; no live run |
+| policy_sop.py | B (Assisted) | REAL | Smoke test PASSED Session 009 — Whistleblower Policy generated, 4 citations, final_report.en.md written |
 | training_material.py | B (Assisted) | STRUCTURAL | Coded; no live run |
 | new_case_intake.py | Utility | STRUCTURAL | Coded; not tested |
 | persona_review.py | Standalone | STRUCTURAL | Coded; not tested |

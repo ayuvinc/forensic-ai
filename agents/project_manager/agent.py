@@ -34,7 +34,7 @@ class ProjectManager:
             manifest=agent_manifest,
             registry=registry,
             hook_engine=hook_engine,
-            tool_definitions=agent_tools.get_tool_definitions(),
+            tool_definitions=agent_tools.get_tool_definitions(document_manager),
             workflow=workflow,
         )
         self._manifest = manifest

@@ -4,29 +4,37 @@
 CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+ba
 
 ## NEXT_TASK
-C-06a — Write integration test scaffold: investigation_report happy path (mocked API).
-No API key required. If ANTHROPIC_API_KEY becomes available → run smoke test first (P7-GATE).
+Planning session with Maher — validate 3-level scope hierarchy, confirm top 3 service line priorities,
+draft intake questionnaire structures (8–12 questions each), review knowledge file scope, design chaining UX.
+Run /ba then /architect. This gates Phases 10–12.
 
 ## CARRY_FORWARD_CONTEXT
-- Session 007 closed. Sprint-05 product-quality fixes COMPLETE.
-- 7 tasks completed: C-01c, C-02a/b, C-04a/b, C-05a/b. 10 files changed.
-- ba-logic.md updated: C-02a Open Decision resolved; case ID format corrected.
-- DELIVERABLE_WRITTEN is now the terminal status for Mode B workflows (choices 4,5,7,8).
-- Document ingestion is now first-class in the user journey (new_case_intake + run.py choices 2+6).
-- Mode B workflows now write artifact + audit event — audit trail is consistent across all 10 menu options.
-- README resume section and case ID format now accurate.
-- Product has still never been live-tested. All 57 modules structural-only.
-- Critical path: ANTHROPIC_API_KEY (R-002, HIGH) → smoke test (P7-GATE) → Phase 7.
+- Session 009 closed. Smoke test PASSED (Option 4 — Whistleblower Policy). Word output wired in.
+- 4 bugs fixed: doc tool filter, has_documents() guard, JSON code-block parsing, doc manager hallucination guard.
+- Scope expanded from 7 phases to 12 phases. Completion: 48%.
+- Streamlit (Option A) confirmed as frontend.
+- FRM full smoke test (Option 6) still pending — aborted mid-run to save API tokens.
+- KF-00 (knowledge/policy_sop/) is the quickest quality win — policy prompt produces 8/10 draft
+  missing 8 predictable gaps; adding knowledge file + prompt checklist will close them.
+- Planning session required before building Phases 10–12 (new service lines, precision intake, knowledge files).
+
+## PARALLEL_QUICK_WIN
+If Maher not available for planning session, next best task is:
+KF-00 — Create knowledge/policy_sop/framework.md and knowledge/policy_sop/sources.md to fix the
+8 gaps identified in ChatGPT review of Whistleblower Policy output (Session 009).
+Gaps: anonymous complaint protocol, retaliation mechanism + disciplinary matrix, evidence/chain-of-custody,
+SLA for closure comms, malicious vs good-faith definition, DPDP Act 2023, vendor enforcement, metrics/KPIs.
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- R-002 (HIGH): ANTHROPIC_API_KEY not set — smoke test, QR-17, PQA/PGP, Phase 7 all blocked.
-- R-009 (HIGH): No smoke test — product quality unverified end-to-end.
-- R-006/R-007: docs/ content requires /architect session (hld.md gaps) — deferred.
-- AKR-08b: /architect LLD session — deferred.
+- Phase 10–12 GATED on planning session with Maher.
+- Phase 7 GATED on FRM full smoke test (P7-GATE) — needs 1-module FRM run to verify quality.
+- QR-17 (document ingestion live test) still pending.
+- C-06a–e (integration tests) can run without API key.
 
 ## HANDOFF_NOTE
-Session 007 closed by session-close. Sprint-05 complete. Next: C-06a integration tests (no API needed)
-or smoke test immediately if API key is available.
+Session 009 closed by session-close. Option 4 smoke test PASSED. Scope expanded (Phases 8–12).
+Next: planning session with Maher (BA + Architect) to gate Phases 10–12.
+If blocking: KF-00 or C-06a can start immediately without waiting for planning session.

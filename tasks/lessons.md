@@ -8,6 +8,18 @@ Categories: ARCH | CODE | PROCESS | TOOLING | RESEARCH
 
 ## Entries
 
+[2026-04-04] [CODE] Policy/SOP prompt produces strong 8/10 first draft (near enterprise-grade per external review) but
+misses 8 predictable gaps: (1) anonymous complaint handling protocol, (2) retaliation investigation mechanism +
+disciplinary matrix, (3) evidence handling / forensics / chain of custody, (4) SLA for closure communication to
+whistleblower, (5) malicious vs good-faith complaint definition (must be precise or courts view as suppressive),
+(6) DPDP Act 2023 integration for India jurisdiction, (7) vendor/third-party enforcement mechanism, (8) metrics /
+KPI reporting framework for Audit Committee. Fix: add these as mandatory checklist in policy_sop system prompt.
+Validated by external ChatGPT review on Whistleblower Policy generated Session 009.
+
+[2026-04-04] [PROCESS] Mode B workflows produce strong working drafts, not final output. Position as "80% done in
+2 minutes — consultant fills gaps as SME." Option 3 (Persona Review → Regulator) is the quality gate that takes
+draft from 8/10 to 9/10 before client delivery. This split must be explicit in UI labelling and onboarding.
+
 [2026-04-04] [PROCESS] Clarify remediation target version BEFORE architect runs — misidentifying v1.2 vs v2.0 caused one full design pass to be discarded and redone.
 [2026-04-04] [ARCH] AK-CogOS v2.0 adds significant structural requirements not in v1.x: docs/ planning directory (8 artifacts), releases/ audit trail, anti-sycophancy protocol, conversation-derived planning docs.
 [2026-04-04] [PROCESS] P0 blocking artifacts (tasks/ba-logic.md, tasks/ux-specs.md, framework-improvements.md) must be created first in any project onboarding — every skill references them on AUTO-RUN.

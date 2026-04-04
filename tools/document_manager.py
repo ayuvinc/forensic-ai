@@ -369,10 +369,21 @@ class DocumentManager:
 
     # ── Bounded retrieval (agent-facing tools) ────────────────────────────────
 
+    def has_documents(self) -> bool:
+        """Return True if at least one document is registered for this case."""
+        return self._index_path.exists() and bool(self.get_index().documents)
+
     def read_excerpt(self, doc_id: str, max_chars: int = DOC_EXCERPT_CHARS) -> str:
         """Return first max_chars characters of extracted text.
         For large docs: appends navigation hint listing section titles."""
-        text = self._load_text(doc_id)
+        try:
+            text = self._load_text(doc_id)
+        except FileNotFoundError:
+            return (
+                f"No document found with doc_id='{doc_id}'. "
+                "No documents have been registered for this case. "
+                "Proceed using your research tools instead."
+            )
         index = self.get_index()
         entry = next((d for d in index.documents if d.doc_id == doc_id), None)
 

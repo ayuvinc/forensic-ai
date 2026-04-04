@@ -9,9 +9,16 @@ from tools.research.sanctions_check import SanctionsCheck
 from tools.research.company_lookup import CompanyLookup
 
 
-def get_tool_definitions() -> list[dict]:
-    """Return Anthropic tool definitions for Junior Analyst's allowed tools."""
-    return [
+_DOC_TOOL_NAMES = {"read_excerpt", "read_pages", "read_section", "find_relevant_docs"}
+
+
+def get_tool_definitions(document_manager=None) -> list[dict]:
+    """Return Anthropic tool definitions for Junior Analyst's allowed tools.
+
+    Document tools are only included when a document_manager is provided —
+    if not registered they cannot be called and should not be offered to the model.
+    """
+    all_tools = [
         {
             "name": "search_web",
             "description": "Search the web for general information using Tavily. Returns citations with low-trust flag.",
@@ -124,6 +131,9 @@ def get_tool_definitions() -> list[dict]:
             },
         },
     ]
+    if document_manager is None:
+        return [t for t in all_tools if t["name"] not in _DOC_TOOL_NAMES]
+    return all_tools
 
 
 def register_tools(registry: ToolRegistry, document_manager=None) -> None:

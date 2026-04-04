@@ -6,8 +6,8 @@
 Status:         CLOSED
 Active task:    none
 Active persona: none
-Blocking issue: R-002 (API key) blocks smoke test and Phase 7
-Last updated:   Session 007 close (2026-04-04) — Sprint-05 complete: C-01c+C-02a/b+C-04a/b+C-05a/b done
+Blocking issue: none
+Last updated:   Session 009 close (2026-04-04) — smoke test bugs fixed, scope expanded
 ```
 
 ---
@@ -51,6 +51,26 @@ P6-04 (zip+README) ← P6-03
 ---
 
 ## PENDING TASKS
+
+### Frontend Migration (post-smoke-test, design decision required)
+
+**Decision required:** Pick one option before starting. See architect assessment in session 009.
+
+Options (complexity low→high):
+- A: Streamlit — 3-5 days, Python-native, no JS, browser-based
+- B: FastAPI + HTMX + HTML templates — 1.5-2 weeks, professional UI, server-rendered
+- C: Electron desktop app — 3-4 weeks, native .app/.exe, no terminal/browser needed
+- D: FastAPI + React/Next.js — 4-6 weeks, most polished, multi-user capable
+
+Recommended for Maher delivery: **Option A (Streamlit)** first, upgrade later if needed.
+
+- [x] FE-00 Confirmed: Streamlit (Option A) — AK decision Session 009 (2026-04-04)
+- [ ] FE-01 (A) Replace ui/ terminal components with Streamlit pages
+- [ ] FE-02 (A) Conversational intake → Streamlit multi-step form per workflow
+- [ ] FE-03 (A) Pipeline progress → Streamlit spinner + status text
+- [ ] FE-04 (A) Output display → Streamlit markdown render + file download buttons
+- [ ] FE-05 (A) Firm profile setup → Streamlit settings page (replaces terminal wizard)
+- [ ] FE-06 (A) Case tracker → Streamlit table with case status + open/download links
 
 ### Sprint-04 — AK-CogOS v2.0 Remediation (Session 005, 2026-04-04)
 
@@ -431,7 +451,108 @@ P7-07 (end-to-end blank instance test) ← P7-05,06
 
 ---
 
+### Phase 8 — Streamlit Frontend Migration (GATED on FE-01..FE-06 complete)
+
+**GATE: FE-01..FE-06 must all be done before Phase 8 wiring.**
+
+- [ ] P8-01 Add Streamlit to requirements.txt; pin version
+- [ ] P8-02 Create app.py (Streamlit entry point) alongside run.py (CLI kept for development)
+- [ ] P8-03 Wire all 10 menu options as Streamlit sidebar navigation
+- [ ] P8-04 Document ingestion UI — file upload widget → DocumentManager.register_document()
+- [ ] P8-05 Case tracker → Streamlit dataframe with case status + download buttons
+- [ ] P8-06 End-to-end smoke test via Streamlit: Option 4 + Option 6
+
+---
+
+### Phase 9 — Workflow Chaining (GATED on Phase 8 complete)
+
+**Approach: same case_id threaded across multiple deliverable workflows.**
+
+- [ ] CH-01 Post-workflow "Add another deliverable to this case?" prompt (Y/N)
+- [ ] CH-02 If Y → present only compatible follow-on workflows based on existing case type
+- [ ] CH-03 Chain state: state.json updated with all workflow runs; case_tracker shows all deliverables per case_id
+- [ ] CH-04 Integration test: investigation_report → persona_review on same case_id
+
+---
+
+### Phase 10 — New Service Lines (GATED on planning session with Maher)
+
+**GATE: /ba + /architect planning session required before building. Scope below is provisional.**
+
+New service lines identified Session 009 — each needs precision intake questionnaire (8–12 questions) + knowledge file:
+
+- [ ] SL-01 Transaction Testing (sub-service of Fraud Audit) — knowledge/transaction_testing/
+- [ ] SL-02 Due Diligence — knowledge/due_diligence/ (commercial, legal, reputational)
+- [ ] SL-03 Fraud Audit — knowledge/fraud_audit/ (ACFE methodology, T&M scope)
+- [ ] SL-04 Sanctions Screening — knowledge/sanctions_screening/ (OFAC/UN/EU, PEP)
+- [ ] SL-05 ESI (Electronic Evidence) Review — knowledge/esi_review/ (EDRM, collection, culling)
+- [ ] SL-06 Expert Witness Support — knowledge/expert_witness/ (court standard, admissibility)
+- [ ] SL-07 HUMINT (Source-based Intelligence) — knowledge/humint/ (methodology, ethics, chain-of-custody)
+
+Scope hierarchy design:
+- Level 1: Service Line (Investigation, FRM, Compliance, etc.)
+- Level 2: Engagement Type (specific sub-service)
+- Level 3: Specific Deliverable (report, register, policy, deck)
+
+---
+
+### Phase 11 — Precision Intake Questionnaires (GATED on Phase 10 planning)
+
+**Requires planning session output: approved question sets per scope.**
+
+- [ ] PQ-01 Transaction Testing intake: 8–12 questions (transaction types, date range, population size, red flag criteria, regulatory context)
+- [ ] PQ-02 Due Diligence intake: 8–12 questions (target type, purpose, depth, jurisdictions, timeline)
+- [ ] PQ-03 Fraud Audit intake: 8–12 questions (allegation type, population, data access, preliminary evidence)
+- [ ] PQ-04 Sanctions intake: 8–12 questions (entity type, jurisdictions, screening lists, existing relationships)
+- [ ] PQ-05 ESI Review intake: 8–12 questions (data volume, custodians, date range, relevance criteria)
+- [ ] PQ-06 Expert Witness intake: 8–12 questions (matter type, jurisdiction, opposing expert, issue framing)
+- [ ] PQ-07 HUMINT intake: 8–12 questions (subject type, jurisdictions, engagement limits, client authorization)
+
+---
+
+### Phase 12 — Knowledge Files for New Service Lines (GATED on Phase 10 planning)
+
+**Quickest win: knowledge/policy_sop/ fixes Whistleblower Policy quality gap already observed.**
+
+- [ ] KF-00 knowledge/policy_sop/ — priority 1; fixes 8 gaps identified in ChatGPT review Session 009
+      Gaps: anonymous complaint handling, retaliation mechanism + disciplinary matrix, evidence/chain-of-custody,
+      SLA for closure comms, malicious vs good-faith definition (legal precision), DPDP Act 2023 integration,
+      vendor/third-party enforcement, metrics/KPI reporting framework
+- [ ] KF-01 knowledge/transaction_testing/ (framework + sources)
+- [ ] KF-02 knowledge/due_diligence/ (framework + sources)
+- [ ] KF-03 knowledge/fraud_audit/ (framework + sources)
+- [ ] KF-04 knowledge/sanctions_screening/ (framework + sources)
+- [ ] KF-05 knowledge/esi_review/ (EDRM framework + sources)
+- [ ] KF-06 knowledge/expert_witness/ (framework + sources)
+- [ ] KF-07 knowledge/humint/ (framework + methodology)
+
+---
+
 ## COMPLETED TASKS
+
+### Sprint-09 (Smoke Test + Scope Expansion — Session 009)
+- [x] BUG-02 agents/*/tools.py: _DOC_TOOL_NAMES filter — doc tools excluded from get_tool_definitions()
+      when document_manager=None; prevents ToolNotFoundError on runs without documents. (2026-04-04)
+- [x] BUG-03 tools/document_manager.py: has_documents() method added; read_excerpt() returns graceful
+      message instead of raising FileNotFoundError when doc not found. (2026-04-04)
+- [x] BUG-04 agents/junior_analyst/agent.py: _parse_output() handles ```json code block wrapping;
+      regex extracts from code block first, then falls back to greedy {.*}. (2026-04-04)
+- [x] BUG-05 run.py: active_doc_manager=None guard — only pass DocumentManager to agents when
+      has_documents() is True; prevents model hallucinating doc_ids when no docs registered. (2026-04-04)
+- [x] SMOKE-01 Option 4 (Policy/SOP) smoke test PASSED — Whistleblower Policy generated, 4 citations,
+      final_report.en.md + final_report.en.docx written, audit_log populated. (2026-04-04)
+- [x] WORD-01 tools/file_tools.py write_final_report(): auto-generates .docx alongside .md via
+      OutputGenerator; graceful skip if python-docx unavailable. (2026-04-04)
+- [x] FE-00 Frontend option confirmed: Streamlit (Option A). (2026-04-04)
+- [x] SCOPE-01 Scope expanded: Phases 8–12 defined (Frontend, Chaining, New Service Lines,
+      Precision Intake, Knowledge Files). Completion recalibrated to 48%. (2026-04-04)
+- [x] PLAN-01 Planning session agenda set: 3-level scope hierarchy validation, top 3 scope priorities,
+      intake questionnaires (8–12 questions each), knowledge file drafting, chaining design. (2026-04-04)
+
+### Sprint-06 (Shipping Readiness)
+- [x] SW-UX-01 setup_wizard.py: collect ANTHROPIC_API_KEY + TAVILY_API_KEY via Prompt.ask(password=True),
+      write directly to .env with atomic tmp→replace; empty-value retry loop; no manual file editing
+      required. (2026-04-04)
 
 ### Sprint-01 (Phase 1 Foundation — 18 files)
 - [x] Project plan written and CLAUDE.md committed (2026-03-29)

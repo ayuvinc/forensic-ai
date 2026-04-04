@@ -96,29 +96,38 @@ def _guide_api_keys(console: Console) -> None:
 
 
 def _create_env(console: Console) -> None:
-    env_example = BASE_DIR / ".env.example"
     env_file = BASE_DIR / ".env"
 
     if env_file.exists():
         console.print("  [green].env already exists — skipping.[/green]")
         return
 
-    if env_example.exists():
-        import shutil
-        shutil.copy(env_example, env_file)
-        console.print("  [green]Copied .env.example to .env[/green]")
-    else:
-        env_file.write_text(
-            "ANTHROPIC_API_KEY=sk-ant-\nTAVILY_API_KEY=tvly-\nBUDGET_MODE=balanced\n",
-            encoding="utf-8",
-        )
-        console.print("  [green]Created .env[/green]")
+    console.print("  Enter your keys below — input is hidden as you type.")
 
-    console.print("  Open [cyan].env[/cyan] in any text editor and paste your API keys.")
-    console.print("  Format:")
-    console.print("    [cyan]ANTHROPIC_API_KEY=sk-ant-...[/cyan]")
-    console.print("    [cyan]TAVILY_API_KEY=tvly-...[/cyan]")
-    Confirm.ask("  .env file saved with your keys?", default=True)
+    while True:
+        anthropic_key = Prompt.ask("  ANTHROPIC_API_KEY", password=True)
+        if anthropic_key.strip():
+            break
+        console.print("  [red]Key cannot be empty. Try again.[/red]")
+
+    while True:
+        tavily_key = Prompt.ask("  TAVILY_API_KEY", password=True)
+        if tavily_key.strip():
+            break
+        console.print("  [red]Key cannot be empty. Try again.[/red]")
+
+    env_content = (
+        f"ANTHROPIC_API_KEY={anthropic_key.strip()}\n"
+        f"TAVILY_API_KEY={tavily_key.strip()}\n"
+        "BUDGET_MODE=balanced\n"
+        "USE_CACHED_RESEARCH=false\n"
+        "CASES_DIR=cases\n"
+    )
+    import os
+    tmp = env_file.with_suffix(".tmp")
+    tmp.write_text(env_content, encoding="utf-8")
+    os.replace(tmp, env_file)
+    console.print("  [green].env created with your keys.[/green]")
 
 
 def _verify_deps(console: Console) -> None:
