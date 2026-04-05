@@ -25,7 +25,7 @@ BOUNDARY_FLAG:
    - `tasks/todo.md`, `tasks/lessons.md`, `tasks/next-action.md`, `tasks/risk-register.md`,
      `tasks/ba-logic.md`, `tasks/ux-specs.md`, `channel.md`, [AUDIT_LOG_PATH], `framework-improvements.md`
 2. Validate required inputs: session_id, sprint_id, session_errors
-   Optional: git_diff — if absent, use sprint summary from [SPRINT_REVIEWS_PATH] as substitute source.
+   Optional: git_diff — if absent, use sprint summary from releases/ as substitute source.
    RETROSPECTIVE_MODE: git_diff not required. Extract lessons from sprint summary + Codex findings instead.
 3. Validate required artifacts are present.
 4. Execute checks/actions.

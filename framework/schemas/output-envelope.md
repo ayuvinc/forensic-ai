@@ -23,8 +23,26 @@ summary: string          # one sentence, human-readable
 failures: []             # array of strings, empty if PASS
 warnings: []             # non-blocking, array of strings
 artifacts_written: []    # array of file paths
-next_action: string      # one sentence
+next_action: string      # one sentence — what runs next (auto or manual)
+manual_action: string    # exactly what AK must do, or NONE if fully automated
+override: string         # how AK can skip this, or NOT_OVERRIDABLE if hard gate
 ```
+
+---
+
+## manual_action Contract
+
+| Value | Meaning |
+|---|---|
+| `NONE` | Fully automated — AK just observes |
+| `"<instruction>"` | AK must take this specific action before workflow continues |
+
+## override Contract
+
+| Value | Meaning |
+|---|---|
+| `NOT_OVERRIDABLE` | Hard gate — cannot be skipped under any circumstance |
+| `"<how to skip>"` | AK can bypass — always logged to audit-log with reason |
 
 ---
 
@@ -85,4 +103,6 @@ Missing extra field → BLOCKED with `MISSING_EXTRA_FIELD: {field_name}`
 ## Contract Version
 
 Referenced from: interop/interop-contract-v1.md
-Current version: 1.0.0
+Current version: 1.1.0
+Changelog:
+  v1.1.0 — Added manual_action and override as mandatory fields (framework v2.2.0)

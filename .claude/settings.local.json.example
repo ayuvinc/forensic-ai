@@ -1,0 +1,7 @@
+{
+  "_comment": "Personal overrides — NOT committed to git. Copy settings.local.json.example to settings.local.json and edit.",
+  "permissions": {
+    "allow": [],
+    "deny": []
+  }
+}

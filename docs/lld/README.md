@@ -1,24 +1,30 @@
-# Low-Level Design — GoodWork Forensic AI
+# Low-Level Design (LLD) Directory
 
-This directory contains per-feature LLD documents. Each file covers one major feature or module in detail: function signatures, data structures, edge cases, and implementation notes.
+This directory contains detailed implementation designs for individual features.
 
-Add one file per feature as the forensic app grows. Reference from `docs/traceability-matrix.md`.
+## When to Create an LLD
 
-> TO POPULATE VIA /architect SESSION — do not generate without reviewing the actual implementation first.
+- Feature touches 3+ files
+- Business rules or permissions are involved
+- Multiple people need to understand the design
+- The feature will be demoed or released to users
+- You're unsure about scope or approach
 
----
+## When NOT to Create an LLD
 
-## Index
+- Single-file bug fix
+- Config change (linting, CI, dependency update)
+- Copy/text change with no architectural impact
+- Trivial feature under 2 files with no business rules
 
-| File | Feature | Status |
-|------|---------|--------|
-| *(none yet)* | | |
+## How to Use
 
----
+1. Copy `feature-template.md` to `<feature-name>.md`
+2. Fill in sections relevant to your feature (skip irrelevant ones)
+3. Set metadata header: Status: draft, Source: appropriate value
+4. Get user confirmation before implementing
+5. Update Status to confirmed after review
 
-## When to Add an LLD File
+## Template
 
-- A feature has more than one non-trivial implementation option
-- A feature has cross-module dependencies that are not obvious from code alone
-- A feature has security or admissibility constraints that must be documented explicitly
-- A bug fix reveals a design gap that needs formal documentation before the next implementation pass
+See [feature-template.md](feature-template.md) for the standard LLD format.

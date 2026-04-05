@@ -1,0 +1,149 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(git checkout*)",
+      "Bash(git add*)",
+      "Bash(git commit*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run test*)",
+      "Bash(npm run build*)",
+      "Bash(npm run dev*)",
+      "Bash(python3 validators/*)",
+      "Bash(bash scripts/validate-framework.sh*)",
+      "mcp__ak-state-machine__get_session_state",
+      "mcp__ak-state-machine__transition_session",
+      "mcp__ak-state-machine__set_active_persona",
+      "mcp__ak-audit-log__append_audit_entry",
+      "mcp__ak-audit-log__get_recent_entries"
+    ],
+    "deny": [
+      "Bash(rm -rf *)",
+      "Bash(git push --force*)",
+      "Bash(git push -f *)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/guard-session-state.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/guard-persona-boundaries.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/guard-planning-artifacts.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/guard-git-push.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/set-teach-me-flag.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/set-codex-prep-flag.sh"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/auto-audit-log.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/validate-envelope.sh"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/auto-persona-detect.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/guard-boundary-flags.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/auto-teach.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/auto-codex-prep.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/auto-codex-read.sh"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/session-integrity-check.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "mcpServers": {
+    "ak-state-machine": {
+      "command": "python3",
+      "args": [
+        "mcp-servers/state_machine_server.py"
+      ],
+      "env": {
+        "PROJECT_ROOT": "."
+      }
+    },
+    "ak-audit-log": {
+      "command": "python3",
+      "args": [
+        "mcp-servers/audit_log_server.py"
+      ],
+      "env": {
+        "PROJECT_ROOT": ".",
+        "AUDIT_LOG_PATH": "tasks/audit-log.md"
+      }
+    }
+  }
+}

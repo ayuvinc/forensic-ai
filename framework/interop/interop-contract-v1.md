@@ -113,7 +113,7 @@ ux_specs:               tasks/ux-specs.md
 channel:                channel.md
 audit_log:              [AUDIT_LOG_PATH]
 framework_improvements: framework-improvements.md
-sprint_reviews:         [SPRINT_REVIEWS_PATH]
+sprint_reviews:         releases/
 regression_artifacts:   [REGRESSION_ARTIFACTS_PATH]
 ```
 

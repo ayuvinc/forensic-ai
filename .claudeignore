@@ -1,0 +1,63 @@
+# AK Cognitive OS — .claudeignore
+# Files and directories excluded from Claude Code context loading.
+# This keeps the context window focused on relevant content.
+
+# Build artifacts
+node_modules/
+.next/
+dist/
+build/
+out/
+coverage/
+.turbo/
+
+# Package manager locks (large, low-value for AI context)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Archive (obsolete framework content)
+archive/
+
+# Session archives (old sessions, low-value during active build)
+releases/session-*.md
+
+# Codex-specific files (excluded in SOLO_CLAUDE mode)
+# Uncomment if running SOLO_CLAUDE:
+# framework/codex-core/
+# **/codex-prompt.md
+
+# Credentials and keys
+*.pem
+*.key
+credentials.json
+
+# Large binary assets
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.ico
+*.woff
+*.woff2
+*.ttf
+*.eot
+*.mp4
+*.webm
+*.pdf
+
+# Test snapshots (low-value for context)
+__snapshots__/

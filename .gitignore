@@ -40,3 +40,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.bak
+
+# AK-Cognitive-OS hook flag files (runtime state, not committed)
+.teach-me-required
+.codex-prep-required

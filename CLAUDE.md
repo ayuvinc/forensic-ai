@@ -1,4 +1,5 @@
 # GoodWork Forensic Consulting Framework — CLAUDE.md
+Tier: Standard
 
 ## Session Handoff
 

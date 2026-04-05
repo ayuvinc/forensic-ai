@@ -84,6 +84,15 @@ confidence_note: [why — e.g. "limited primary sources" or "multiple corroborat
 [one sentence — what the Architect or BA should do with this]
 ```
 
+
+## Context Budget
+
+| Category | Files |
+|---|---|
+| Always load | `CLAUDE.md`, `tasks/todo.md`, `tasks/next-action.md` |
+| Load on demand | `tasks/ba-logic.md`, `tasks/ux-specs.md`, `tasks/lessons.md` |
+| Never load | `releases/`, `guides/`, large generated files |
+
 ## HANDOFF
 Return this JSON/YAML-compatible object:
 ```yaml

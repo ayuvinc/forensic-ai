@@ -1,29 +1,55 @@
-# CHANNEL — Session Broadcast
+# channel.md — Agent Communication Channel
 
-## Current State
-- Framework version: AK-CogOS v2.0 (Feb 2026) | interop-contract v1.0.0
-- Status: CLOSED (Session 009)
-- Sessions completed: 001, 002, 003, 004, 005, 006, 007, 008, 009
-- Last closed: 2026-04-04 (Session 009)
-- Last agent run: 2026-04-04 — session-close (session 009)
-- Mode: SOLO_CLAUDE
+## Purpose
 
-## Active Sprint
-- Sprint ID: sprint-09 (CLOSED)
-- Objective: Smoke test live API; fix bugs; expand scope to Phases 8–12
-- Status: CLOSED
-- Completion: Option 4 smoke test PASSED; 4 bugs fixed; Word output added; scope expanded to 48%
+This file is the shared communication bus between agents (personas and skills).
+Each agent reads context here and writes its output status here.
+The Architect and skill agents own the write gate.
 
-## Pipeline Queue
-- Status: AWAITING PLANNING SESSION
-- Next task: /ba + /architect planning session with Maher — gates Phases 10–12
-- Active persona: none (awaiting session-open)
+---
 
-## Conditions Resolved
-- R-002 CLOSED: API key active, smoke test passed
-- R-009 PARTIAL: Option 4 passed, Option 6 (FRM) still pending
+## Current Status
 
-## Open Conditions
-- P7-GATE: FRM full smoke test (1 module) pending
-- KF-00: knowledge/policy_sop/ quickest quality win
-- Planning session gates: Phases 10, 11, 12 (new service lines, intake, knowledge files)
+```
+session:        none
+sprint:         none
+active_persona: none
+last_skill_run: none
+last_updated:   —
+```
+
+---
+
+## Last Handoff
+
+```yaml
+from:    —
+to:      —
+status:  —
+message: —
+```
+
+---
+
+## Queued Messages
+
+<!-- Agents append messages here. Architect clears at session close. -->
+
+---
+
+## Sprint Packet Status
+
+```
+packet_ready:     false
+codex_ready:      false
+last_intake_run:  —
+```
+
+---
+
+## Usage
+
+- Skills write their output envelope summary here after execution
+- Architect reads here to understand current sprint state
+- `/check-channel` reads this file and reports status to the team
+- `/session-close` clears stale entries and archives the session state

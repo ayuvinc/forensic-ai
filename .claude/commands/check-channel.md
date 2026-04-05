@@ -74,6 +74,8 @@ failures: []
 warnings: []
 artifacts_written: []
 next_action: "<what AK should do next>"
+manual_action: NONE
+override: "NOT_OVERRIDABLE — read-only utility, no gates to bypass"
 ```
 
 ## BOUNDARY_FLAG
