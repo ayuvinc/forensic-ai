@@ -42,14 +42,27 @@ targets_main() {
 
 # Block push to main/master
 if targets_main "$COMMAND"; then
-  # Read active persona from SESSION STATE in tasks/todo.md (single source of truth).
+  # Read active persona from the SESSION STATE block in tasks/todo.md.
   # The ACTIVE_PERSONA env var is never set by Claude Code's skill loader — do not use it.
+  #
+  # IMPORTANT: the regex is scoped to the ## SESSION STATE block, not the whole file.
+  # A full-file search would match "Active persona:" in task descriptions or comments,
+  # allowing a non-architect session to pass if any task mentions that string.
   PERSONA="$(python3 -c "
 import re, sys
 try:
     with open('tasks/todo.md', 'r') as f:
         content = f.read()
-    m = re.search(r'^Active persona:\s*(.+)$', content, re.MULTILINE)
+    # Extract SESSION STATE block (from header to next ## heading or EOF)
+    idx = content.find('## SESSION STATE')
+    if idx == -1:
+        print('')
+        sys.exit(0)
+    rest = content[idx + len('## SESSION STATE'):]
+    next_heading = re.search(r'\n## ', rest)
+    block = rest[:next_heading.start()] if next_heading else rest
+    # Read Active persona only from within this block
+    m = re.search(r'^Active persona:\s*(.+)$', block, re.MULTILINE)
     print(m.group(1).strip() if m else '')
 except Exception:
     print('')
