@@ -88,10 +88,13 @@ except Exception:
 
   # Check QA_APPROVED exists in tasks/todo.md (skip if file doesn't exist — new project)
   # Pattern matches "- Status: QA_APPROVED" in an actual task block — not the STATUS LIFECYCLE comment.
+  # Also skip if no tasks exist at all (clean slate after archive — sprint complete is valid).
   if [[ -f "tasks/todo.md" ]]; then
-    if ! grep -qE "^\- Status:[[:space:]]+QA_APPROVED" "tasks/todo.md" 2>/dev/null; then
-      echo "BLOCKED: No QA_APPROVED tasks found in tasks/todo.md. Get QA sign-off before pushing to main." >&2
-      exit 2
+    if grep -qE "^\- Status:" "tasks/todo.md" 2>/dev/null; then
+      if ! grep -qE "^\- Status:[[:space:]]+QA_APPROVED" "tasks/todo.md" 2>/dev/null; then
+        echo "BLOCKED: No QA_APPROVED tasks found in tasks/todo.md. Get QA sign-off before pushing to main." >&2
+        exit 2
+      fi
     fi
   fi
 
