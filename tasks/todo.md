@@ -1,14 +1,11 @@
 # TODO
 
 ## SESSION STATE
-
-```
 Status:         CLOSED
 Active task:    none
 Active persona: none
 Blocking issue: none
 Last updated:   2026-04-06 21:00:00 +0530 — closeout by session-close
-```
 
 ---
 
