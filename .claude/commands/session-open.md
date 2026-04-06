@@ -1,4 +1,4 @@
-# /session-open $ARGUMENTS
+# /session-open
 
 ## WHO YOU ARE
 You are the session-open agent in AK Cognitive OS. Your only job is: prepare a three-line standup from session context
@@ -20,7 +20,6 @@ BOUNDARY_FLAG:
 - If required inputs/artifacts are missing, emit `status: BLOCKED` and stop.
 
 ## ON ACTIVATION - AUTO-RUN SEQUENCE
-0. Parse `$ARGUMENTS` for inline inputs (e.g., `/session-open session_id=5 sprint_id=2`). Override defaults with any values found. Supported arguments: `session_id`, `sprint_id`.
 1. Resolve paths from project `CLAUDE.md` overrides; fallback defaults:
    - `tasks/todo.md`, `tasks/lessons.md`, `tasks/next-action.md`, `tasks/risk-register.md`,
      `tasks/ba-logic.md`, `tasks/ux-specs.md`, `channel.md`, [AUDIT_LOG_PATH], `framework-improvements.md`
@@ -37,13 +36,23 @@ Checks/Actions:
 - Read SESSION STATE block from tasks/todo.md.
 - BLOCKED immediately if SESSION STATE block is missing. Include `MISSING_SESSION_STATE` in failures[].
 - BLOCKED immediately if SESSION STATE Status ≠ CLOSED. A non-CLOSED status means a session is already running or state is invalid. Include current status in failures[] with `SESSION_STATE_VIOLATION`.
-- STATE WRITE SEQUENCE (MCP-first, sentinel fallback):
-  1. Attempt MCP primary path: call `mcp__ak-state-machine__transition_session` with `to_state=OPEN`.
-     If MCP succeeds → skip steps 2–4.
-  2. If MCP unavailable: run Bash `touch .session-state-transition` to write sentinel.
-  3. Write SESSION STATE Status = OPEN in tasks/todo.md via Edit. Update Active persona, Active task, and Last updated fields.
-  4. Run Bash `rm -f .session-state-transition` to remove sentinel regardless of step 3 outcome.
-- Validate the write succeeded by re-reading SESSION STATE — BLOCKED with `SESSION_STATE_WRITE_FAILED` if Status ≠ OPEN after write.
+- Call `mcp__ak-state-machine__transition_session(to_state="OPEN")`. Handle result:
+  - If `result.success` is true: continue to set_active_persona via MCP (primary path).
+  - If `result.error` contains `INVALID_TRANSITION`: emit BLOCKED with `SESSION_STATE_VIOLATION: session already open` and stop. Do NOT fall back.
+  - If MCP is unavailable (tool not found, server not running, import error) OR result.success is false for any other reason:
+    **FALLBACK PATH** — emit WARN: "MCP unavailable — falling back to direct file write":
+    1. Use Bash to run: `echo "session-open" > tasks/.session-transition-lock`
+    2. Use Bash with python3 to update SESSION STATE fields directly in tasks/todo.md:
+       - Status: OPEN
+       - Active task: [TASK from next-action.md]
+       - Active persona: [expected_persona_from_next_action]
+       - Last updated: [ISO-8601 timestamp] — Session N open by session-open (fallback)
+    3. Use Bash to run: `rm -f tasks/.session-transition-lock`
+    4. Add WARN entry to audit log: "MCP unavailable — fell back to direct file write"
+    Note: The bash trap in steps 1-3 ensures lock cleanup even on error. If using Bash tool,
+    wrap as: `trap 'rm -f tasks/.session-transition-lock' ERR EXIT; <write commands>`
+- Call `mcp__ak-state-machine__set_active_persona(persona=<expected_persona_from_next_action>)` (primary path only — skip if fallback was used). If `result.success` is false, emit BLOCKED with `SESSION_STATE_WRITE_FAILED`.
+- Call `mcp__ak-state-machine__get_session_state()` and verify `status == "OPEN"` (primary path only). BLOCKED with `SESSION_STATE_WRITE_FAILED` if not. On fallback path: read tasks/todo.md directly and verify Status field reads OPEN.
 - Read tasks/lessons.md — last 10 entries only.
 - Read tasks/next-action.md — NEXT_PERSONA, TASK, CONTEXT fields.
 - Read tasks/risk-register.md — any OPEN entries.
@@ -77,8 +86,6 @@ failures: []
 warnings: []
 artifacts_written: []
 next_action: "<what to run next>"
-manual_action: NONE
-override: "NOT_OVERRIDABLE — session must open cleanly before any task work"
 extra_fields:
   standup_lines: ["line1", "line2", "line3"]
 ```

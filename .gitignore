@@ -48,3 +48,6 @@ Thumbs.db
 
 # MCP server logs (runtime-generated, not committed)
 logs/
+
+# Session lock files (session-open/session-close fallback path)
+tasks/.session-transition-lock

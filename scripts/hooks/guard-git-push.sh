@@ -42,9 +42,32 @@ targets_main() {
 
 # Block push to main/master
 if targets_main "$COMMAND"; then
-  PERSONA="${ACTIVE_PERSONA:-unknown}"
+  # Read active persona from SESSION STATE in tasks/todo.md (single source of truth).
+  # The ACTIVE_PERSONA env var is never set by Claude Code's skill loader — do not use it.
+  PERSONA="$(python3 -c "
+import re, sys
+try:
+    with open('tasks/todo.md', 'r') as f:
+        content = f.read()
+    m = re.search(r'^Active persona:\s*(.+)$', content, re.MULTILINE)
+    print(m.group(1).strip() if m else '')
+except Exception:
+    print('')
+" 2>/dev/null || echo "")"
 
-  # Check persona first
+  if [[ -z "$PERSONA" ]]; then
+    echo "BLOCKED: Could not read Active persona from tasks/todo.md." >&2
+    echo "         Ensure tasks/todo.md exists and contains a valid SESSION STATE block." >&2
+    exit 2
+  fi
+
+  if [[ "$PERSONA" == "none" ]]; then
+    echo "BLOCKED: No active session — Active persona is 'none'." >&2
+    echo "         Run /session-open to start a session before pushing to main." >&2
+    exit 2
+  fi
+
+  # Check persona
   if [[ "$PERSONA" != "architect" ]]; then
     echo "BLOCKED: Only the Architect persona may push to main/master. Active persona: ${PERSONA}" >&2
     exit 2
