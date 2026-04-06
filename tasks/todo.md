@@ -3,11 +3,11 @@
 ## SESSION STATE
 
 ```
-Status:         OPEN
-Active task:    Planning session — FRM guided-exercise redesign + Phases 10–12 gate
-Active persona: ba
+Status:         CLOSED
+Active task:    none
+Active persona: none
 Blocking issue: none
-Last updated:   Session 010 open (2026-04-06)
+Last updated:   2026-04-06 21:00:00 +0530 — closeout by session-close
 ```
 
 ---

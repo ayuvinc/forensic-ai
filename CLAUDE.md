@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-02 21:49:32 +0530 — closeout by Codex
-- Session summary: Closeout recorded with Session 3 framed as T06-T10 complete; T11-T14 remain next; two review findings carried forward into handoff.
+- Last updated: 2026-04-06 21:00:00 +0530 — closeout by session-close
+- Session summary: Session 010 — planning only. BA (BA-002..BA-011): FRM guided-exercise redesign confirmed, historical knowledge library designed, DD/Sanctions/TT intake questionnaires confirmed, engagement scoping workflow (problem-first) designed, workflow chaining rules confirmed. Architect (Sprint-10A..10H): 35+ tasks across 8 sprints, critical path defined. Real GoodWork materials researched (CE Creates DD reports, proposals). docs/problem-definition.md and docs/scope-brief.md populated. Next: Sprint-10A schemas + Sprint-10B knowledge files.
 
 ## Use Case Note
 
