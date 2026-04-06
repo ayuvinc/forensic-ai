@@ -13,6 +13,7 @@ Env:
 """
 
 import json
+import logging
 import os
 import re
 import sys
@@ -29,6 +30,36 @@ except ImportError:
 
 PROJECT_ROOT = Path(os.environ.get("PROJECT_ROOT", ".")).resolve()
 TODO_PATH = PROJECT_ROOT / "tasks" / "todo.md"
+
+
+# --------------------------------------------------------------------------- #
+# Startup logging
+# --------------------------------------------------------------------------- #
+
+def _setup_logging() -> logging.Logger:
+    log_dir = PROJECT_ROOT / "logs" / "mcp"
+    try:
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_path = log_dir / "state_machine_server.log"
+        # Rotate if > 500KB — keep last 200 lines
+        if log_path.exists() and log_path.stat().st_size > 500_000:
+            lines = log_path.read_text(encoding="utf-8").splitlines()
+            log_path.write_text("\n".join(lines[-200:]) + "\n", encoding="utf-8")
+        handler = logging.FileHandler(str(log_path), encoding="utf-8")
+    except OSError:
+        handler = logging.StreamHandler(sys.stderr)
+
+    logging.basicConfig(
+        handlers=[handler],
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%SZ",
+    )
+    return logging.getLogger("state_machine_server")
+
+
+logger = _setup_logging()
+logger.info("startup — PID=%s PROJECT_ROOT=%s TODO_PATH=%s", os.getpid(), PROJECT_ROOT, TODO_PATH)
 
 # --------------------------------------------------------------------------- #
 # Parsing helpers
@@ -248,10 +279,20 @@ async def call_tool(name: str, arguments: dict):
 
 
 async def main():
-    async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
-        await server.run(read_stream, write_stream, server.create_initialization_options())
+    logger.info("MCP handshake starting — waiting for client initialize")
+    try:
+        async with mcp.server.stdio.stdio_server() as (read_stream, write_stream):
+            await server.run(read_stream, write_stream, server.create_initialization_options())
+        logger.info("MCP server shut down cleanly")
+    except Exception as exc:
+        logger.exception("MCP server error: %s", exc)
+        raise
 
 
 if __name__ == "__main__":
     import asyncio
-    asyncio.run(main())
+    try:
+        asyncio.run(main())
+    except Exception as exc:
+        logger.exception("Fatal error in asyncio.run: %s", exc)
+        sys.exit(1)

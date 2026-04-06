@@ -37,7 +37,12 @@ Checks/Actions:
 - Read SESSION STATE block from tasks/todo.md.
 - BLOCKED immediately if SESSION STATE block is missing. Include `MISSING_SESSION_STATE` in failures[].
 - BLOCKED immediately if SESSION STATE Status ≠ CLOSED. A non-CLOSED status means a session is already running or state is invalid. Include current status in failures[] with `SESSION_STATE_VIOLATION`.
-- Write SESSION STATE Status = OPEN in tasks/todo.md. Update Active persona, Active task, and Last updated fields.
+- STATE WRITE SEQUENCE (MCP-first, sentinel fallback):
+  1. Attempt MCP primary path: call `mcp__ak-state-machine__transition_session` with `to_state=OPEN`.
+     If MCP succeeds → skip steps 2–4.
+  2. If MCP unavailable: run Bash `touch .session-state-transition` to write sentinel.
+  3. Write SESSION STATE Status = OPEN in tasks/todo.md via Edit. Update Active persona, Active task, and Last updated fields.
+  4. Run Bash `rm -f .session-state-transition` to remove sentinel regardless of step 3 outcome.
 - Validate the write succeeded by re-reading SESSION STATE — BLOCKED with `SESSION_STATE_WRITE_FAILED` if Status ≠ OPEN after write.
 - Read tasks/lessons.md — last 10 entries only.
 - Read tasks/next-action.md — NEXT_PERSONA, TASK, CONTEXT fields.

@@ -44,3 +44,7 @@ Thumbs.db
 # AK-Cognitive-OS hook flag files (runtime state, not committed)
 .teach-me-required
 .codex-prep-required
+.session-state-transition
+
+# MCP server logs (runtime-generated, not committed)
+logs/

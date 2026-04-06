@@ -5,18 +5,19 @@
 # Called by Claude Code before Write/Edit tool calls.
 # Receives tool call info via stdin as JSON.
 #
-# MCP IS THE PRIMARY PATH for SESSION STATE transitions.
-# session-open and session-close call mcp__ak-state-machine__transition_session
-# directly — those writes bypass this hook entirely (MCP tool calls are not
-# intercepted by Write/Edit PreToolCall hooks).
+# PRIMARY PATH — MCP:
+#   session-open and session-close call mcp__ak-state-machine__transition_session
+#   directly. MCP tool calls are not intercepted by Write/Edit PreToolCall hooks,
+#   so they bypass this guard entirely.
 #
-# This guard is DEFENSE-IN-DEPTH: it blocks any direct Edit/Write to
-# tasks/todo.md that touches SESSION STATE without going through the MCP
-# server. In normal workflow this guard should never fire — it exists to
-# catch accidental direct file edits only.
+# FALLBACK PATH — Sentinel file:
+#   When MCP is unavailable, session-open/session-close write a sentinel file
+#   (.session-state-transition) via Bash BEFORE making any Edit/Write call.
+#   This guard checks for the sentinel and allows the write.
+#   The sentinel is removed by the skill after the write completes.
 #
-# Environment:
-#   ACTIVE_SKILL — set by session-open/session-close skills (or empty)
+# This guard is DEFENSE-IN-DEPTH: it blocks accidental direct edits to
+# SESSION STATE that come from neither MCP nor the sentinel path.
 #
 # Exit 0 = allow, Exit 2 = block with message on stderr
 
@@ -24,7 +25,7 @@ set -euo pipefail
 
 INPUT="$(cat)"
 
-# Extract the target file path from the tool call
+# Derive project root from the file path being edited (strip tasks/todo.md suffix)
 FILE_PATH="$(echo "$INPUT" | python3 -c "
 import sys, json
 data = json.load(sys.stdin)
@@ -47,14 +48,16 @@ print(content)
 " 2>/dev/null || echo "")"
 
 if echo "$CONTENT" | grep -qi "SESSION STATE\|^Status:"; then
-  ALLOWED_SKILLS="session-open session-close"
-  CURRENT="${ACTIVE_SKILL:-unknown}"
-  for skill in $ALLOWED_SKILLS; do
-    if [[ "$CURRENT" == "$skill" ]]; then
-      exit 0
-    fi
-  done
-  echo "BLOCKED: Only /session-open and /session-close may modify SESSION STATE. Active skill: ${CURRENT}" >&2
+  # Derive project root: strip trailing /tasks/todo.md
+  PROJECT_ROOT="$(echo "$FILE_PATH" | sed 's|/tasks/todo\.md$||')"
+  SENTINEL="${PROJECT_ROOT}/.session-state-transition"
+
+  # Allow if sentinel file is present (written by session-open or session-close via Bash)
+  if [[ -f "$SENTINEL" ]]; then
+    exit 0
+  fi
+
+  echo "BLOCKED: Only /session-open and /session-close may modify SESSION STATE. Write the sentinel file first: touch ${SENTINEL}" >&2
   exit 2
 fi
 

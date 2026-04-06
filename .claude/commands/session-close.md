@@ -48,7 +48,12 @@ Checks/Actions (run in order, BLOCKED on first failure):
 7. git commit -m "chore: Session N close — [one-line summary of what was built]".
 8. git push origin main.
 9. Write tasks/next-action.md: NEXT_PERSONA / TASK / CONTEXT / COMMAND fields.
-10. Update SESSION STATE in tasks/todo.md: Status=CLOSED, Active task=none, Active persona=none, Last updated=Session N close.
+10. STATE WRITE SEQUENCE (MCP-first, sentinel fallback):
+    a. Attempt MCP primary path: call `mcp__ak-state-machine__transition_session` with `to_state=CLOSED`.
+       If MCP succeeds → skip steps b–d.
+    b. If MCP unavailable: run Bash `touch .session-state-transition` to write sentinel.
+    c. Update SESSION STATE in tasks/todo.md via Edit: Status=CLOSED, Active task=none, Active persona=none, Last updated=Session N close.
+    d. Run Bash `rm -f .session-state-transition` to remove sentinel regardless of step c outcome.
 11. Validate SESSION STATE is now CLOSED before emitting PASS. If Status≠CLOSED after write → BLOCKED with SESSION_STATE_VIOLATION.
 
 Validation contracts:
