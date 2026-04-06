@@ -1,63 +1,43 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
-ba
+session-close
 
 ## NEXT_TASK
-Planning session with Maher — validate 3-level scope hierarchy, confirm top 3 service line priorities,
-draft intake questionnaire structures (8–12 questions each), review knowledge file scope, design chaining UX.
-Run /ba then /architect. This gates Phases 10–12.
+Close Session 010. BA planning complete, architecture complete. No build work started this session — planning only.
 
-PLANNING AGENDA ADDITIONS (from Session 009 close — PRIORITY 1 FIRST):
-
-0. [PRIORITY 1] FRM guided-exercise redesign — current one-shot generation is fundamentally wrong.
-   Design the FRM as a structured assessment conversation:
-   Step 1: Show plan — "Here are the 8 modules. We will cover X, Y, Z based on your scope."
-   Step 2: Per module — present risk sub-areas, ask which apply to this client/industry
-   Step 3: Per risk area — ask: any known incidents? existing controls? probability (1-5)? impact (1-5)?
-   Step 4: Model generates the risk item from consultant's answers + regulatory baseline
-   Step 5: Consultant reviews each risk item — approve / modify / skip
-   Step 6: Final register assembled from confirmed items
-   Zero-information case: model shows the framework, presents industry-baseline risks as DRAFT,
-   consultant confirms/adjusts each one before it goes into the register.
-   This same pattern applies to: Investigation Report scoping, Due Diligence checklist, Transaction Testing scope.
-   Design question for planning: which steps are conversational vs form-based in Streamlit UI?
-1. Zero-information draft design: define "content floor" per workflow — what the engine produces when
-   consultant provides no documents and minimal intake. E.g. FRM → industry-baseline risks from knowledge file.
-   Every workflow must return a usable starting-point draft, never a blank deliverable.
-   Design question: for each scope type (FRM, Investigation, Policy, Proposal, Transaction Testing, etc.)
-   what are the 5–15 baseline items the engine can always populate from domain knowledge alone?
-2. Apply same principle to investigations: if no documents, engine drafts from publicly known facts +
-   asks targeted questions to fill gaps. Partner/PM review still applies.
-3. Context limit hygiene: sessions must close before 80% context. Check at session-open.
+Sprint-10 is fully designed. Build queue in dependency order:
+1. Sprint-10A (Schemas) — ARCH-S-01 through ARCH-S-05 — no deps, build first
+2. Sprint-10B (Knowledge Files) — KF-NEW, KF-02, KF-04, KF-01, KF-00 — parallel with schemas
+3. Sprint-10C (Historical Library) — HRL-00 then HRL-01..06 — after ARCH-S-01
+4. Sprint-10D (FRM Guided Exercise) — FRM-R-01..08 — after ARCH-S-01
+5. Sprint-10E (New Service Lines) — SL-GATE-01..03 — after schemas + knowledge files
+6. Sprint-10F (Engagement Scoping) — SCOPE-WF-01/02 — after KF-NEW + ARCH-S-04
+7. Sprint-10G (Chaining) — CHAIN-00..02 — after Phase 8 (Streamlit)
+8. Sprint-10H (Disclaimers) — ARCH-GAP-01/02 — parallel with workflows
 
 ## CARRY_FORWARD_CONTEXT
-- Session 009 closed. Smoke test PASSED (Option 4 — Whistleblower Policy). Word output wired in.
-- 4 bugs fixed: doc tool filter, has_documents() guard, JSON code-block parsing, doc manager hallucination guard.
-- Scope expanded from 7 phases to 12 phases. Completion: 48%.
-- Streamlit (Option A) confirmed as frontend.
-- FRM full smoke test (Option 6) still pending — aborted mid-run to save API tokens.
-- KF-00 (knowledge/policy_sop/) is the quickest quality win — policy prompt produces 8/10 draft
-  missing 8 predictable gaps; adding knowledge file + prompt checklist will close them.
-- Planning session required before building Phases 10–12 (new service lines, precision intake, knowledge files).
-
-## PARALLEL_QUICK_WIN
-If Maher not available for planning session, next best task is:
-KF-00 — Create knowledge/policy_sop/framework.md and knowledge/policy_sop/sources.md to fix the
-8 gaps identified in ChatGPT review of Whistleblower Policy output (Session 009).
-Gaps: anonymous complaint protocol, retaliation mechanism + disciplinary matrix, evidence/chain-of-custody,
-SLA for closure comms, malicious vs good-faith definition, DPDP Act 2023, vendor enforcement, metrics/KPIs.
+- Session 010 was a pure planning session — BA + Architect. Zero code written.
+- 10 BA entries confirmed (BA-002 through BA-011) in tasks/ba-logic.md.
+- 35+ tasks written to tasks/todo.md (Sprint-10A through 10H).
+- docs/problem-definition.md and docs/scope-brief.md are now populated (no longer stubs).
+- AKR-08b (/architect session to fill docs/hld.md gaps) is partially addressed — hld.md not yet updated this session; should be updated next architect session.
+- FRM smoke test (Option 6, P7-GATE) still pending — needs real API keys, not blocked by planning.
+- QR-17 (document ingestion live test) still pending.
+- CE Creates DD reports on Desktop/GoodWork/ are the designated seed data for the DD historical library — Maher to run HRL-01 import wizard once it's built.
+- GoodWork_Pilot_Proposal_Draft.docx = separate product (B2B training programme) — not in scope for forensic-ai/ build; flag for future product roadmap discussion.
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Phase 10–12 GATED on planning session with Maher.
-- Phase 7 GATED on FRM full smoke test (P7-GATE) — needs 1-module FRM run to verify quality.
-- QR-17 (document ingestion live test) still pending.
-- C-06a–e (integration tests) can run without API key.
+- Phase 10–13 build GATED on AK review and approval of architecture (tasks/todo.md Sprint-10A through 10H).
+- Sprint-10G (Chaining) GATED on Phase 8 (Streamlit) completion.
+- SCOPE-WF-01 GATED on KF-NEW (engagement_taxonomy knowledge file).
+- SL-GATE-01 through SL-GATE-03 GATED on respective knowledge files (KF-01, KF-02, KF-04).
+- FRM smoke test (P7-GATE) still pending — must pass before FRM guided exercise redesign is merged.
 
 ## HANDOFF_NOTE
-Session 009 closed by session-close. Option 4 smoke test PASSED. Scope expanded (Phases 8–12).
-Next: planning session with Maher (BA + Architect) to gate Phases 10–12.
-If blocking: KF-00 or C-06a can start immediately without waiting for planning session.
+Session 010 closed by session-close after BA + Architect. No code changes this session.
+Next session: begin Sprint-10A (schemas) or Sprint-10B (knowledge files) — both have zero dependencies and can start immediately.
+Recommended start: ARCH-S-01 (RiskContextItem) + KF-00 (policy_sop quick win) in parallel — shortest path to FRM redesign + policy quality fix.

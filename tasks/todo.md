@@ -3,11 +3,11 @@
 ## SESSION STATE
 
 ```
-Status:         CLOSED
-Active task:    none
-Active persona: none
+Status:         OPEN
+Active task:    Planning session — FRM guided-exercise redesign + Phases 10–12 gate
+Active persona: ba
 Blocking issue: none
-Last updated:   Session 009 close (2026-04-04) — smoke test bugs fixed, scope expanded
+Last updated:   Session 010 open (2026-04-06)
 ```
 
 ---
@@ -558,7 +558,7 @@ STEP 5 — Register assembled from approved items only
 Zero-information case: model pre-populates Step 3 with industry-baseline answers, clearly labelled
 BASELINE (unverified) — consultant reviews each one rather than starting from blank.
 
-- [ ] FRM-R-00 Planning gate: validate guided-exercise flow design with Maher
+- [x] FRM-R-00 Planning gate: validate guided-exercise flow design with Maher — CONFIRMED Session 010 (2026-04-06). Edit = structured conversation, model recommends all parameters. See BA-002.
 - [ ] FRM-R-01 New intake: after module selection, present plan summary before starting
       "We will assess X sub-areas across Y modules. Here is the structure. Proceed?"
 - [ ] FRM-R-02 Per-module loop: for each module, present sub-areas list → consultant confirms scope
@@ -581,8 +581,7 @@ and minimal intake. Never return a blank deliverable when domain knowledge exist
 Design: each workflow has a "content floor" — baseline items populated from knowledge file when
 consultant provides no evidence. Consultant adds/removes/adjusts from this baseline.
 
-- [ ] ZID-00 Planning: define content floor per workflow (5–15 baseline items each)
-      Scope: FRM, Investigation, Policy/SOP, Proposal, Transaction Testing, Due Diligence, Sanctions
+- [x] ZID-00 Planning: define content floor per workflow — CONFIRMED Session 010 (2026-04-06). All 7 workflows defined. See BA-004.
 - [ ] ZID-01 FRM: if findings=[] after junior run → inject industry-baseline risks from knowledge file
       before PM review (not as final answer — as starting point for consultant review)
 - [ ] ZID-02 Investigation: if no documents registered → system prompt instructs junior to draft from
@@ -594,6 +593,84 @@ consultant provides no evidence. Consultant adds/removes/adjusts from this basel
       as BASELINE (unverified) for consultant review"
 - [ ] ZID-05 Session context hygiene: session-open checks must warn if context approaching limit;
       close sessions before 80% to preserve carry-forward fidelity
+
+### Phase 10–13 Architecture + Build Tasks (Session 010 — 2026-04-06)
+
+**Architect decisions:**
+- FRM Exercise Engine: Option A (refactor in place, not generic engine yet)
+- DD + Sanctions: Mode B first (single-pass), upgrade to full pipeline later (same path as C-01b)
+- Transaction Testing: new SCOPE_CONFIRMED state between INTAKE_CREATED and DELIVERABLE_WRITTEN
+- Chaining: new core/chain_router.py provides logic; Phase 9 CH-01..04 provide UI
+- Historical Library: tools/knowledge_library.py — sanitisation is a HARD GATE before any index write
+
+**Critical path:**
+Schemas → Knowledge files → Historical Library → Workflows → Scoping → Chaining
+
+#### Sprint-10A — Schemas (no deps — build first, everything else blocks on these)
+
+- [ ] ARCH-S-01 schemas/artifacts.py: add RiskContextItem — stores Maher's per-sub-area answers for FRM exercise (incident: str, existing_controls: str, probability: int 1-5, impact: int 1-5, consultant_notes: str). GATES: FRM-R-03.
+- [ ] ARCH-S-02 schemas/dd.py — new file: DDIntakeIndividual (14 fields per BA-006), DDIntakeEntity (14 fields per BA-007), DDReport (subject_profile, methodology, sanctions_results, pep_results|beneficial_ownership, adverse_media, risk_classification: Literal["LOW","MEDIUM","HIGH"], recommendation: str). GATES: SL-GATE-01.
+- [ ] ARCH-S-03 schemas/transaction_testing.py — new file: TTIntakeContext (engagement_context: Literal["fraud_discovery","fraud_quantification","audit_compliance","due_diligence","regulatory"], fraud_typology, data_inventory, population_size, date_range, evidence_standard), TestingPlan (tests: list[TestObjective], population, method, caveats), TTResult. GATES: SL-GATE-03.
+- [ ] ARCH-S-04 schemas/engagement_scope.py — new file: ScopeIntake (client_situation: str, trigger: str, desired_outcome: str, constraints: str), ScopeRecommendation (engagement_types: list[str], scope_components: list[str], deliverables: list[str], sequencing: list[str], caveats: list[str]), ConfirmedScope. GATES: SCOPE-WF-01.
+- [ ] ARCH-S-05 core/state_machine.py: add SCOPE_CONFIRMED to CaseStatus enum; add INTAKE_CREATED → SCOPE_CONFIRMED and SCOPE_CONFIRMED → DELIVERABLE_WRITTEN transitions to VALID_TRANSITIONS. GATES: SL-GATE-03.
+
+#### Sprint-10B — Knowledge Files (parallel with schemas, no code deps)
+
+- [ ] KF-NEW knowledge/engagement_taxonomy/framework.md — full forensic engagement taxonomy: 18+ engagement types each with triggering scenario, standard scope components, typical deliverables, applicable frameworks (ACFE/IIA/ISO/UAE), regulatory context, common scope combinations. Architect-validated list: fraud investigation (7 types), FRM, DD (individual/entity), transaction testing, asset tracing, expert witness, sanctions screening, ABC program, regulatory compliance review, whistleblower investigation, insurance fraud, procurement fraud audit, ESI/e-discovery, insolvency fraud, policy/SOP, training, HUMINT. GATES: SCOPE-WF-01.
+- [ ] KF-02 knowledge/due_diligence/framework.md — GoodWork 5-phase DD methodology (from CE Creates reports), source list by jurisdiction, risk classification criteria (LOW/MEDIUM/HIGH), standard report template, FATF/AML/CFT standards, licensed DB gap disclaimer text, HUMINT scope disclaimer text. GATES: SL-GATE-01.
+- [ ] KF-04 knowledge/sanctions_screening/framework.md — 5 official screening lists (OFAC/UN/EU/UK OFSI/UAE), PEP classification, false positive analysis methodology, risk rating criteria, WorldCheck gap disclaimer. GATES: SL-GATE-02.
+- [ ] KF-01 knowledge/transaction_testing/framework.md — ACFE transaction testing methodology, Benford's law procedure, three-way matching procedure, test objectives by fraud typology (6 types), UAE regulatory testing requirements per regulator, sampling standards. GATES: SL-GATE-03.
+- [ ] KF-00 knowledge/policy_sop/framework.md — already in todo.md; 8 gap fixes from ChatGPT review Session 009. Priority: run this alongside KF-02.
+
+#### Sprint-10C — Historical Knowledge Library (depends on Sprint-10A schemas)
+
+- [ ] HRL-00 tools/knowledge_library.py — [SCAFFOLD first] KnowledgeLibrary class: ingest(file_path, service_type) → runs intake conversation → sanitise() → index_entry(). sanitise() strips: names, passport/ID numbers, company reg numbers, case IDs, dates that identify specific engagements. Retrieval: match_similar(engagement_params) → list[HistoricalMatch] sorted by similarity. Hard gate: if sanitise() fails validation, ingest() raises SanitisationError — no partial index entries written. GATES: HRL-01..06.
+- [ ] HRL-01 Historical register/report import wizard — extend setup_wizard.py or add guided_import.py; prompts Maher to upload FRM registers, DD reports, proposals, scope letters; calls KnowledgeLibrary.ingest() per file; shows index summary after each import. CE Creates DD reports (3) are the documented seed entries. GATED on HRL-00.
+- [ ] HRL-02 firm_profile/historical_registers/ dir + index.json schema — GATED on HRL-00.
+- [ ] HRL-03 firm_profile/historical_reports/due_diligence/ dir + index.json schema — GATED on HRL-00.
+- [ ] HRL-04 firm_profile/historical_reports/sanctions_screening/ dir + index.json schema — GATED on HRL-00.
+- [ ] HRL-05 firm_profile/historical_reports/transaction_testing/ dir + index.json schema — GATED on HRL-00.
+- [ ] HRL-06 firm_profile/historical_scopes/ dir + index.json schema — GATED on HRL-00.
+
+#### Sprint-10D — FRM Guided Exercise Redesign (depends on ARCH-S-01)
+
+- [ ] FRM-R-01 workflows/frm_risk_register.py: intake updated — after module selection, present plan summary before starting. "We will assess X sub-areas across Y modules. Proceed?" GATED on ARCH-S-01.
+- [ ] FRM-R-02 Per-module loop: for each module, present sub-areas list → Maher confirms which apply (Y/N/Partial). Store confirmed sub-areas in list before entering per-risk loop.
+- [ ] FRM-R-03 Per-risk-area: structured 4-question sequence (incidents? controls? probability? impact?). Store answers in RiskContextItem; pass to model for item generation. GATED on ARCH-S-01.
+- [ ] FRM-R-04 One-item-at-a-time generation: model generates one RiskItem from RiskContextItem + regulatory baseline. Output: risk title, scenario, impact rating, probability rating, residual risk — all recommended by model. Never generate full register in one call.
+- [ ] FRM-R-05 Review loop: show each RiskItem → Approve / Edit / Skip. Edit triggers structured model conversation (model asks follow-ups and re-recommends all parameters). One revision cycle per item. Override after revision recorded in audit_log.
+- [ ] FRM-R-06 Register assembly: only approved items enter final register. Explicitly skipped items recorded in state.json as excluded. Empty register warning before final assembly.
+- [ ] FRM-R-07 Zero-info mode: if all Step 3 answers skipped, model pre-fills RiskContextItem with industry-baseline answers labelled BASELINE. Maher still reviews each item — no auto-approval.
+- [ ] FRM-R-08 BASELINE flag handling: BASELINE label stored in state.json per item. Maher's approval removes it from the deliverable. audit_log records provenance (BASELINE vs consultant-input vs FROM_SIMILAR_ENGAGEMENT) for every item.
+
+#### Sprint-10E — New Service Line Workflows (depends on Schemas + Knowledge Files)
+
+- [ ] SL-GATE-01 workflows/due_diligence.py — Mode B; Individual/Entity branch at intake using DDIntakeIndividual / DDIntakeEntity; 5-phase methodology from KF-02; report structure mirrors CE Creates template (Executive Summary → Profile → Methodology → Sanctions → PEP/UBO → Adverse Media → Conclusion); ARCH-GAP-01 disclaimer injected automatically; ARCH-GAP-02 flag injected if Phase 2 selected. GATED on ARCH-S-02, KF-02.
+- [ ] SL-GATE-02 workflows/sanctions_screening.py — Mode B; intake per BA-008; wire existing tools/research/sanctions_check.py; ARCH-GAP-01 disclaimer; output: clearance memo or full report per intake Q10. GATED on ARCH-S-02 (extend for sanctions intake), KF-04.
+- [ ] SL-GATE-03 workflows/transaction_testing.py — 2-stage intake per BA-009; testing plan generated and shown to Maher before document ingestion; state transitions: INTAKE_CREATED → SCOPE_CONFIRMED → DELIVERABLE_WRITTEN; uses TTIntakeContext and TestingPlan schemas. GATED on ARCH-S-03, ARCH-S-05, KF-01.
+
+#### Sprint-10F — Engagement Scoping Workflow (depends on KF-NEW)
+
+- [ ] SCOPE-WF-01 workflows/engagement_scoping.py — 5-step problem-first flow per BA-010; reads knowledge/engagement_taxonomy/ at runtime; produces ConfirmedScope; routes to existing workflow via run.py/app.py dispatch. GATED on KF-NEW, ARCH-S-04.
+- [ ] SCOPE-WF-02 run.py / app.py: add "0. Scope New Engagement" as optional entry point; existing 10 menu items unchanged. GATED on SCOPE-WF-01.
+
+#### Sprint-10G — Workflow Chaining (depends on Phase 8 Streamlit)
+
+- [ ] CHAIN-00 core/chain_router.py — CHAIN_MAP: dict[str, list[str]] defining 11 valid chains per BA-011; get_compatible_chains(workflow_id) → list[str]; blocked chains enforced by omission. GATED on Phase 8 (FE-01..FE-06).
+- [ ] CHAIN-01 Post-workflow "Add another deliverable?" prompt — calls chain_router.get_compatible_chains(); offers compatible options; threads case_id through; updates state.json with all workflow runs. GATED on CHAIN-00.
+- [ ] CHAIN-02 case_tracker (Option 9): update to show all deliverables per case_id when chaining has been used. GATED on CHAIN-01.
+
+#### Sprint-10H — Disclaimers and Templates
+
+- [ ] ARCH-GAP-01 Licensed database disclaimer — standard text block for all DD and Sanctions outputs: "This screening was conducted using publicly available official lists (OFAC, UN, EU, UK OFSI, UAE). It does not include WorldCheck, WorldCompliance, or other commercial database screening. For acquisition-grade or regulatory-grade due diligence, commercial database screening is recommended." Add to templates/ and inject into all DD/Sanctions deliverables.
+- [ ] ARCH-GAP-02 HUMINT scope flag — standard text block: "This scope includes components that require discreet source enquiries (HUMINT). HUMINT cannot be performed by this tool. Execution requires qualified human investigators. This section defines the HUMINT scope; delivery is manual." Add to templates/ and inject when Phase 2 / Enhanced DD is selected.
+
+**Security model — all new tasks:**
+- Auth: single user, local install — no auth layer required
+- Data boundaries: all case data stays in cases/{id}/; historical library stays in firm_profile/; never transmitted except as model prompt content
+- PII: DDIntake fields (name, DOB, passport) stored in cases/{id}/intake.json only; sanitisation in KnowledgeLibrary is a HARD GATE — SanitisationError blocks index write if PII detected in stripped output
+- Audit: every ingest, every workflow run, every state transition appended to audit_log.jsonl
+- Abuse surface: uploaded files parsed by python-docx/PyPDF2 only — no shell execution; web research results truncated to 2000 chars and HTML-stripped (existing guardrail); RiskContextItem fields validated against schema before model call
 
 ---
 
