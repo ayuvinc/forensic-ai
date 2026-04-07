@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
-Active task:    ARCH-S-01 + KF-00 (Sprint-10A schemas + policy_sop knowledge file)
-Active persona: junior-dev (build)
+Status:         CLOSED
+Active task:    none
+Active persona: none
 Blocking issue: none
-Last updated:   2026-04-07 15:15:22 UTC — Session 011 open by session-open (fallback)
+Last updated:   2026-04-07 20:00:00 UTC — Session 011 close by session-close (fallback)
 
 ---
 
@@ -616,10 +616,10 @@ Schemas → Knowledge files → Historical Library → Workflows → Scoping →
 #### Sprint-10B — Knowledge Files (parallel with schemas, no code deps)
 
 - [x] KF-NEW knowledge/engagement_taxonomy/framework.md — AK-CONFIRMED list (2026-04-07): Investigation Report (7 distinct sub-type entries: general/procurement/payroll/expense/financial-stmt/AML/whistleblower), FRM Risk Register (8 modules), Due Diligence Individual, Due Diligence Entity, Transaction Testing, Sanctions Screening, Policy/SOP, Training Material, Client Proposal, Engagement Scoping, ABC Programme (can be standalone OR bundled with FRM). EXCLUDED: Insurance Fraud, Asset Tracing (always part of investigation), Insolvency Fraud, Expert Witness (deferred), ESI (deferred), HUMINT (deferred). Each entry: triggering scenarios, standard scope components, typical deliverables, applicable frameworks, common chains, exclusions, red flags that escalate. Quality standard: tier B from draft (claim labels, provenance metadata). GATES: SCOPE-WF-01.
-- [ ] KF-02 knowledge/due_diligence/framework.md — GoodWork 5-phase DD methodology (CE Creates reports NOT available as reference — derive from standard FATF/ACFE methodology + BA-006/007 report structure). Source list by jurisdiction. Risk classification: LOW/MEDIUM/HIGH + CLEAR/FLAG with explicit criteria (no model judgment). Licensed DB gap disclaimer text (ARCH-GAP-01). HUMINT scope disclaimer (ARCH-GAP-02). Quality standard: tier B from draft. GATES: SL-GATE-01.
-- [ ] KF-04 knowledge/sanctions_screening/framework.md — 5 official screening lists (OFAC/UN/EU/UK OFSI/UAE), PEP classification, false positive analysis methodology, risk rating criteria, WorldCheck gap disclaimer. GATES: SL-GATE-02.
-- [ ] KF-01 knowledge/transaction_testing/framework.md — ACFE transaction testing methodology, Benford's law procedure, three-way matching procedure, test objectives by fraud typology (6 types), UAE regulatory testing requirements per regulator, sampling standards. GATES: SL-GATE-03.
-- [x] KF-00 knowledge/policy_sop/framework.md — BUILT Sprint-10A (2026-04-07). Needs KQ-01 remediation pass (quality standard). Sources.md missing (KQ-03).
+- [x] KF-02 knowledge/due_diligence/framework.md — GoodWork 5-phase DD methodology (CE Creates reports NOT available as reference — derive from standard FATF/ACFE methodology + BA-006/007 report structure). Source list by jurisdiction. Risk classification: LOW/MEDIUM/HIGH + CLEAR/FLAG with explicit criteria (no model judgment). Licensed DB gap disclaimer text (ARCH-GAP-01). HUMINT scope disclaimer (ARCH-GAP-02). Quality standard: tier B from draft. GATES: SL-GATE-01. BUILT Sprint-10B-KQ (2026-04-07).
+- [x] KF-04 knowledge/sanctions_screening/framework.md — 5 official screening lists (OFAC/UN/EU/UK OFSI/UAE), PEP classification, false positive analysis methodology, risk rating criteria, WorldCheck gap disclaimer. GATES: SL-GATE-02. BUILT Sprint-10B-KQ (2026-04-07).
+- [x] KF-01 knowledge/transaction_testing/framework.md — ACFE transaction testing methodology, Benford's law procedure, three-way matching procedure, test objectives by fraud typology (6 types), UAE regulatory testing requirements per regulator, sampling standards. GATES: SL-GATE-03. BUILT Sprint-10B-KQ (2026-04-07).
+- [x] KF-00 knowledge/policy_sop/framework.md — BUILT Sprint-10A (2026-04-07). KQ-01 remediation complete (2026-04-07). Sources.md (KQ-03) complete (2026-04-07).
 
 #### Sprint-10B-KQ — Knowledge Quality Remediation (parallel with Sprint-10B, no build deps)
 

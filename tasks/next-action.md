@@ -1,36 +1,43 @@
 # NEXT ACTION
 
 ## SESSION
-OPEN
+CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+codex-prep → qa → architect
 
 ## NEXT_TASK
-Sprint-10A (ARCH-S-01 + ARCH-S-07) — schemas build. Two tasks, no dependencies, can start immediately:
-1. ARCH-S-01: Add RiskContextItem to schemas/artifacts.py
-2. ARCH-S-07: Add SanitisedIndexEntry to schemas/artifacts.py
-3. ARCH-S-06: Add SanitisationError to tools/knowledge_library.py (scaffold only)
+Pre-merge quality gate for Sprint-10A + Sprint-10B-KQ feature branches, then Sprint-10E/F build.
 
-Run these three in sequence (ARCH-S-01 + ARCH-S-07 touch the same file; ARCH-S-06 is a separate file). After: ARCH-S-02 (schemas/dd.py), ARCH-S-03 (schemas/transaction_testing.py), ARCH-S-04 (schemas/engagement_scope.py), ARCH-S-05 (state_machine.py).
+**Step 1 — Before next /session-open:**
+1. `/codex-prep` on branch `feature/sprint-10A-schemas-kf00`
+2. `/qa` — gate: schemas pass import, all Pydantic models instantiate, state machine transitions valid
+3. `/codex-prep` on branch `feature/sprint-10B-knowledge-files`
+4. `/qa` — gate: all 14 knowledge files present, claim labels present, quality tier B declared, sources.md companions present
+5. `/architect` — merge both feature branches to main; assign Sprint-10E or Sprint-10F as next build sprint
 
-Parallel with schemas: KF-00 (knowledge/policy_sop/framework.md) — no code deps, pure content.
+**Step 2 — After merge, next build sprint options (both UNBLOCKED):**
+- Sprint-10E (SL-GATE-01..03): New service line workflows (due_diligence.py, sanctions_screening.py, transaction_testing.py). All gates satisfied (schemas done, KFs done).
+- Sprint-10F (SCOPE-WF-01..02): Engagement scoping workflow. All gates satisfied (KF-NEW done, ARCH-S-04 done).
+- Sprint-10H (ARCH-GAP-01/02): Disclaimer templates. Can run parallel with 10E/F.
+
+Architect to decide which sprint is highest priority given current state.
 
 ## CARRY_FORWARD_CONTEXT
-- Session 011: Architect session. Sprint-10A schema gaps closed (ARCH-S-06, ARCH-S-07 added). docs/hld.md populated — no longer a stub.
-- Sprint-10A..10H design is complete and AK-approved. Build queue is OPEN.
-- Critical path: Schemas (10A) → Knowledge Files (10B, parallel) → Historical Library (10C) → FRM Redesign (10D) → Service Lines (10E) → Scoping (10F) → Chaining (10G, gated on Phase 8) → Disclaimers (10H, parallel with E/F)
-- FRM smoke test (P7-GATE) still pending — must pass before FRM-R-01..08 merge. Do not start FRM-R-01 until P7-GATE passes.
-- QR-17 (document ingestion live test) still pending — gated on live API keys.
-- SanitisationError location: tools/knowledge_library.py (module-level), not schemas/ — avoids circular dep.
-- SanitisedIndexEntry: schemas/artifacts.py — no PII fields by model definition (enforced structurally).
+- Session 011 COMPLETE: Sprint-10A (7 schemas + KF-00 + docs/hld.md) + Sprint-10B-KQ (11 tasks, 14 knowledge files, all tier B).
+- Full knowledge base: 14 files across 6 domains (frm, investigation, policy_sop, due_diligence, sanctions_screening, transaction_testing, engagement_taxonomy — each with framework.md + sources.md).
+- Schemas complete: dd.py, transaction_testing.py, engagement_scope.py, artifacts.py (RiskContextItem + SanitisedIndexEntry), state_machine.py (SCOPE_CONFIRMED), tools/knowledge_library.py (scaffold).
+- BA-012..017 written. BA-012 CONFIRMED. BA-014 CONFIRMED (AK answers). BA-015/016/017 CONFIRMED with architect defaults.
+- docs/hld.md populated. docs/lld/knowledge-quality-standard.md created.
+- Branches not yet merged: feature/sprint-10A-schemas-kf00 and feature/sprint-10B-knowledge-files.
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- FRM-R-01..08 GATED on P7-GATE (FRM smoke test baseline passing).
-- Sprint-10G (Chaining) GATED on Phase 8 (Streamlit) completion.
-- SCOPE-WF-01 GATED on KF-NEW (engagement_taxonomy knowledge file).
-- SL-GATE-01..03 GATED on respective knowledge files (KF-02, KF-04, KF-01).
+- FRM-R-01..08 GATED on P7-GATE (FRM smoke test with live API keys) — do not start until smoke test passes.
+- Sprint-10G (Chaining) GATED on Phase 8 (Streamlit FE-01..06) — deferred.
+- Sprint-10C (HRL-00..06) GATED on ARCH-S-06/07 (done) — UNBLOCKED, but lower priority than 10E/F.
+- KF-03/05/06/07 (fraud_audit, esi_review, expert_witness, humint knowledge files) — deferred until those service lines are scoped.
+- KF-02 note: DD methodology derived from FATF/ACFE — validate against GoodWork's actual DD practice on first live engagement.
+- BA-015 Q1 (GoodWork 5-phase DD methodology confirmation) — AK to confirm on first DD run.
 
 ## HANDOFF_NOTE
-Architect session complete. Sprint-10A..10H fully designed and AK-approved. docs/hld.md written. ARCH-S-06 + ARCH-S-07 added to Sprint-10A. Build queue open.
-Recommended parallel start: (1) ARCH-S-01+ARCH-S-07+ARCH-S-06 in sequence → then ARCH-S-02..05; (2) KF-00 independently.
+Session 011 close. All Sprint-10A and Sprint-10B-KQ tasks complete and committed to feature branches. SESSION STATE = CLOSED. Next: /codex-prep + /qa on both branches, then /architect to merge and assign Sprint-10E/F.
