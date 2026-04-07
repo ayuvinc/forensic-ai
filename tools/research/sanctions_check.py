@@ -3,13 +3,14 @@
 Allowed domains: ofac.treas.gov, un.org, sanctions.ec.europa.eu
 If no match found: returns explicit "no authoritative match identified".
 NEVER infers a sanctions match. NEVER uses general web results.
+
+When RESEARCH_MODE=knowledge_only (default), returns a stub immediately — no network call.
+Set RESEARCH_MODE=live in .env to enable Tavily.
 """
 
 from datetime import datetime, timezone
 
-from tavily import TavilyClient
-
-from config import TAVILY_API_KEY
+from config import RESEARCH_MODE, TAVILY_API_KEY
 from schemas.research import Citation, ResearchResult
 
 SANCTIONS_DOMAINS = [
@@ -23,23 +24,45 @@ NO_MATCH_DISCLAIMER = (
     "This is not a clearance — conduct independent verification before relying on this result."
 )
 
+_KNOWLEDGE_ONLY_DISCLAIMER = (
+    "Research mode: knowledge_only. Sanctions lookup disabled. "
+    "Manual screening required before any sanctions conclusion."
+)
+
 
 class SanctionsCheck:
     def __init__(self):
         self._client = None
 
-    def _get_client(self) -> TavilyClient:
+    def _get_client(self):
         if self._client is None:
+            from tavily import TavilyClient
             self._client = TavilyClient(api_key=TAVILY_API_KEY)
         return self._client
 
     def check(self, entity_name: str, max_results: int = 5) -> ResearchResult:
+        if RESEARCH_MODE != "live":
+            return ResearchResult(
+                query=f"{entity_name} sanctions designation",
+                results=[],
+                authoritative_citations=[],
+                disclaimer=_KNOWLEDGE_ONLY_DISCLAIMER,
+            )
+
         query = f"{entity_name} sanctions designation"
-        raw = self._get_client().search(
-            query=query,
-            max_results=max_results,
-            include_domains=SANCTIONS_DOMAINS,
-        )
+        try:
+            raw = self._get_client().search(
+                query=query,
+                max_results=max_results,
+                include_domains=SANCTIONS_DOMAINS,
+            )
+        except Exception as e:
+            return ResearchResult(
+                query=query,
+                results=[],
+                authoritative_citations=[],
+                disclaimer=f"Sanctions lookup unavailable ({e}). {NO_MATCH_DISCLAIMER}",
+            )
 
         authoritative = []
         for r in raw.get("results", []):

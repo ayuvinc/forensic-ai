@@ -19,6 +19,14 @@ SOPS_DIR.mkdir(exist_ok=True)
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 TAVILY_API_KEY    = os.getenv("TAVILY_API_KEY", "")
 
+# ── Research Mode ─────────────────────────────────────────────────────────────
+# "knowledge_only" (default): all research tools return stub results immediately.
+#   No network calls. Pipeline runs on model knowledge + knowledge-base files.
+#   Use this for dev, demo, and any environment where Tavily is unavailable.
+# "live": Tavily API is called for web/regulatory/sanctions/company lookups.
+#   Requires a valid TAVILY_API_KEY. Set in .env: RESEARCH_MODE=live
+RESEARCH_MODE = os.getenv("RESEARCH_MODE", "knowledge_only")
+
 # ── Models ────────────────────────────────────────────────────────────────────
 HAIKU  = "claude-haiku-4-5-20251001"
 SONNET = "claude-sonnet-4-6"
@@ -122,8 +130,9 @@ def validate_config() -> list[str]:
     missing = []
     if not ANTHROPIC_API_KEY:
         missing.append("ANTHROPIC_API_KEY")
-    if not TAVILY_API_KEY:
-        missing.append("TAVILY_API_KEY")
+    # Tavily is only required when research mode is live
+    if RESEARCH_MODE == "live" and not TAVILY_API_KEY:
+        missing.append("TAVILY_API_KEY (required when RESEARCH_MODE=live)")
     if BUDGET_MODE not in MODEL_ROUTING:
         missing.append(f"BUDGET_MODE='{BUDGET_MODE}' is invalid (use: economy|balanced|premium)")
     return missing
