@@ -72,7 +72,7 @@ def main() -> None:
             console.print("\n[yellow]Exiting...[/yellow]")
             break
 
-        if choice == "0":
+        if choice == "q":
             console.print("[dim]Goodbye.[/dim]")
             break
 
@@ -96,7 +96,21 @@ def _dispatch(
 ) -> None:
     """Dispatch menu choice to appropriate workflow."""
 
-    if choice == "1":
+    if choice == "0":
+        # Scope New Engagement — problem-first scoping flow
+        from ui.guided_intake import run_generic_intake
+        from workflows.engagement_scoping import run_engagement_scoping_workflow
+
+        intake = run_generic_intake(console, "engagement_scoping", "Scope New Engagement")
+        if intake:
+            _persist_intake(intake)
+            run_engagement_scoping_workflow(
+                intake, console=console,
+                on_progress=progress.make_callback(),
+            )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
+
+    elif choice == "1":
         # New Case Intake
         from workflows.new_case_intake import run_new_case_intake
         run_new_case_intake(console)
