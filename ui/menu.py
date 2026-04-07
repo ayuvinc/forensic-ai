@@ -11,6 +11,7 @@ from ui.display import print_header
 
 MENU_ITEMS = [
     # (option, category, label, description)
+    ("0",  "SCOPING",       "Scope New Engagement",           "Problem-first — describe the situation, model recommends the service"),
     ("1",  "INVESTIGATION",  "New Case Intake",               "Create a new case folder and set up structure"),
     ("2",  "INVESTIGATION",  "Investigation Report",          "Full pipeline — Junior > PM > Partner review"),
     ("3",  "INVESTIGATION",  "Persona Review",                "Review deliverable through CFO/Lawyer/Regulator/Adjuster lens"),
@@ -39,11 +40,11 @@ def render_menu(console: Console, firm_name: str = "GoodWork Forensic Consulting
             current_category = category
         console.print(f"  [bold cyan]{opt:>2}[/bold cyan]  {label}  [dim]{desc}[/dim]")
 
-    console.print("\n  [bold dim]0[/bold dim]  [dim]Exit[/dim]")
+    console.print("\n  [bold dim] q[/bold dim]  [dim]Exit[/dim]")
     console.print()
 
     return Prompt.ask(
         "Select option",
-        choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
+        choices=["q", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
         default="6",
     )
