@@ -710,3 +710,101 @@ AK can disable this per-session if it becomes noise.
 
 **BA-012 status: CONFIRMED (with architect defaults — AK to validate on first Policy/SOP run)**
 
+
+---
+
+## BA-013 — FRM Engagement Suite (Option 6 redesign)
+
+**Confirmed: 2026-04-07**
+
+**Decision:** Option 6 is an FRM Engagement entry point, not just a risk register runner.
+After intake, the user selects which deliverables are in scope for this engagement.
+
+**Deliverable menu (confirmed):**
+1. Risk Register (current 8-module pipeline)
+2. Anti-Fraud Policy / SOP
+3. Training Material
+
+User enters numbers (e.g. `1,2` or Enter for all). All selected deliverables run under the same case ID and are saved to the same case folder.
+
+**Sequencing rule:** Risk Register always runs first if selected (it informs the Policy and Training content). Policy runs before Training if both selected.
+
+**UI flow:**
+```
+FRM Engagement — Case Intake
+  [intake questions — client, industry, size, jurisdiction, scope]
+
+  Which deliverables do you need?
+    1. Risk Register
+    2. Anti-Fraud Policy / SOP
+    3. Training Material
+  Enter numbers (e.g. 1,2 or Enter for all):
+```
+
+**Out of scope for this sprint:**
+- No new module-level changes to frm_risk_register.py
+- Policy/SOP and Training Material re-use existing workflows (policy_sop.py, training_material.py) — no new agent code needed
+
+**BA-013 status: CONFIRMED**
+
+---
+
+## BA-014 — Industry/Function/Sub-Area Taxonomy (Structured Intake Options)
+
+**Confirmed: 2026-04-07**
+
+**Decision:** All intake questions that currently accept free text for industry, function, sub-area, and
+service type must offer a numbered picklist with a free-text fallback option. This applies to every
+workflow — FRM, Investigation, DD, Sanctions, TT, Scoping, Proposal.
+
+**Why:** Structured intake data enables:
+1. Industry-specific module pre-suggestion (e.g. Manufacturing → auto-suggest FRM Modules 3, 4, 6)
+2. Case tracker filtering/grouping by industry and service type
+3. Knowledge-file routing — model loads correct regulatory/risk baseline by industry automatically
+4. Future: industry-specific report templates and risk benchmarks
+
+**Taxonomy depth (v1):**
+- Level 1: Industry (e.g. Manufacturing, Financial Services, Real Estate, Healthcare, Government)
+- Level 2: Sub-sector (e.g. Manufacturing → Discrete / Process / FMCG / Construction)
+- Free text always available as fallback — user types "Other: <custom value>"
+
+**Taxonomy is data, not code:** Lives in `knowledge/taxonomy/industries.json`. Not hardcoded in
+prompts or workflow files. Workflows load it at runtime. Adding a new industry = editing one JSON file,
+no code change.
+
+**Industry → FRM module pre-suggestion map:** Also in taxonomy data, not in frm_risk_register.py.
+Example: `"Manufacturing": {"suggested_modules": [3, 4, 6], "rationale": "Procurement, HR, CapEx exposure"}`
+
+**BA-014 status: CONFIRMED**
+
+---
+
+## BA-015 — True Modularity Design Principle
+
+**Confirmed: 2026-04-07**
+
+**Decision:** The framework must be truly modular — every axis of variation is a data/config file,
+not a code branch. Adding a new industry, jurisdiction, service line, risk module, persona, or knowledge
+domain must require zero changes to core Python code.
+
+**Modularity axes (each must be a config/data file, not hardcoded):**
+
+| Axis | Config location | Current state |
+|------|----------------|--------------|
+| Industries + sub-sectors | `knowledge/taxonomy/industries.json` | Hardcoded in prompts |
+| FRM module definitions + dependencies | `knowledge/taxonomy/frm_modules.json` | Hardcoded in frm_risk_register.py |
+| Workflow enablement per instance | `instance_config/firm.json` | Partially done (Phase 7) |
+| Jurisdiction → regulator mapping | `config.py: JURISDICTION_REGISTRY` | In code — move to JSON |
+| Knowledge file routing (industry × workflow) | `knowledge/taxonomy/routing_table.json` | Not yet built |
+| Risk category definitions per module | `knowledge/frm/module_N_risks.json` | Embedded in knowledge .md files |
+| Persona enablement | `instance_config/firm.json` | Partially done (Phase 7) |
+| Agent model routing | `config.py: MODEL_ROUTING` | In code — acceptable, keep |
+
+**Implementation principle:** Core Python reads config/data files and executes logic. Domain knowledge
+(what industries exist, what modules apply, what risks are relevant) lives in data files only.
+New firm = new instance config. New industry = new taxonomy entry. New service line = new knowledge dir + routing entry.
+
+**What does NOT need to move:** Model routing, API keys, pipeline orchestration logic — these are
+framework concerns, not domain knowledge.
+
+**BA-015 status: CONFIRMED — architect to design modularity sprint after P7-GATE**

@@ -189,3 +189,25 @@ Quality standard: docs/lld/knowledge-quality-standard.md
 
 - [x] FRM-R-00 Guided-exercise flow validated with Maher — CONFIRMED Session 010. Edit = structured conversation, model recommends all parameters. See BA-002.
 - [x] ZID-00 Content floor per workflow defined — CONFIRMED Session 010. All 7 workflows defined. See BA-004.
+
+---
+
+## Sprint-10E — New Service Line Workflows (feature/sprint-10B-knowledge-files, 2026-04-07)
+
+- [x] SL-GATE-01 workflows/due_diligence.py — Mode B; Individual/Entity branch; 5-phase methodology; ARCH-GAP-01 always injected; ARCH-GAP-02 if Phase 2.
+- [x] SL-GATE-02 workflows/sanctions_screening.py — Mode B; aliases capped at 3; deduped citations; clearance memo or full report.
+- [x] SL-GATE-03 workflows/transaction_testing.py — 2-stage intake; testing plan proposed + confirmed before document ingestion; state INTAKE_CREATED → SCOPE_CONFIRMED → DELIVERABLE_WRITTEN.
+
+---
+
+## Sprint-10H — Disclaimers and Templates (feature/sprint-10B-knowledge-files, 2026-04-07)
+
+- [x] ARCH-GAP-01 templates/disclaimer_licensed_db.md — standard licensed-DB gap disclaimer; injected in all DD and Sanctions deliverables.
+- [x] ARCH-GAP-02 templates/disclaimer_humint_scope.md — HUMINT scope flag; injected when Phase 2/Enhanced DD selected.
+
+---
+
+## Sprint-10F — Engagement Scoping Workflow (feature/SCOPE-WF-01-engagement-scoping, 2026-04-07)
+
+- [x] SCOPE-WF-01 workflows/engagement_scoping.py — 5-step problem-first flow per BA-010; reads knowledge/engagement_taxonomy/framework.md at runtime; produces ConfirmedScope; routes to existing workflows via _WORKFLOW_ROUTE map.
+- [x] SCOPE-WF-02 run.py + ui/menu.py — Option 0 "Scope New Engagement" added (SCOPING category); exit moved from "0" to "q"; choices list updated to ["q","0".."13"].

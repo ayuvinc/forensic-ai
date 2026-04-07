@@ -40,6 +40,7 @@ Sprint-10C (library) ← Sprint-10A
 Sprint-10D (FRM redesign) ← ARCH-S-01 + P7-GATE baseline
 Sprint-10E (workflows) ← Sprint-10A + Sprint-10B
 Sprint-10F (scoping) ← KF-NEW + ARCH-S-04
+Sprint-10I (Tavily resilience) ← config.py — blocks P7-GATE
 Sprint-10G (chaining) ← Phase 8 (FE-01..06)
 Phase 8 (Streamlit) ← FE-01..06
 Phase 9 (chaining UI) ← Sprint-10G
@@ -47,11 +48,38 @@ Phase 7 (blank framework) ← P7-GATE
 ```
 
 Completed tasks archived in: releases/completed-tasks.md
-Sprint-01, Sprint-02, QR-01..16, Sprint-03 (completed), Sprint-04 AKR, Sprint-06, Sprint-09, Sprint-10A, Sprint-10B, Sprint-10B-KQ — all DONE, see releases/completed-tasks.md.
+Sprint-01, Sprint-02, QR-01..16, Sprint-03 (completed), Sprint-04 AKR, Sprint-06, Sprint-09, Sprint-10A, Sprint-10B, Sprint-10B-KQ, Sprint-10E, Sprint-10H, Sprint-10F — all DONE, see releases/completed-tasks.md.
 
 ---
 
 ## PENDING TASKS
+
+---
+
+### Sprint-10I — P7-GATE Unblock: Research Mode Flag (PRIORITY: IMMEDIATE)
+
+**Context:** Tavily API unreachable in current env. `timeout=_TIMEOUT` kwarg is silently ignored by the
+Tavily SDK — each retry attempt waits the full 60s default. 3 attempts × 60s = 3+ min hang before graceful
+fallback. User terminates terminal before fallback fires. Fix: add `RESEARCH_MODE` flag; when
+`knowledge_only`, skip all Tavily calls immediately. No network, no hang. Pipeline runs on model knowledge.
+
+**Constraint:** `RESEARCH_MODE=knowledge_only` is the DEFAULT. Set `RESEARCH_MODE=live` in .env to re-enable
+Tavily. This ensures demo/dev never requires external connectivity.
+
+**Security model:**
+- Auth: N/A (local CLI, no auth layer)
+- Data boundaries: no change — research results stay within local case folder
+- PII: no change — same sanitisation hooks apply
+- Audit: no new events required; research_mode is logged in existing agent context
+- Abuse surface: stub returns fixed string — no injection surface
+
+- [x] BUG-09a `config.py` — DONE
+- [x] BUG-09b `tools/research/general_search.py` — DONE
+- [x] BUG-09c `tools/research/regulatory_lookup.py` — DONE
+- [x] BUG-09d `tools/research/sanctions_check.py` — DONE
+- [x] BUG-09e `tools/research/company_lookup.py` — DONE
+
+**After BUG-09:** Run P7-GATE → `python run.py` → Option 6 → complete FRM workflow → verify `final_report.en.md` written, `audit_log.jsonl` populated, `state.json = OWNER_APPROVED`.
 
 ---
 
@@ -237,6 +265,171 @@ FRM flow design (confirmed):
 
 ---
 
+### Sprint-10L — Mode-Aware Review Chain (PRIORITY 1 — must build before P7-GATE matrix)
+
+**Context:** 100-iteration Monte Carlo (Session 013) showed G-13/G-14 (PM + Partner revision loop
+exhaustion) cause 38/60 crashes — 63% of all failures. Root cause: PM and Partner review criteria
+were designed for live-research + document-backed output. In knowledge_only mode they correctly
+reject generic output → revision loop hits MAX_REVISION_ROUNDS → crash. Fix: mode-aware acceptance
+criteria in PM and Partner agents.
+
+**Rule:** In knowledge_only mode, PM/Partner must NEVER request revision solely because:
+- Citations are missing or have empty source_url
+- Findings lack client-specific evidence (acceptable — model works from knowledge)
+- Output is generic (flag as open_questions, not revision request)
+
+**In knowledge_only mode, PM/Partner SHOULD still reject:**
+- Factually wrong regulatory references
+- Empty findings list (zero risks identified)
+- Structural schema violations
+
+**Security model:** No auth/PII changes. Audit: revision decisions must log mode in audit_log.
+
+- [ ] SRL-01 `agents/project_manager/prompts.py` — add mode-aware section to PM review system
+      prompt. When RESEARCH_MODE=knowledge_only: evaluate output on structure, logic, and
+      completeness of reasoning — not on citation presence. Flag missing evidence as
+      open_questions[] on JuniorDraft. Do NOT set revision_required=True for citation gaps alone.
+
+- [ ] SRL-02 `agents/partner/prompts.py` — same pattern for Partner. In knowledge_only mode:
+      approve if structure is sound and open_questions are documented. Escalation not required
+      for absence of authoritative citations when mode is knowledge_only.
+
+- [ ] SRL-03 `agents/project_manager/agent.py` — pass RESEARCH_MODE into PM context dict so
+      prompt can reference it. Same for partner/agent.py.
+
+- [ ] SRL-04 Smoke test validation: run Option 6 (FRM, 2 modules, knowledge_only). Confirm
+      PM approves or requests revision only for substantive issues, not citation absence.
+      Confirm no G-13/G-14 crash across 3 consecutive runs.
+
+---
+
+### Sprint-10K — Pre-Production Hardening (GATED on P7-GATE — do not start until gate passes)
+
+**Context:** Session 013 smoke test exposed three production risks in the BUG-09/10 fixes. These must
+be resolved before any client-facing use of the system.
+
+**Security model (applies to all 10K tasks):**
+- Auth: N/A (local CLI, single user)
+- Data boundaries: no change
+- PII: no change — sanitisation hooks unchanged
+- Audit: PPH-01 adds a new audit event for research mode at session start
+- Abuse surface: PPH-03 disclaimer is fixed string — no injection surface
+
+#### PPH-01 — RESEARCH_MODE smart default (P1 — must fix before production)
+
+**Risk:** Current default is `knowledge_only` regardless of whether TAVILY_API_KEY is present.
+A consultant with a valid key who doesn't set `RESEARCH_MODE=live` gets silently degraded output
+with no live regulatory/sanctions data. The degradation is not visible at session start.
+
+- [ ] PPH-01a `config.py` — Change RESEARCH_MODE default:
+      `RESEARCH_MODE = os.getenv("RESEARCH_MODE", "live" if TAVILY_API_KEY else "knowledge_only")`
+      Key present → live by default. No key → knowledge_only automatically. Explicit env var always wins.
+
+- [ ] PPH-01b `run.py` — At startup, after validate_config(), print one line showing active research mode:
+      `[Research: LIVE — Tavily enabled]` or `[Research: KNOWLEDGE-ONLY — no external data]`
+      So consultant sees it on every run, not buried in output.
+
+#### PPH-02 — Sanctions screening degraded-mode warning (P1 — must fix before production)
+
+**Risk:** In knowledge_only mode, sanctions_screening workflow returns model-knowledge output with a
+disclaimer buried in text. A consultant could interpret this as a live screen result — "no match found"
+when no live screen was conducted. This is a compliance and liability issue.
+
+- [ ] PPH-02a `workflows/sanctions_screening.py` — At top of workflow, before any agent run:
+      if RESEARCH_MODE != "live": print a prominent warning panel (Rich Panel, red border):
+      "SANCTIONS SCREENING — LIVE DATA DISABLED. This output is based on model knowledge only.
+       No live OFAC/UN/EU screening was conducted. This result CANNOT be used as a sanctions clearance.
+       Set RESEARCH_MODE=live in .env and re-run with a valid TAVILY_API_KEY for a live screen."
+      Workflow still runs (consultant may want the template structure) but warning is unmissable.
+
+#### PPH-03 — Knowledge-only disclaimer surfaced as UI warning (P2 — before first client delivery)
+
+**Risk:** Knowledge-only disclaimer is appended as plain text inside agent output. Consultant sees it
+inline with the draft content and may not register it as a system-level limitation.
+
+- [ ] PPH-03a `ui/display.py` — Add `display_research_mode_banner(mode: str)` function. Called once
+      at session start (by run.py PPH-01b). Renders Rich panel appropriate to mode.
+
+- [ ] PPH-03b `core/agent_base.py` — After appending knowledge-only disclaimer text, also call a
+      lightweight `warn_knowledge_only()` that writes one line to stderr/console so it's visible
+      separate from the draft output. Keep the text disclaimer in the output for audit trail.
+
+#### PPH-04 — Guardrail mode-awareness rule (P2 — engineering practice)
+
+**Learning:** Any guardrail that enforces external-data quality (citations, sources, live lookups) must
+check RESEARCH_MODE before firing. This is now a design constraint, not a one-off fix.
+
+- [ ] PPH-04a `docs/lld/guardrails.md` — Document the mode-awareness rule: "Every guardrail that
+      references external data (citations, authoritative sources, live lookups) MUST condition on
+      RESEARCH_MODE == 'live'. In knowledge_only mode, replace hard block with disclaimer."
+      This is the rule junior-dev applies to any new guardrail going forward.
+
+---
+
+### BUG-10 — Citation guard blocks knowledge_only mode (IMMEDIATE — P7-GATE blocker)
+
+**File:** `core/agent_base.py` — single line fix.
+
+**Root cause:** Citation guard at line 160 raises `NoCitationsError` when no authoritative tool was
+called. In `knowledge_only` mode, research tools return stubs — model may not call them, so the guard
+fires even though there is no real citation requirement. Guard was designed for `live` mode only.
+
+**Security model:** N/A — no auth, no PII, no new data paths. Guardrail relaxation is scoped to
+knowledge_only mode only. Live mode guard is unchanged.
+
+- [x] BUG-10a `core/agent_base.py` — DONE. Committed to feature/BUG-10-citation-guard-knowledge-only.
+
+**Acceptance:** `python run.py` → Option 6 → FRM run completes without NoCitationsError.
+
+---
+
+### Sprint-10J — Taxonomy + True Modularity Foundation (GATED on P7-GATE)
+
+**BA sign-off:** BA-014, BA-015 confirmed 2026-04-07.
+
+**Design principle:** Every axis of variation (industry, module, jurisdiction, knowledge routing) becomes
+a data/config file. Zero core-code changes to add a new industry, service line, or jurisdiction.
+
+**Dependency note:** Sprint-10J is foundational — all later intake and UI improvements build on it.
+Complete before BA-013 (FRM Suite) and FRM-R-01..08, as both will read from taxonomy data.
+
+```
+SPRINT-10J INTERNAL DEPS:
+TAX-01 (industries.json) ──── TAX-02 (frm_modules.json) ──── TAX-04 (routing_table.json)
+TAX-01 ──────────────────────────────────────────────── TAX-03 (jurisdiction registry → JSON)
+TAX-01 + TAX-02 + TAX-03 + TAX-04 ──── TAX-05 (prompt_with_options UI helper)
+TAX-05 ──── TAX-06 (wire into all intake flows)
+```
+
+- [ ] TAX-01 Create `knowledge/taxonomy/industries.json` — Level 1 industries + Level 2 sub-sectors.
+      Minimum: Manufacturing, Financial Services, Real Estate, Healthcare, Retail, Government, Technology, Construction.
+      Each entry: `{id, label, sub_sectors[], suggested_frm_modules[], rationale}`.
+
+- [ ] TAX-02 Create `knowledge/taxonomy/frm_modules.json` — extract FRM module definitions from
+      frm_risk_register.py. Each entry: `{id, label, description, dependencies[], default_enabled}`.
+      frm_risk_register.py reads from this file — no module definitions in code.
+
+- [ ] TAX-03 Move `JURISDICTION_REGISTRY` from `config.py` to `knowledge/taxonomy/jurisdictions.json`.
+      config.py loads the file at startup and exposes the same API (get_jurisdiction_domains etc).
+      No behaviour change — pure data extraction.
+
+- [ ] TAX-04 Create `knowledge/taxonomy/routing_table.json` — maps `{industry_id, workflow_id}` →
+      `knowledge_file_path`. Agents read this to load the right knowledge baseline. Start with FRM + DD.
+
+- [ ] TAX-05 Add `prompt_with_options(question, options, allow_free_text=True)` to `ui/guided_intake.py`.
+      Displays numbered list + "0. Other (type your own)" option. Returns structured value with
+      `{selected_id, label, is_custom}` so downstream code knows if it was a taxonomy pick or free text.
+
+- [ ] TAX-06 Wire `prompt_with_options` into all workflow intake flows that currently ask free-text for
+      industry, sub-sector, jurisdiction, and engagement type:
+      `workflows/frm_risk_register.py`, `workflows/engagement_scoping.py`,
+      `workflows/due_diligence.py`, `workflows/investigation_report.py`.
+
+**UX note:** TAX-05/06 also drives the Streamlit frontend redesign (Phase 8) — intake components will
+map directly to Streamlit select boxes + text_input fallback. Design TAX-05 interface with that in mind.
+
+---
+
 ### Sprint-10C — Historical Knowledge Library (depends on Sprint-10A — UNBLOCKED)
 
 - [ ] HRL-00 tools/knowledge_library.py: KnowledgeLibrary class — ingest(file_path, service_type) → intake conversation → sanitise() → index_entry(). sanitise() strips names, passport/ID numbers, company reg numbers, case IDs, identifying dates. Retrieval: match_similar(engagement_params) → list[HistoricalMatch]. Hard gate: SanitisationError blocks index write if PII in stripped output.
@@ -264,20 +457,6 @@ WARNING: FRM-R-01..08 must be built behind a new workflow path until P7-GATE (FR
 
 ---
 
-### Sprint-10E — New Service Line Workflows (depends on Sprint-10A + Sprint-10B — UNBLOCKED after merge)
-
-- [ ] SL-GATE-01 workflows/due_diligence.py — Mode B; Individual/Entity branch via DDIntakeIndividual/DDIntakeEntity; 5-phase methodology from KF-02; report structure: Executive Summary → Profile → Methodology → Sanctions → PEP/UBO → Adverse Media → Conclusion; ARCH-GAP-01 disclaimer auto-injected; ARCH-GAP-02 flag if Phase 2 selected. GATED on ARCH-S-02, KF-02.
-- [ ] SL-GATE-02 workflows/sanctions_screening.py — Mode B; intake per BA-008; wire existing tools/research/sanctions_check.py; ARCH-GAP-01 disclaimer; output: clearance memo or full report per intake. GATED on KF-04.
-- [ ] SL-GATE-03 workflows/transaction_testing.py — 2-stage intake per BA-009; testing plan generated and shown before document ingestion; state: INTAKE_CREATED → SCOPE_CONFIRMED → DELIVERABLE_WRITTEN; uses TTIntakeContext and TestingPlan. GATED on ARCH-S-03, ARCH-S-05, KF-01.
-
----
-
-### Sprint-10F — Engagement Scoping Workflow (depends on KF-NEW — UNBLOCKED after merge)
-
-- [ ] SCOPE-WF-01 workflows/engagement_scoping.py — 5-step problem-first flow per BA-010; reads knowledge/engagement_taxonomy/ at runtime; produces ConfirmedScope; routes to existing workflow via run.py/app.py dispatch. GATED on KF-NEW, ARCH-S-04.
-- [ ] SCOPE-WF-02 run.py / app.py: add "0. Scope New Engagement" as optional entry point; existing 10 menu items unchanged. GATED on SCOPE-WF-01.
-
----
 
 ### Sprint-10G — Workflow Chaining (GATED on Phase 8 Streamlit)
 
@@ -287,7 +466,3 @@ WARNING: FRM-R-01..08 must be built behind a new workflow path until P7-GATE (FR
 
 ---
 
-### Sprint-10H — Disclaimers and Templates (can run parallel with Sprint-10E)
-
-- [ ] ARCH-GAP-01 Licensed database disclaimer text — add to templates/ and inject into all DD and Sanctions deliverables: "This screening was conducted using publicly available official lists (OFAC, UN, EU, UK OFSI, UAE). It does not include WorldCheck, WorldCompliance, or other commercial databases. For acquisition-grade or regulatory-grade due diligence, commercial database screening is recommended."
-- [ ] ARCH-GAP-02 HUMINT scope flag text — add to templates/ and inject when Phase 2/Enhanced DD selected: "This scope includes components that require discreet source enquiries (HUMINT). HUMINT cannot be performed by this tool. Execution requires qualified human investigators. This section defines the HUMINT scope; delivery is manual."

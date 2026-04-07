@@ -148,8 +148,15 @@ def register_tools(registry: ToolRegistry, document_manager=None) -> None:
     registry.register("sanctions_check",   sanc.check)
     registry.register("company_lookup",    comp.lookup)
 
+    _no_docs = lambda **_: {"result": "No documents loaded for this case. Proceed using web research and regulatory knowledge only."}
+
     if document_manager:
-        registry.register("read_excerpt",      document_manager.read_excerpt)
-        registry.register("read_pages",        document_manager.read_pages)
-        registry.register("read_section",      document_manager.read_section)
+        registry.register("read_excerpt",       document_manager.read_excerpt)
+        registry.register("read_pages",         document_manager.read_pages)
+        registry.register("read_section",       document_manager.read_section)
         registry.register("find_relevant_docs", document_manager.find_relevant_docs)
+    else:
+        registry.register("read_excerpt",       _no_docs)
+        registry.register("read_pages",         _no_docs)
+        registry.register("read_section",       _no_docs)
+        registry.register("find_relevant_docs", _no_docs)

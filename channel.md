@@ -13,9 +13,9 @@ The Architect and skill agents own the write gate.
 ```
 session:        012
 sprint:         sprint-10F
-active_persona: junior-dev
+active_persona: AK
 last_skill_run: architect
-last_updated:   2026-04-07 17:30:00 UTC
+last_updated:   2026-04-07 18:00:00 UTC
 ```
 
 ---
@@ -24,13 +24,16 @@ last_updated:   2026-04-07 17:30:00 UTC
 
 ```yaml
 from:    architect
-to:      junior-dev
+to:      AK
 status:  PASS
 message: |
-  Sprint-10E + 10H complete. All imports clean. Committed to main.
-  Next: Sprint-10F — workflows/engagement_scoping.py + menu Option 0.
-  Gates satisfied: KF-NEW merged, ARCH-S-04 merged.
-  Read tasks/next-action.md for full task spec.
+  Sprint-10F complete. engagement_scoping.py + Option 0 built and merged to main.
+  All 14 menu options import clean.
+  Sprint-10E + 10H + Sprint-10F archived to releases/completed-tasks.md.
+  todo.md decongested.
+  Next: P7-GATE — AK must run python run.py with live API keys (FRM smoke test).
+  Gate passes → Sprint-10D (FRM redesign) unblocked.
+  Read tasks/next-action.md for options.
 ```
 
 ---

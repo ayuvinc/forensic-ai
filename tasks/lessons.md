@@ -59,3 +59,51 @@ draft from 8/10 to 9/10 before client delivery. This split must be explicit in U
 [2026-04-02] [CODE] Prefer deriving import-time state from canonical source data instead of persisting duplicate mutable state that can drift.
 [2026-04-02] [CODE] Topbar/session chrome should reset on import, route change, and session restart so stale UI context is not carried forward.
 [2026-04-02] [TOOLING] Offline or network-restricted environments limit build verification; handoff notes should record when validation was intentionally deferred.
+
+[2026-04-07] [ARCH] Any guardrail that enforces external-data quality (citations, authoritative sources,
+live lookups) MUST be mode-aware. Check RESEARCH_MODE before firing. In knowledge_only mode: replace
+hard block with disclaimer appended to output. In live mode: hard block stands. This applies to
+NoCitationsError, any future sanctions-match-required check, and any regulatory-source enforcement.
+Lesson from BUG-10 (Session 013): citation guard was not mode-aware, blocked knowledge_only smoke test.
+
+[2026-04-07] [ARCH] Config flags that control data quality degradation must default to the HIGHER
+quality setting when the required credential is present. RESEARCH_MODE should default to "live" if
+TAVILY_API_KEY exists, not "knowledge_only". Silent degradation is worse than a startup error.
+Lesson from BUG-09 (Session 013): default was knowledge_only regardless of key presence.
+
+[2026-04-07] [ARCH] Workflows with compliance/legal implications (sanctions screening, regulatory
+sign-off) must surface degraded-mode warnings as unmissable UI panels — not inline text. A disclaimer
+buried in draft output may not be read. Sanctions workflow in knowledge_only mode must render a red
+warning panel before output. Consultant must acknowledge before proceeding. Lesson from PPH-02 design.
+
+[2026-04-07] [PROCESS] When fixing a guardrail to support a new mode (e.g. knowledge_only), immediately
+assess every other guardrail in the same file for the same gap. Don't fix one instance and ship —
+audit the full file. BUG-09/10 smoke test required 3 separate fix-test cycles that could have been 1.
+
+[2026-04-07] [ARCH] The 3-agent review pipeline (Junior → PM → Partner) was designed assuming
+documents + live research are always present. In knowledge_only mode, PM correctly rejects generic
+output → revision loop exhausts at MAX_REVISION_ROUNDS → crash. This is the system working as
+designed, not a bug. Fix: PM and Partner agents need mode-aware acceptance criteria. In
+knowledge_only mode: accept best-effort model output, flag gaps as open_questions not revision
+requests, never request revision for missing citations. G-13/G-14 account for 38/60 crashes
+in 100-iteration Monte Carlo — the biggest production risk, not the research tool stubs.
+
+[2026-04-07] [PROCESS] Game theory + Monte Carlo simulation is a faster and cheaper way to find
+production failure modes than running actual smoke tests. 100 theoretical iterations (2 min, zero
+API cost) revealed G-13/G-14 as the dominant failure mode — something 16 structured real runs
+would have taken hours to discover. Use Monte Carlo before every major feature release to estimate
+crash rate and trust trajectory before touching production. Seed with real p-values from code
+inspection.
+
+[2026-04-07] [ARCH] Fix priority must be derived from crash frequency, not intuition or recency.
+BUG-09/10/11 were urgent because they blocked the smoke test. But Monte Carlo showed G-13/G-14
+(PM/Partner review loop exhaustion) cause 63% of all crashes in real usage. The fix order should
+be: (1) mode-aware review criteria, (2) C=0 for non-compliance workflows, (3) schema field
+defaults, (4) UI warnings. Intuition said fix the obvious bugs first — simulation said fix the
+review chain first.
+
+[2026-04-07] [ARCH] Nash equilibrium in a consulting tool: if trust < 0.60, the practitioner
+permanently avoids the feature that caused the crash. Trust hit zero at iteration 11 in simulation.
+Recovery is near-impossible once a practitioner decides a tool is unreliable — they will route
+around it permanently. This means: zero crashes is the only acceptable target for core workflows
+(FRM, Investigation). Degraded-with-warning is acceptable. CRASH is not.
