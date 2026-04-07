@@ -13,10 +13,12 @@ class CaseStatus(str, Enum):
     OWNER_REJECTED          = "owner_rejected"
     PIPELINE_ERROR          = "pipeline_error"
     DELIVERABLE_WRITTEN     = "deliverable_written"   # Mode B (Assisted) terminal status
+    SCOPE_CONFIRMED         = "scope_confirmed"        # Transaction Testing: testing plan locked before document ingestion
 
 
 VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
-    CaseStatus.INTAKE_CREATED:          [CaseStatus.JUNIOR_DRAFT_COMPLETE],
+    # Standard pipeline
+    CaseStatus.INTAKE_CREATED:          [CaseStatus.JUNIOR_DRAFT_COMPLETE, CaseStatus.SCOPE_CONFIRMED],
     CaseStatus.JUNIOR_DRAFT_COMPLETE:   [CaseStatus.PM_REVIEW_COMPLETE, CaseStatus.PM_REVISION_REQUESTED],
     CaseStatus.PM_REVISION_REQUESTED:   [CaseStatus.JUNIOR_DRAFT_COMPLETE],
     CaseStatus.PM_REVIEW_COMPLETE:      [CaseStatus.PARTNER_REVIEW_COMPLETE, CaseStatus.PARTNER_REVISION_REQ],
@@ -24,6 +26,8 @@ VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.PARTNER_REVIEW_COMPLETE: [CaseStatus.OWNER_READY],
     CaseStatus.OWNER_READY:             [CaseStatus.OWNER_APPROVED, CaseStatus.OWNER_REJECTED],
     CaseStatus.OWNER_REJECTED:          [CaseStatus.JUNIOR_DRAFT_COMPLETE],
+    # Transaction Testing path: testing plan confirmed → deliverable written
+    CaseStatus.SCOPE_CONFIRMED:         [CaseStatus.DELIVERABLE_WRITTEN],
 }
 
 TERMINAL_STATUSES = {CaseStatus.OWNER_APPROVED, CaseStatus.PIPELINE_ERROR, CaseStatus.DELIVERABLE_WRITTEN}

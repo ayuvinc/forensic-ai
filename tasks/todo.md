@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
-Active task:    none
-Active persona: none
+Status:         OPEN
+Active task:    ARCH-S-01 + KF-00 (Sprint-10A schemas + policy_sop knowledge file)
+Active persona: junior-dev (build)
 Blocking issue: none
-Last updated:   2026-04-06 21:00:00 +0530 — closeout by session-close
+Last updated:   2026-04-07 15:15:22 UTC — Session 011 open by session-open (fallback)
 
 ---
 
@@ -511,7 +511,7 @@ Scope hierarchy design:
 
 **Quickest win: knowledge/policy_sop/ fixes Whistleblower Policy quality gap already observed.**
 
-- [ ] KF-00 knowledge/policy_sop/ — priority 1; fixes 8 gaps identified in ChatGPT review Session 009
+- [x] KF-00 knowledge/policy_sop/ — priority 1; fixes 8 gaps identified in ChatGPT review Session 009
       Gaps: anonymous complaint handling, retaliation mechanism + disciplinary matrix, evidence/chain-of-custody,
       SLA for closure comms, malicious vs good-faith definition (legal precision), DPDP Act 2023 integration,
       vendor/third-party enforcement, metrics/KPI reporting framework
@@ -605,11 +605,13 @@ Schemas → Knowledge files → Historical Library → Workflows → Scoping →
 
 #### Sprint-10A — Schemas (no deps — build first, everything else blocks on these)
 
-- [ ] ARCH-S-01 schemas/artifacts.py: add RiskContextItem — stores Maher's per-sub-area answers for FRM exercise (incident: str, existing_controls: str, probability: int 1-5, impact: int 1-5, consultant_notes: str). GATES: FRM-R-03.
-- [ ] ARCH-S-02 schemas/dd.py — new file: DDIntakeIndividual (14 fields per BA-006), DDIntakeEntity (14 fields per BA-007), DDReport (subject_profile, methodology, sanctions_results, pep_results|beneficial_ownership, adverse_media, risk_classification: Literal["LOW","MEDIUM","HIGH"], recommendation: str). GATES: SL-GATE-01.
-- [ ] ARCH-S-03 schemas/transaction_testing.py — new file: TTIntakeContext (engagement_context: Literal["fraud_discovery","fraud_quantification","audit_compliance","due_diligence","regulatory"], fraud_typology, data_inventory, population_size, date_range, evidence_standard), TestingPlan (tests: list[TestObjective], population, method, caveats), TTResult. GATES: SL-GATE-03.
-- [ ] ARCH-S-04 schemas/engagement_scope.py — new file: ScopeIntake (client_situation: str, trigger: str, desired_outcome: str, constraints: str), ScopeRecommendation (engagement_types: list[str], scope_components: list[str], deliverables: list[str], sequencing: list[str], caveats: list[str]), ConfirmedScope. GATES: SCOPE-WF-01.
-- [ ] ARCH-S-05 core/state_machine.py: add SCOPE_CONFIRMED to CaseStatus enum; add INTAKE_CREATED → SCOPE_CONFIRMED and SCOPE_CONFIRMED → DELIVERABLE_WRITTEN transitions to VALID_TRANSITIONS. GATES: SL-GATE-03.
+- [x] ARCH-S-01 schemas/artifacts.py: add RiskContextItem — stores Maher's per-sub-area answers for FRM exercise (incident: str, existing_controls: str, probability: int 1-5, impact: int 1-5, consultant_notes: str). GATES: FRM-R-03.
+- [x] ARCH-S-02 schemas/dd.py — new file: DDIntakeIndividual (14 fields per BA-006), DDIntakeEntity (14 fields per BA-007), DDReport (subject_profile, methodology, sanctions_results, pep_results|beneficial_ownership, adverse_media, risk_classification: Literal["LOW","MEDIUM","HIGH"], recommendation: str). GATES: SL-GATE-01.
+- [x] ARCH-S-03 schemas/transaction_testing.py — new file: TTIntakeContext (engagement_context: Literal["fraud_discovery","fraud_quantification","audit_compliance","due_diligence","regulatory"], fraud_typology, data_inventory, population_size, date_range, evidence_standard), TestingPlan (tests: list[TestObjective], population, method, caveats), TTResult. GATES: SL-GATE-03.
+- [x] ARCH-S-04 schemas/engagement_scope.py — new file: ScopeIntake (client_situation: str, trigger: str, desired_outcome: str, constraints: str), ScopeRecommendation (engagement_types: list[str], scope_components: list[str], deliverables: list[str], sequencing: list[str], caveats: list[str]), ConfirmedScope. GATES: SCOPE-WF-01.
+- [x] ARCH-S-05 core/state_machine.py: add SCOPE_CONFIRMED to CaseStatus enum; add INTAKE_CREATED → SCOPE_CONFIRMED and SCOPE_CONFIRMED → DELIVERABLE_WRITTEN transitions to VALID_TRANSITIONS. GATES: SL-GATE-03.
+- [x] ARCH-S-06 tools/knowledge_library.py (scaffold): define module-level SanitisationError exception class. Location is tools/, not schemas/ — it is a runtime validation error, not a data model. Must be importable by HRL-00 without circular dep. GATES: HRL-00.
+- [x] ARCH-S-07 schemas/artifacts.py: add SanitisedIndexEntry model — {service_type: str, industry: str, jurisdiction: str, company_size_band: Literal["<50","50-200","200-1000",">1000"], engagement_date_year: int, scope_components: list[str], risk_count: int, key_patterns: list[str], source_file_hash: str, provenance: Literal["BASELINE","FROM_SIMILAR_ENGAGEMENT"]}. No PII fields by design — enforced at model level, not convention. GATES: HRL-00, HRL-02..06.
 
 #### Sprint-10B — Knowledge Files (parallel with schemas, no code deps)
 
