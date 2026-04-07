@@ -22,6 +22,7 @@ from config import (
     ANTHROPIC_API_KEY,
     MAX_API_RETRIES,
     MAX_RESEARCH_EXCERPT_CHARS,
+    RESEARCH_MODE,
     RETRY_BACKOFF_SECONDS,
     get_model,
 )
@@ -157,7 +158,10 @@ class BaseAgent:
             )
 
             # ── citation guard ───────────────────────────────────────────────
-            if require_citations:
+            # In live mode: enforce that at least one authoritative tool was called.
+            # In knowledge_only mode: authoritative tools return stubs, so the hard
+            # block is skipped. A disclaimer is appended to the output instead.
+            if require_citations and RESEARCH_MODE == "live":
                 has_citations = any(
                     tc["tool"] in ("regulatory_lookup", "sanctions_check", "company_lookup")
                     for tc in tool_calls
@@ -167,6 +171,13 @@ class BaseAgent:
                         f"{self.manifest.plugin_id} produced no authoritative citations "
                         "but workflow requires them."
                     )
+            elif require_citations and RESEARCH_MODE != "live":
+                text = (
+                    text + "\n\n"
+                    "[Knowledge-only mode: no authoritative citations fetched. "
+                    "Output based on model knowledge and knowledge-base files. "
+                    "Verify regulatory references independently before client delivery.]"
+                )
 
             return {"text": text, "tool_calls": tool_calls}
 
