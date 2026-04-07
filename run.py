@@ -283,6 +283,54 @@ def _dispatch(
         from workflows.browse_sops import run_browse_sops
         run_browse_sops(console)
 
+    elif choice == "11":
+        # Due Diligence
+        from ui.guided_intake import run_generic_intake
+        from workflows.due_diligence import run_due_diligence_workflow
+
+        intake = run_generic_intake(console, "due_diligence", "Due Diligence")
+        if intake:
+            _persist_intake(intake)
+            result = run_due_diligence_workflow(
+                intake, registry, hook_engine, console=console,
+                on_progress=progress.make_callback(),
+            )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
+            from ui.display import render_deliverable_summary
+            render_deliverable_summary(console, result)
+
+    elif choice == "12":
+        # Sanctions Screening
+        from ui.guided_intake import run_generic_intake
+        from workflows.sanctions_screening import run_sanctions_screening_workflow
+
+        intake = run_generic_intake(console, "sanctions_screening", "Sanctions Screening")
+        if intake:
+            _persist_intake(intake)
+            result = run_sanctions_screening_workflow(
+                intake, registry, hook_engine, console=console,
+                on_progress=progress.make_callback(),
+            )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
+            from ui.display import render_deliverable_summary
+            render_deliverable_summary(console, result)
+
+    elif choice == "13":
+        # Transaction Testing
+        from ui.guided_intake import run_generic_intake
+        from workflows.transaction_testing import run_transaction_testing_workflow
+
+        intake = run_generic_intake(console, "transaction_testing", "Transaction Testing")
+        if intake:
+            _persist_intake(intake)
+            result = run_transaction_testing_workflow(
+                intake, registry, hook_engine, console=console,
+                on_progress=progress.make_callback(),
+            )
+            _mark_deliverable_written(intake.case_id, intake.workflow)
+            from ui.display import render_deliverable_summary
+            render_deliverable_summary(console, result)
+
 
 def _select_or_create_intake(console: Console, workflow: str, label: str):
     """Let user select existing case or create minimal intake."""

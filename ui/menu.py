@@ -1,4 +1,4 @@
-"""Main menu — 10-item Rich terminal menu."""
+"""Main menu — Rich terminal menu."""
 
 from __future__ import annotations
 
@@ -21,6 +21,9 @@ MENU_ITEMS = [
     ("8",  "BUSINESS",       "Build Proposal PPT Prompt Pack", "Assisted — slide storyboard + per-slide prompts"),
     ("9",  "BUSINESS",       "Case Tracker",                  "View all cases and resume in-progress work"),
     ("10", "BUSINESS",       "Browse SOPs",                   "Browse saved SOPs and policies"),
+    ("11", "DILIGENCE",     "Due Diligence",                 "Assisted — Individual or Entity DD report"),
+    ("12", "DILIGENCE",     "Sanctions Screening",           "Assisted — Screen against OFAC, UN, EU, UK, UAE lists"),
+    ("13", "DILIGENCE",     "Transaction Testing",           "Guided — Testing plan + structured analysis report"),
 ]
 
 
@@ -41,6 +44,6 @@ def render_menu(console: Console, firm_name: str = "GoodWork Forensic Consulting
 
     return Prompt.ask(
         "Select option",
-        choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
+        choices=["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"],
         default="6",
     )
