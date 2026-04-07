@@ -11,11 +11,11 @@ The Architect and skill agents own the write gate.
 ## Current Status
 
 ```
-session:        none
-sprint:         none
-active_persona: none
-last_skill_run: none
-last_updated:   —
+session:        012
+sprint:         sprint-10B (pre-merge gate)
+active_persona: architect
+last_skill_run: session-open
+last_updated:   2026-04-07 16:10:14 UTC
 ```
 
 ---
@@ -23,10 +23,16 @@ last_updated:   —
 ## Last Handoff
 
 ```yaml
-from:    —
-to:      —
-status:  —
-message: —
+from:    session-open
+to:      architect
+status:  PASS
+message: |
+  Session 012 opened. Fallback path used (MCP unavailable).
+  Standup delivered. Handing off to /architect for:
+  1. Comprehensive feature-wise status update (Status Update 1)
+  2. Next-step plan with sprint priorities (Status Update 2)
+  Ask AK if understood before proceeding to each update.
+  After architect completes, next build sprint is 10E, 10F, or 10H.
 ```
 
 ---
@@ -42,7 +48,7 @@ message: —
 ```
 packet_ready:     false
 codex_ready:      false
-last_intake_run:  —
+last_intake_run:  2026-04-07
 ```
 
 ---

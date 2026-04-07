@@ -390,3 +390,323 @@ _What must be true for a feature to be considered done._
 [2026-04-06] Urdu language coverage: official Pakistani databases and Urdu-language adverse media are sub-contractor dependent. Tool covers English and Arabic only for automated research.
 
 [2026-04-06] Historical reports import: firm_profile/historical_registers/ and firm_profile/historical_reports/{service}/ require a guided import wizard at firm setup. CE Creates reports (3 DD reports) are the seed data for the DD library. Sanitisation step is mandatory at ingestion — strip all names, IDs, case references before indexing.
+
+---
+
+## Session 011 BA — Knowledge File Audit (2026-04-07)
+
+---
+
+### BA-012 — Policy/SOP Knowledge File Scope Clarification
+- Status: DRAFT — **OPEN QUESTION FOR AK**
+- Scope: knowledge/policy_sop/framework.md (KF-00) — scope of mandatory sections
+
+**User outcome:** Model generates correct mandatory sections for the specific policy type Maher is drafting — not a generic checklist applied regardless of policy type.
+
+**Background:**
+KF-00 (built Sprint-10A) marks 7 of its 8 sections as MANDATORY for ALL policy/SOP types.
+workflows/policy_sop.py handles multiple policy types. Sections relevant to speaking-up/reporting
+policies are irrelevant in other policy types:
+
+| Section | Whistleblower Policy | Data Protection Policy | Anti-Bribery Policy | Procurement Policy |
+|---------|---------------------|----------------------|--------------------|--------------------|
+| Anonymous complaint handling | MANDATORY | Not applicable | Conditional | Not applicable |
+| Retaliation mechanism + disciplinary matrix | MANDATORY | Not applicable | Conditional | Not applicable |
+| Evidence chain of custody | MANDATORY | Conditional | Conditional | Not applicable |
+| SLA for closure comms | MANDATORY | Conditional | Conditional | Not applicable |
+| Malicious vs good-faith definition | MANDATORY | Not applicable | Not applicable | Not applicable |
+| Data protection integration | CONDITIONAL (jurisdiction) | MANDATORY | Conditional | Conditional |
+| Vendor enforcement | CONDITIONAL | Conditional | MANDATORY | MANDATORY |
+| Metrics/KPI for Audit Committee | CONDITIONAL | Conditional | MANDATORY | Not applicable |
+
+**Business rules (proposed, pending AK confirmation):**
+  - Policy types are categorised at intake: "reporting_policy" (whistleblower, speak-up, fraud hotline), "compliance_policy" (ABC, AML, data protection), "operational_policy" (procurement, IT, finance), "hr_policy" (disciplinary, performance)
+  - KF-00 sections tagged with applicable policy types: mandatory / conditional / not_applicable
+  - Junior system prompt receives only the relevant sections for the intake policy type
+  - Data protection integration (Section 6) is CONDITIONAL on jurisdiction, not policy type — it applies whenever the policy involves personal data, regardless of type
+
+**Edge cases:**
+  - Maher does not specify policy type at intake: model asks one clarifying question before drafting
+  - Policy spans multiple types (e.g. Whistleblower + Data Protection merged policy): all applicable mandatory sections apply
+  - New policy type not in taxonomy: model applies minimum mandatory set (data protection + vendor enforcement + audit KPIs) and flags which sections may not apply
+
+**Out of scope:** Redesigning the entire KF-00 framework — the 8 sections are correct and complete for whistleblower policies. The only change needed is tagging each section with its applicable policy types.
+
+**Open question for AK:**
+  1. Is my categorisation above correct? Specifically: does Maher draft Anti-Bribery Policies as a standalone service, or does ABC always come bundled with FRM Module 1 (Governance & Policy)?
+  2. Should policy type be captured at intake as a structured field (Maher picks from a list), or inferred by the model from the policy name/description Maher provides?
+  3. Does Maher want the model to proactively suggest missing policy types when scoping? (e.g. "You're drafting a Whistleblower Policy — do you also want a Retaliation Investigation Procedure as a companion document?")
+
+---
+
+### BA-013 — knowledge/policy_sop/sources.md Required
+- Status: CONFIRMED (no open questions — straightforward completion task)
+- Scope: Companion sources file for KF-00, referenced in framework.md but not yet created
+
+**User outcome:** Junior analyst has a curated, verified source list for regulatory citations in policy/SOP deliverables. Avoids re-searching for the same regulatory instruments in every case.
+
+**Business rules:**
+  - Same structure as knowledge/frm/sources.md and knowledge/investigation/sources.md
+  - Must cover: UAE onshore (Federal laws), DIFC, ADGM, India (SEBI/POSH/DPDP), UK (FCA/ICO), international standards (ISO 37001, ACFE, IIA)
+  - Each source entry: source name, jurisdiction, URL, what it covers, trust level (authoritative / reference)
+  - Authoritative sources: government/regulator URLs only — cb.gov.ae, dfsa.ae, adgm.com, mohre.gov.ae, sebi.gov.in, ico.org.uk, fca.org.uk
+  - Reference sources: ISO, ACFE, IIA standards (no URL — accessible via subscription or purchase; note this)
+
+**Edge cases:**
+  - URL no longer valid at research time: regulatory_lookup.py returns "no authoritative source found" — disclaimer added; sources.md is a starting-point guide, not a guarantee
+  - Jurisdiction not in list: model falls back to UAE context + flags that jurisdiction-specific review needed
+
+**Out of scope:** Populating the sources file with full text of legislation. Source list only — URLs, names, what each covers.
+
+---
+
+### BA-014 — knowledge/engagement_taxonomy/framework.md Content Requirements (KF-NEW)
+- Status: CONFIRMED — 2026-04-07 (AK answered all 5 questions)
+- Scope: Engagement taxonomy knowledge file — gates SCOPE-WF-01 (engagement scoping workflow)
+
+**User outcome:** Model can identify the correct GoodWork service line from a plain-language client situation description, propose a structured scope, and route to the right workflow — without Maher knowing the service line name upfront.
+
+**Business rules:**
+  - File must cover every GoodWork-deliverable engagement type with enough detail for the model to distinguish between types when the situation is ambiguous
+  - Per engagement type, minimum required:
+    1. Triggering scenarios: what client situations lead to this engagement
+    2. Standard scope components: what work is always included vs optional
+    3. Typical deliverables: what Maher produces at the end
+    4. Applicable frameworks: ACFE / IIA / ISO / UAE regulatory standard that governs this type
+    5. Common scope combinations: which engagement types are typically paired or sequenced
+    6. Exclusions: what this type does NOT cover (important for scoping conversations)
+    7. Red flags that escalate: situations where this engagement type should expand to another
+  - Engagement types to cover (architect-validated list from Session 010, BA confirmation pending):
+
+| # | Type | GoodWork Active? | Notes |
+|---|------|-----------------|-------|
+| 1 | FRM Risk Register | YES — core | 8 modules, already built |
+| 2 | Investigation Report — General | YES — core | 7 sub-types |
+| 3 | Investigation Report — Procurement Fraud | YES | Sub-type of 2 |
+| 4 | Investigation Report — Payroll Fraud | YES | Sub-type of 2 |
+| 5 | Investigation Report — Expense Fraud | YES | Sub-type of 2 |
+| 6 | Investigation Report — Financial Statement Fraud | YES | Sub-type of 2 |
+| 7 | Investigation Report — AML/Financial Crime | YES | Sub-type of 2 |
+| 8 | Investigation Report — Whistleblower | YES | Sub-type of 2 |
+| 9 | Investigation Report — Insurance Fraud | Confirm with AK | |
+| 10 | Due Diligence — Individual | YES — new | BA-006 confirmed |
+| 11 | Due Diligence — Entity | YES — new | BA-007 confirmed |
+| 12 | Transaction Testing | YES — new | BA-009 confirmed |
+| 13 | Sanctions Screening | YES — new | BA-008 confirmed |
+| 14 | Policy / SOP | YES — core | Already built |
+| 15 | Training Material | YES — core | Already built |
+| 16 | Client Proposal | YES — core | Already built |
+| 17 | Engagement Scoping (standalone) | YES — new | Meta-service |
+| 18 | Asset Tracing | Confirm with AK | Separate from investigation? |
+| 19 | ABC Programme | Confirm with AK | FRM Module 1 subset or standalone? |
+| 20 | Expert Witness Support | DEFERRED | Cut-for-now per scope-brief |
+| 21 | ESI / e-discovery | DEFERRED | Cut-for-now |
+| 22 | HUMINT | DEFERRED | Cut-for-now |
+
+**AK confirmations (2026-04-07):**
+  1. Insurance Fraud Investigation — NOT a GoodWork-active service. Exclude from taxonomy.
+  2. Asset Tracing — NOT standalone; always part of investigation engagement. No separate taxonomy entry.
+  3. ABC Programme — CAN BE standalone OR bundled with FRM Module 1. Both paths in taxonomy.
+  4. Investigation sub-types — DISTINCT entries (7 entries, not one entry with branching).
+  5. Insolvency Fraud — NOT a GoodWork service. Exclude from taxonomy.
+  Also confirmed: No CE Creates reports available as reference for KF-02 — must work from standard methodology.
+
+**Edge cases:**
+  - Client situation maps to a deferred service line (ESI, Expert Witness): model acknowledges it, flags as outside current tool scope, suggests the closest available service
+  - Ambiguous situation (could be investigation OR due diligence): model asks one clarifying question, presents both options with distinction
+  - Novel situation not in taxonomy: model flags as outside standard service lines, offers to draft a custom scope document manually
+
+**Open questions for AK (ALL required before KF-NEW can be authored):**
+  1. Is Insurance Fraud Investigation a GoodWork-active service? Has Maher done these? If yes, what triggers the engagement and what does the deliverable look like?
+  2. Is Asset Tracing a standalone GoodWork service, or is it always part of an investigation? If standalone — what's the typical deliverable (asset schedule, court-ready report, both)?
+  3. Is ABC Programme a standalone service (separate from FRM Module 1), or is it only delivered as part of FRM? If standalone — what does a GoodWork ABC engagement produce?
+  4. For Investigation Report taxonomy: should the 7 sub-types be distinct engagement entries in the taxonomy (so the model can distinguish "this is a payroll fraud investigation" from "this is a procurement fraud investigation"), or is one "Investigation Report" entry with sub-type branching sufficient?
+  5. Does GoodWork scope Insolvency Fraud investigations? (High-frequency UAE/GCC type — involved assets hidden before insolvency filing)
+
+---
+
+### BA-015 — knowledge/due_diligence/framework.md Content Requirements (KF-02)
+- Status: DRAFT — partial open questions for AK
+- Scope: DD knowledge file — gates SL-GATE-01 (due_diligence workflow)
+
+**User outcome:** Junior analyst drafts DD reports using GoodWork's actual methodology and report structure, not a generic template. CE Creates reports are the benchmark.
+
+**Business rules:**
+  - GoodWork's DD methodology is derived from CE Creates reports (the firm Maher came from). The knowledge file should reflect that methodology, not a generic external framework.
+  - 5-phase structure (confirmed from memory — validate with AK):
+    Phase 1: Subject identification and scope confirmation
+    Phase 2: Open-source intelligence gathering (OSINT)
+    Phase 3: Sanctions and PEP screening (5 official lists)
+    Phase 4: Adverse media and regulatory record review
+    Phase 5: Corporate mapping and beneficial ownership analysis (entity DD)
+  - Report structure mirrors CE Creates template (confirmed BA-006/007):
+    Individual: Executive Summary → Subject Profile → Methodology → Sanctions → PEP → Adverse Media → Conclusion
+    Entity: Executive Summary → Entity Profile → Methodology → Sanctions → Beneficial Ownership → Adverse Media → Regulatory Compliance Status → Conclusion
+  - Risk classification: LOW / MEDIUM / HIGH — criteria must be explicit (not left to model judgment):
+    LOW = no sanctions match, no adverse media, no PEP, no red flags
+    MEDIUM = inconclusive match, limited adverse media, tangential connection to flagged entity
+    HIGH = confirmed sanctions match, confirmed PEP with unmitigated risk, significant adverse media
+  - CLEAR vs FLAG binary alongside risk classification: CLEAR = no further action recommended; FLAG = escalation or further investigation recommended
+  - Source list by jurisdiction: UAE (MOEC, DED, ADGM, DIFC registries), GCC, India (MCA21, CIBIL), UK (Companies House), international (OpenCorporates, Orbis)
+
+**Edge cases:**
+  - Subject has common name (high false positive risk): model notes this explicitly in methodology section; all matches listed with confidence rating
+  - Subject has name variants (Arabic/English transliteration): model screens under all variants; notes them in methodology
+  - No records found at all: model must distinguish "no records found" from "subject is clear" — they are not the same
+
+**Open questions for AK:**
+  1. Is the 5-phase methodology above accurate for GoodWork? Or does Maher follow a different structure? (CE Creates methodology may have evolved)
+  2. Does GoodWork use a standardised engagement letter for DD, or does it vary? This determines whether there's a scope confirmation step before screening begins.
+  3. What is GoodWork's standard turnaround for a Phase 1 DD? (Sets the timeline field default at intake)
+  4. Can the BA access one of the CE Creates DD reports as a reference? (Maher has these on Desktop/GoodWork/ — reading one would significantly improve KF-02 accuracy)
+
+---
+
+### BA-016 — knowledge/sanctions_screening/framework.md Content Requirements (KF-04)
+- Status: DRAFT — one open question for AK
+- Scope: Sanctions screening knowledge file — gates SL-GATE-02
+
+**User outcome:** Sanctions screening memos are produced against a consistent methodology that Maher can stand behind professionally — not ad hoc web searches.
+
+**Business rules:**
+  - 5 official screening lists (confirmed, already in sanctions_check.py): OFAC SDN, UN Security Council Consolidated List, EU Consolidated Sanctions List, UK OFSI Consolidated List, UAE Local Terrorist Designation List
+  - PEP classification: model must classify PEPs by category and risk level
+    Category 1 (highest): heads of state, government ministers, senior military/judiciary
+    Category 2: senior government officials, state-owned enterprise executives, ambassadors
+    Category 3: local/regional officials, family members of Category 1/2
+    Retired PEPs: same classification as active but with time-decay on risk rating (typically 12-24 months)
+  - False positive analysis: every potential match must be assessed for false positive probability before flagging
+    Match confidence scoring: name similarity % + date of birth match (if available) + nationality match + known alias match
+    Threshold for "inconclusive match" vs "confirmed match" must be stated in the methodology
+  - Worldcheck gap disclosure: every output must include the licensed database disclaimer (ARCH-GAP-01 text) — not negotiable, not optional
+  - Output format options per intake Q10: internal clearance memo / full report / regulatory filing / screening spreadsheet
+    Each format has a different level of narrative — clearance memo is shortest, regulatory filing is most formal
+
+**Edge cases:**
+  - Match found but clearly different individual (same name, different DOB, different nationality): document as "false positive — same name" in the output; do not flag
+  - Match found with insufficient information to confirm or exclude: "inconclusive — further information required" — model cannot make a determination; escalation recommended
+  - Subject name in Arabic only (no English transliteration): model transliterates and screens under both; notes methodology
+  - Batch of subjects: tool processes one at a time; model notes at intake that batch processing is manual (BA-008 edge case, already confirmed)
+
+**Open question for AK:**
+  1. Does GoodWork have a house standard for what constitutes a "CLEAR" result on a sanctions screening (e.g. no hits on any of the 5 lists = CLEAR, regardless of adverse media)? Or is CLEAR/FLAG determined holistically across sanctions + PEP + adverse media combined?
+
+---
+
+### BA-017 — knowledge/transaction_testing/framework.md Content Requirements (KF-01)
+- Status: DRAFT — two open questions for AK
+- Scope: Transaction Testing knowledge file — gates SL-GATE-03
+
+**User outcome:** Transaction Testing engagements start with a model-proposed testing plan grounded in ACFE methodology, not invented from scratch. Maher refines rather than creates from blank.
+
+**Business rules:**
+  - ACFE methodology coverage per fraud typology (6 types confirmed in BA-009):
+
+    Procurement fraud:
+    → Three-way matching: PO date vs Invoice date vs Payment date — any out-of-sequence is an exception
+    → Vendor master analysis: new vendors registered shortly before large invoices; duplicate registrations
+    → Split PO testing: orders just below approval threshold; sequence of same-vendor orders on same day
+    → Conflict of interest: cross-reference vendor addresses/accounts against employee records
+
+    Payroll fraud:
+    → Ghost employee: employees with no line manager, no HR file, or terminated employees still receiving pay
+    → Rate manipulation: pay rate changes without HR approval record; changes effective on unusual dates
+    → Overtime analysis: employees with >X% of base salary in overtime; patterns by department/supervisor
+
+    Expense fraud:
+    → Duplicate submission: same amount, same vendor, short date range — especially across periods
+    → Round-dollar testing: amounts that are exactly round numbers (suspicious in genuine expense reports)
+    → Weekend/holiday spend: expenses on dates when the business was closed
+    → Policy compliance: maximum claim limits, prohibited categories, approver conflict
+
+    Cash fraud:
+    → Petty cash reconciliation: opening balance + receipts - disbursements ≠ closing balance
+    → Sequencing gaps: missing receipt numbers in a series
+    → Large round disbursements without supporting documentation
+
+    Financial statement fraud:
+    → Journal entry testing: manual JEs posted by senior personnel, at period end, to unusual accounts
+    → Cut-off testing: revenue/expenses recorded in wrong period
+    → Revenue recognition: shipments on last day of period; return reversals in next period
+
+    AML:
+    → Structuring detection: multiple transactions just below reporting threshold (CTR equivalent)
+    → Counterparty analysis: transactions with sanctioned jurisdictions or high-risk countries
+    → Velocity analysis: unusual transaction frequency changes; dormant accounts reactivating
+
+  - Benford's Law: applicable to procurement and expense fraud testing where population is large enough
+    Benford's applies to: invoice amounts, payment amounts, journal entry amounts
+    Benford's does NOT apply to: payroll (amounts are set by contract), petty cash (too few transactions), rent/lease payments (fixed amounts)
+    Model must note Benford's Law applicability in the testing plan when fraud typology is relevant
+
+  - UAE regulatory testing context:
+    CBUAE: AML testing requirements for licensed financial institutions (Transaction Monitoring reviews)
+    DFSA: financial crime testing requirements for DIFC-regulated entities
+    SCA: market manipulation testing for listed securities
+    ADGM: FSRA AML testing requirements
+
+  - Sampling guidance (advisory — Maher decides final sample size):
+    Full population preferred for populations < 10,000 transactions
+    Random statistical sampling (95% confidence, 5% margin) for populations > 10,000
+    Judgmental sampling: always in addition to statistical sampling, not instead of — focus on high-risk periods and high-risk vendors/employees
+
+**Edge cases:**
+  - Multiple fraud typologies: model proposes a combined plan; Maher can deselect individual components before SCOPE_CONFIRMED
+  - Data not in expected format: testing plan notes data format requirements; model cannot test what it cannot read (format mismatch is flagged before document ingestion)
+  - Population too small for Benford's Law: model notes this and does not apply it; uses alternative procedures
+
+**Open questions for AK:**
+  1. Has Maher used Benford's Law in his actual engagements? Or is it theoretical knowledge only? This determines whether it's included in the knowledge file as a recommended procedure or just noted as an available technique.
+  2. For the UAE regulatory context: does Maher deliver Transaction Testing to regulated financial institutions (banks, insurance companies) or primarily to non-regulated corporates? The regulatory framework section in KF-01 changes significantly based on the answer.
+
+---
+
+## BA Summary — Session 011 Knowledge Audit
+
+**Knowledge file status:**
+
+| File | Status | Blocker |
+|------|--------|---------|
+| knowledge/frm/framework.md | COMPLETE | None |
+| knowledge/frm/sources.md | COMPLETE | None |
+| knowledge/investigation/framework.md | COMPLETE | None |
+| knowledge/investigation/sources.md | COMPLETE | None |
+| knowledge/policy_sop/framework.md (KF-00) | BUILT — scope clarification needed | BA-012 open question |
+| knowledge/policy_sop/sources.md | MISSING — needs creation | Straightforward; BA-013 confirmed |
+| knowledge/engagement_taxonomy/framework.md (KF-NEW) | NOT STARTED | BA-014: 5 open questions for AK |
+| knowledge/due_diligence/framework.md (KF-02) | NOT STARTED | BA-015: 4 open questions (1 critical) |
+| knowledge/sanctions_screening/framework.md (KF-04) | NOT STARTED | BA-016: 1 open question |
+| knowledge/transaction_testing/framework.md (KF-01) | NOT STARTED | BA-017: 2 open questions |
+
+**Unblocked work (no AK input needed):**
+- knowledge/policy_sop/sources.md (BA-013) — can be built now
+- knowledge/sanctions_screening/framework.md (KF-04) — mostly unblocked; 1 clarification needed but file can be drafted with a placeholder
+- knowledge/transaction_testing/framework.md (KF-01) — can be drafted; 2 clarifications improve depth but don't block the file
+- KF-00 scope tagging (BA-012) — can be drafted pending AK confirmation on policy type categories
+
+**AK input required before build:**
+- BA-014 (KF-NEW): All 5 questions must be answered — taxonomy accuracy is the whole point of this file; wrong entries are worse than missing ones
+- BA-015 (KF-02): Question 4 (CE Creates report access) is the highest-value input; the other 3 can be resolved with reasonable defaults
+
+
+---
+
+### BA-012 Update — Policy Type Questions 2 and 3 (Architect defaults, 2026-04-07)
+
+AK answered Q1 (ABC Programme) via BA-014 confirmation: "can be any" (standalone or FRM-bundled).
+
+Q2 — Should policy type be a structured intake field or model-inferred?
+**Architect default:** Infer from policy name/description at intake. Model asks one clarifying question
+only if type is genuinely ambiguous. Rationale: adding a structured pick-list adds friction to the
+fastest workflow; the model has enough context to classify correctly in >90% of cases. If wrong,
+Maher corrects and model re-classifies before drafting.
+
+Q3 — Should model suggest companion documents?
+**Architect default:** Yes — proactive suggestion is offered ONCE at the end of intake, not during
+drafting. Example: "You're drafting a Whistleblower Policy — GoodWork typically pairs this with a
+Retaliation Investigation Procedure. Want to add that as a second deliverable in this case?"
+Rationale: captures upsell opportunity and closes a common scope gap without interrupting the draft.
+AK can disable this per-session if it becomes noise.
+
+**BA-012 status: CONFIRMED (with architect defaults — AK to validate on first Policy/SOP run)**
+
