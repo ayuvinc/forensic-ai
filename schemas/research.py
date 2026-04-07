@@ -4,7 +4,8 @@ from pydantic import BaseModel
 
 
 class Citation(BaseModel):
-    source_url: str
+    # Empty string is valid — knowledge-only citations have no URL
+    source_url: str = ""
     source_name: str
     source_type: Literal["authoritative", "news", "general", "unverified"]
     retrieved_at: datetime
