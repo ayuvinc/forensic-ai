@@ -515,10 +515,10 @@ Scope hierarchy design:
       Gaps: anonymous complaint handling, retaliation mechanism + disciplinary matrix, evidence/chain-of-custody,
       SLA for closure comms, malicious vs good-faith definition (legal precision), DPDP Act 2023 integration,
       vendor/third-party enforcement, metrics/KPI reporting framework
-- [ ] KF-01 knowledge/transaction_testing/ (framework + sources)
-- [ ] KF-02 knowledge/due_diligence/ (framework + sources)
+- [x] KF-01 knowledge/transaction_testing/ (framework + sources)
+- [x] KF-02 knowledge/due_diligence/ (framework + sources)
 - [ ] KF-03 knowledge/fraud_audit/ (framework + sources)
-- [ ] KF-04 knowledge/sanctions_screening/ (framework + sources)
+- [x] KF-04 knowledge/sanctions_screening/ (framework + sources)
 - [ ] KF-05 knowledge/esi_review/ (EDRM framework + sources)
 - [ ] KF-06 knowledge/expert_witness/ (framework + sources)
 - [ ] KF-07 knowledge/humint/ (framework + methodology)
@@ -615,11 +615,24 @@ Schemas → Knowledge files → Historical Library → Workflows → Scoping →
 
 #### Sprint-10B — Knowledge Files (parallel with schemas, no code deps)
 
-- [ ] KF-NEW knowledge/engagement_taxonomy/framework.md — full forensic engagement taxonomy: 18+ engagement types each with triggering scenario, standard scope components, typical deliverables, applicable frameworks (ACFE/IIA/ISO/UAE), regulatory context, common scope combinations. Architect-validated list: fraud investigation (7 types), FRM, DD (individual/entity), transaction testing, asset tracing, expert witness, sanctions screening, ABC program, regulatory compliance review, whistleblower investigation, insurance fraud, procurement fraud audit, ESI/e-discovery, insolvency fraud, policy/SOP, training, HUMINT. GATES: SCOPE-WF-01.
-- [ ] KF-02 knowledge/due_diligence/framework.md — GoodWork 5-phase DD methodology (from CE Creates reports), source list by jurisdiction, risk classification criteria (LOW/MEDIUM/HIGH), standard report template, FATF/AML/CFT standards, licensed DB gap disclaimer text, HUMINT scope disclaimer text. GATES: SL-GATE-01.
+- [x] KF-NEW knowledge/engagement_taxonomy/framework.md — AK-CONFIRMED list (2026-04-07): Investigation Report (7 distinct sub-type entries: general/procurement/payroll/expense/financial-stmt/AML/whistleblower), FRM Risk Register (8 modules), Due Diligence Individual, Due Diligence Entity, Transaction Testing, Sanctions Screening, Policy/SOP, Training Material, Client Proposal, Engagement Scoping, ABC Programme (can be standalone OR bundled with FRM). EXCLUDED: Insurance Fraud, Asset Tracing (always part of investigation), Insolvency Fraud, Expert Witness (deferred), ESI (deferred), HUMINT (deferred). Each entry: triggering scenarios, standard scope components, typical deliverables, applicable frameworks, common chains, exclusions, red flags that escalate. Quality standard: tier B from draft (claim labels, provenance metadata). GATES: SCOPE-WF-01.
+- [ ] KF-02 knowledge/due_diligence/framework.md — GoodWork 5-phase DD methodology (CE Creates reports NOT available as reference — derive from standard FATF/ACFE methodology + BA-006/007 report structure). Source list by jurisdiction. Risk classification: LOW/MEDIUM/HIGH + CLEAR/FLAG with explicit criteria (no model judgment). Licensed DB gap disclaimer text (ARCH-GAP-01). HUMINT scope disclaimer (ARCH-GAP-02). Quality standard: tier B from draft. GATES: SL-GATE-01.
 - [ ] KF-04 knowledge/sanctions_screening/framework.md — 5 official screening lists (OFAC/UN/EU/UK OFSI/UAE), PEP classification, false positive analysis methodology, risk rating criteria, WorldCheck gap disclaimer. GATES: SL-GATE-02.
 - [ ] KF-01 knowledge/transaction_testing/framework.md — ACFE transaction testing methodology, Benford's law procedure, three-way matching procedure, test objectives by fraud typology (6 types), UAE regulatory testing requirements per regulator, sampling standards. GATES: SL-GATE-03.
-- [ ] KF-00 knowledge/policy_sop/framework.md — already in todo.md; 8 gap fixes from ChatGPT review Session 009. Priority: run this alongside KF-02.
+- [x] KF-00 knowledge/policy_sop/framework.md — BUILT Sprint-10A (2026-04-07). Needs KQ-01 remediation pass (quality standard). Sources.md missing (KQ-03).
+
+#### Sprint-10B-KQ — Knowledge Quality Remediation (parallel with Sprint-10B, no build deps)
+
+**Quality standard defined in:** docs/lld/knowledge-quality-standard.md (2026-04-07)
+**Codex finding:** knowledge/policy_sop/framework.md mixes law/best-practice/product-rules without labels; uses absolute language without citation; frm + investigation files need provenance metadata.
+
+- [x] KQ-01 knowledge/policy_sop/framework.md: remediation pass — add [LAW]/[BEST_PRACTICE]/[PRODUCT_RULE]/[ADVISORY] labels to all substantive claims; replace "must"/"legally insufficient"/"courts have ruled" with labeled claims or softer language; add provenance metadata per section; add quality header (tier C → B). No content changes — labeling only.
+- [x] KQ-02 knowledge/frm/frm_framework.md + knowledge/investigation/investigation_framework.md: light remediation — add quality header block (tier B); add provenance metadata to major sections; no claim rewrites needed.
+- [x] KQ-03 knowledge/policy_sop/sources.md: create companion sources file (BA-013 confirmed). Same structure as knowledge/frm/sources.md. Cover: UAE onshore (Federal laws + MOHRE), DIFC, ADGM, India (SEBI/POSH/DPDP), UK (FCA/ICO), international (ISO 37001, ACFE, IIA). Authoritative URLs only for [LAW] sources; note that ISO/ACFE/IIA are subscription-based (no public URL).
+- [x] KQ-04 knowledge/due_diligence/sources.md: create alongside KF-02. UAE registries (MOEC, DED, ADGM, DIFC), GCC registries, India (MCA21), UK (Companies House), international (OpenCorporates). Note: Orbis, LexisNexis Diligence, WorldCheck are licensed — not accessible to tool.
+- [x] KQ-05 knowledge/sanctions_screening/sources.md: create alongside KF-04. The 5 official list URLs (ofac.treas.gov, un.org/securitycouncil/sanctions, sanctions.ec.europa.eu, assets.publishing.service.gov.uk/ofsi, uaecabinet.ae). PEP registers are not openly searchable — note this explicitly.
+- [x] KQ-06 knowledge/transaction_testing/sources.md: create alongside KF-01. ACFE Fraud Examiners Manual (subscription), IIA standards, UAE CBUAE/DFSA/SCA/ADGM FSRA regulatory testing requirements (authoritative URLs), Benford's Law source reference.
+- [x] KQ-07 knowledge/engagement_taxonomy/sources.md: create alongside KF-NEW. References ACFE Practice Guides, IIA IPPF, UAE SCA/DFSA/ADGM engagement requirements by type.
 
 #### Sprint-10C — Historical Knowledge Library (depends on Sprint-10A schemas)
 

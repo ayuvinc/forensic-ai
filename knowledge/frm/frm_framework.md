@@ -1,3 +1,14 @@
+---
+file: knowledge/frm/frm_framework.md
+quality_tier: B
+last_reviewed: 2026-04-07
+reviewer: session-011
+open_claims: 0
+---
+
+<!-- Sources: knowledge/frm/sources.md — see that file for full URLs -->
+<!-- Claim labels: [LAW] [BEST_PRACTICE] [PRODUCT_RULE] [ADVISORY] — see docs/lld/knowledge-quality-standard.md -->
+
 # FRM Framework Knowledge Base
 
 ## What is FRM?

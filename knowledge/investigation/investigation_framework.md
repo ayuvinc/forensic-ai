@@ -1,3 +1,14 @@
+---
+file: knowledge/investigation/investigation_framework.md
+quality_tier: B
+last_reviewed: 2026-04-07
+reviewer: session-011
+open_claims: 0
+---
+
+<!-- Sources: knowledge/investigation/sources.md — see that file for full URLs -->
+<!-- Claim labels: [LAW] [BEST_PRACTICE] [PRODUCT_RULE] [ADVISORY] — see docs/lld/knowledge-quality-standard.md -->
+
 # Investigation Framework Knowledge Base
 
 ## What It's For

@@ -1,66 +1,111 @@
+---
+file: knowledge/policy_sop/framework.md
+quality_tier: B
+last_reviewed: 2026-04-07
+reviewer: session-011
+open_claims: 2
+policy_type_scope: reporting_policy (whistleblower, speak-up, fraud hotline) — see POLICY TYPE APPLICABILITY below
+---
+
 # Policy / SOP Knowledge File — GoodWork Forensic AI
 # KF-00 — Priority 1 knowledge file
-# Session: 011 (2026-04-07) | Origin: junior-dev build from BA-004 + lessons.md Session 009
-#
-# Purpose: Inject this knowledge into the policy_sop workflow system prompt to close the
-# 8 quality gaps identified in the external ChatGPT review of the Whistleblower Policy
-# generated in Session 009. These gaps were present in every policy/SOP generated before
-# this file existed. After this file is loaded, the junior agent must include all 8 sections.
+
+<!-- Sources: knowledge/policy_sop/sources.md — see that file for full URLs and document titles -->
 
 ---
 
 ## HOW TO USE THIS FILE
 
 This file is loaded by `workflows/policy_sop.py` into the Junior Analyst system prompt.
-It defines mandatory content requirements for all Policy/SOP deliverables.
-The Junior Analyst must treat every item marked **MANDATORY** as a required section.
-Items marked **CONDITIONAL** are required only when the stated condition is true.
+It defines content requirements for Policy/SOP deliverables.
+
+**Claim labels used throughout this file:**
+- `[LAW — instrument]` — statutory or regulatory requirement; cite the instrument
+- `[BEST_PRACTICE — source]` — industry or professional standard; deviation is defensible but document it
+- `[PRODUCT_RULE]` — a rule enforced by this tool; Maher can override
+- `[ADVISORY]` — recommended but not required; based on professional judgment or common practice
+
+Sections marked **MANDATORY (reporting_policy)** apply to whistleblower, speak-up, and fraud
+hotline policies. See POLICY TYPE APPLICABILITY table below for other policy types.
 
 ---
 
-## MANDATORY CONTENT REQUIREMENTS
+## POLICY TYPE APPLICABILITY
 
-### 1. Anonymous Complaint Handling Protocol [MANDATORY]
+<!-- Sources: BA-012 architect decision 2026-04-07 -->
 
-Every whistleblower / speak-up / reporting policy must specify:
-- The exact mechanism for anonymous submission (dedicated hotline, third-party platform,
-  sealed envelope procedure — at least one method must be named specifically)
-- How anonymous complaints are triaged when the investigator cannot follow up for clarification
-- Whether anonymous reporters can receive status updates and, if so, how
-- What happens if an anonymous complaint lacks sufficient detail to investigate
-- The organisation's commitment that no attempt will be made to identify anonymous reporters
+[PRODUCT_RULE] The model infers policy type from the policy name and description at intake.
+If type is ambiguous, the model asks one clarifying question before classifying.
 
-**Common failure mode:** Policies that say "anonymous reports are accepted" without describing
-the mechanism or the triage procedure for information-poor anonymous reports.
+Policy types recognised by this tool:
 
-**Regulatory grounding:**
-- UAE: No specific requirement but ADGM/DIFC-incorporated entities should align with
-  FCA Handbook (SYSC 18) which requires appropriate anonymous reporting channels
-- India: SEBI Circular CIR/CFD/CMD1/168/2019 (listed entities must have anonymous reporting)
-- UK GDPR / UAE PDPL: Anonymous data by definition has no data subject rights — confirm
-  the mechanism truly anonymises before the report reaches the investigator
-- International: ISO 37001:2016 §8.9 — reporting mechanisms should permit anonymous reports
+| Type | Examples |
+|------|---------|
+| `reporting_policy` | Whistleblower Policy, Speak-Up Policy, Fraud Hotline Policy |
+| `compliance_policy` | Anti-Bribery & Corruption (ABC), AML, Data Protection Policy |
+| `operational_policy` | Procurement Policy, IT Acceptable Use, Finance Procedures |
+| `hr_policy` | Disciplinary Policy, Performance Management, Code of Conduct |
+
+Section applicability by policy type:
+
+| Section | reporting_policy | compliance_policy | operational_policy | hr_policy |
+|---------|-----------------|------------------|--------------------|-----------|
+| 1. Anonymous Complaint Handling | MANDATORY | Conditional | Not applicable | Conditional |
+| 2. Retaliation Mechanism | MANDATORY | Conditional | Not applicable | Mandatory |
+| 3. Evidence Chain of Custody | MANDATORY | Conditional | Conditional | Not applicable |
+| 4. SLA for Closure Comms | MANDATORY | Conditional | Not applicable | Conditional |
+| 5. Malicious vs Good-Faith | MANDATORY | Not applicable | Not applicable | Not applicable |
+| 6. Data Protection Integration | Conditional (jurisdiction) | MANDATORY | Conditional | Conditional |
+| 7. Vendor Enforcement | Conditional | MANDATORY | MANDATORY | Not applicable |
+| 8. Audit Committee KPIs | Conditional | MANDATORY | Not applicable | Not applicable |
 
 ---
 
-### 2. Retaliation Investigation Mechanism + Disciplinary Matrix [MANDATORY]
+## CONTENT REQUIREMENTS
 
-Every policy must include:
+### 1. Anonymous Complaint Handling Protocol
+**Applies to:** `reporting_policy` (mandatory); `hr_policy`, `compliance_policy` (conditional)
 
-**a. Retaliation definition:** A specific, non-exhaustive list of acts that constitute retaliation —
-e.g. termination, demotion, reassignment, exclusion from meetings, negative performance reviews,
-withdrawal of development opportunities, social ostracism. Vague language ("we do not tolerate
-retaliation") without examples is insufficient.
+<!-- Sources: ISO 37001:2016 §8.9; SEBI Circular CIR/CFD/CMD1/168/2019; FCA SYSC 18 -->
 
-**b. Retaliation investigation procedure:** Who investigates a retaliation complaint? The
-standard: the investigator of the original complaint must not investigate the retaliation
-allegation (conflict of interest). Procedure should specify:
-- Who receives the retaliation complaint
-- Who is appointed to investigate it (independent of original complaint investigator)
-- Timeline for investigation and outcome
-- Interim protective measures available to the reporter while investigation is underway
+[PRODUCT_RULE] Every reporting policy must specify at least one named anonymous submission mechanism — a hotline number, a third-party platform, a dedicated email address, or a sealed envelope procedure. Saying "anonymous reports are accepted" without naming the mechanism is insufficient for this tool's quality standard.
 
-**c. Disciplinary matrix:** A table specifying consequences for substantiated retaliation:
+[BEST_PRACTICE — ISO 37001:2016 §8.9] Anti-bribery management systems should permit anonymous reporting. The reporting mechanism should be designed to encourage use.
+
+[LAW — SEBI Circular CIR/CFD/CMD1/168/2019] Indian-listed entities must provide an anonymous reporting mechanism for employees and directors.
+
+[ADVISORY — FCA SYSC 18] ADGM- and DIFC-incorporated entities regulated by the DFSA or operating under FCA-equivalent standards should align their anonymous reporting channels with FCA SYSC 18 requirements, though no UAE-onshore legal mandate requires this.
+
+**Content checklist for this section:**
+- Named mechanism for anonymous submission
+- How information-poor anonymous complaints are triaged (insufficient detail → what happens?)
+- Whether anonymous reporters can receive status updates and how
+- Explicit commitment that no attempt is made to identify the anonymous reporter
+
+[ADVISORY] Anonymous data by definition carries no data subject rights (UAE PDPL, DPDP Act). Verify that the submission mechanism genuinely anonymises before the report reaches the investigator — pseudonymous is not the same as anonymous.
+
+---
+
+### 2. Retaliation Investigation Mechanism + Disciplinary Matrix
+**Applies to:** `reporting_policy`, `hr_policy` (mandatory); `compliance_policy` (conditional)
+
+<!-- Sources: Federal Decree-Law No. 33 of 2021; POSH Act 2013; ACFE Professional Standards -->
+
+**a. Retaliation definition**
+
+[PRODUCT_RULE] The policy must define retaliation with a specific, non-exhaustive list of acts — not just a general statement. Examples to include: termination, demotion, reassignment, exclusion from meetings, negative performance reviews, withdrawal of development opportunities, social ostracism. A general prohibition without examples is weaker than a defined list.
+
+[ADVISORY] In practice, vague retaliation clauses are harder to enforce and harder for employees to recognise as protections. Specificity serves both the employer (clear standard) and the employee (knows what is prohibited).
+
+**b. Retaliation investigation procedure**
+
+[PRODUCT_RULE] The policy must state who investigates a retaliation complaint and confirm that this person is independent from the investigator of the original complaint.
+
+[ADVISORY] Common standard: retaliation investigations are handled by HR, Legal, or an external investigator, separate from the underlying complaint. Investigate the retaliation allegation with the same methodology as the original complaint.
+
+**c. Disciplinary matrix**
+
+[PRODUCT_RULE] Include a consequence table for substantiated retaliation. Suggested starting point (Maher adapts to client's existing HR framework):
 
 | Severity | Examples | Consequence |
 |----------|----------|-------------|
@@ -68,250 +113,226 @@ allegation (conflict of interest). Procedure should specify:
 | Moderate | Negative review, reassignment | Final written warning or demotion |
 | Serious | Termination, threat, sustained campaign | Dismissal for cause |
 
-**Why this matters:** Courts in the UAE (DIFC), UK, and India have ruled that a policy
-prohibiting retaliation without a credible investigation mechanism and defined consequences
-is considered illusory and does not provide the employer a defence. A policy stating only
-"retaliation is prohibited" is legally insufficient.
+**Why this matters**
 
-**Regulatory grounding:**
-- UAE Labour Law (Federal Decree-Law No. 33 of 2021): Art. 47 — employer may not terminate
-  an employee for filing a complaint; courts have awarded reinstatement + compensation
-- India: POSH Act 2013 (applicable to gender harassment); Whistle Blowers Protection Act 2014
-  (central government employees) — private sector analogue via SEBI requirements for listed entities
-- ACFE Code of Ethics: investigations into retaliation must be treated with same rigour as
-  original allegation
+[ADVISORY] Practitioners and employment lawyers commonly advise that a policy prohibiting retaliation without a credible investigation mechanism and defined consequences is difficult to enforce and may not provide the employer a meaningful defence in dispute resolution. This is practical guidance, not a statement of case law — specific court authority is not cited here.
+
+[LAW — Federal Decree-Law No. 33 of 2021, Art. 47] UAE onshore: an employer may not terminate an employee for filing a complaint with the Ministry of Human Resources and Emiratisation. Courts have awarded reinstatement and compensation in substantiated cases.
+
+[LAW — POSH Act 2013] India: applies to gender-based harassment complaints; retaliation against complainants is prohibited. Private sector analogue for other complaint types: SEBI requirements for listed entities.
+
+[BEST_PRACTICE — ACFE Professional Standards] Investigations into retaliation should be treated with the same rigour and independence as the original allegation.
 
 ---
 
-### 3. Evidence Handling, Forensics, and Chain of Custody [MANDATORY]
+### 3. Evidence Handling, Forensics, and Chain of Custody
+**Applies to:** `reporting_policy` (mandatory); `compliance_policy`, `operational_policy` (conditional)
 
-Every policy that governs investigations (whistleblower, fraud, misconduct) must include:
+<!-- Sources: ACFE Fraud Examiners Manual; Federal Law No. 10 of 1992; Indian Evidence Act 1872; Federal Law No. 5 of 2012 -->
 
-**a. Document preservation order:** From the moment a complaint is received, what documents
-and data must be preserved? Who issues the preservation directive? What are the penalties
-for destruction of evidence?
+**a. Document preservation**
 
-**b. Digital evidence handling:**
-- Email, chat, and file system evidence must be collected by or under the supervision of a
-  qualified forensic professional or external forensic firm
-- Screenshots taken by non-specialists are NOT admissible as primary evidence in most
-  jurisdictions — the policy should state this and prescribe when forensic collection is required
-- Metadata preservation: collecting files by copy-paste destroys metadata; the policy must
-  require forensic imaging or equivalent
+[PRODUCT_RULE] The policy must specify: (1) what triggers a preservation directive; (2) who issues it; (3) which documents and data are covered; (4) consequences for destruction after notice.
 
-**c. Physical evidence handling:**
-- Chain of custody log: who collected it, when, from where, in whose presence
-- Secure storage: locked cabinet with access log
-- No original documents to be marked, annotated, or removed from evidence store
+[ADVISORY] Common trigger: a complaint is received, or a formal investigation is opened. Preservation notices typically cover all documents related to the subject matter, including email, file systems, messaging platforms, and financial records from the relevant period.
 
-**d. Interview records:**
-- All investigative interviews to be documented contemporaneously
-- Interviewee to be offered opportunity to review and sign their statement
-- Audio/video recording only with consent (UAE: recording without consent may constitute
-  criminal breach of privacy under Federal Law No. 5 of 2012 on Combatting Cybercrimes)
+**b. Digital evidence handling**
 
-**e. Evidence classification:**
-- Who determines what is privileged (legal professional privilege / attorney-client privilege)?
-- Privileged documents must be clearly marked; investigator must not review without counsel present
+[BEST_PRACTICE — ACFE Fraud Examiners Manual] Digital evidence should be collected by or under the supervision of a qualified forensic professional. Unmanaged collection risks destroying metadata and may affect the usefulness of the evidence in proceedings.
 
-**Regulatory grounding:**
-- ACFE Fraud Examiners Manual: evidence chain of custody requirements
-- DIFC Courts: Rules of Court Order 24 (disclosure obligations in litigation — preserved
-  documents must be producible in original form)
-- UAE Federal Law on Evidence in Civil and Commercial Transactions (Federal Law No. 10 of 1992)
-- India: Indian Evidence Act 1872 (electronic records — Sections 65A, 65B for admissibility)
+[ADVISORY] Screenshots taken by non-specialists may face challenges in formal proceedings because they do not preserve file metadata and are relatively easy to alter. Where evidence integrity matters, forensic imaging or equivalent procedures are preferred. This is practical guidance — admissibility rules vary by jurisdiction and proceeding type.
 
----
+[ADVISORY] Collecting files by copy-paste destroys modification timestamps. If evidence may be needed in proceedings, use write-blocking tools and document the collection process.
 
-### 4. SLA for Closure Communication to Whistleblower / Reporter [MANDATORY]
+**c. Physical evidence**
 
-Every policy must specify:
-- Initial acknowledgement: within how many business days of receiving the complaint
-- Status update: at what intervals during a long investigation (common: every 30 days)
-- Closure communication: notification to reporter when the investigation is concluded
-  (even if outcome is confidential — "the matter has been investigated and appropriate
-  action has been taken" is sufficient)
-- Where the reporter is anonymous: mechanism for posting a general outcome notice
-  (e.g. intranet update) so the reporter can know the complaint was acted on
+[BEST_PRACTICE — ACFE Fraud Examiners Manual] Chain of custody log: record who collected the item, when, from where, and in whose presence. Store originals securely; use copies for working purposes.
 
-**Why this matters:** The single most common reason whistleblowers go external (regulator,
-media) rather than internal is the perception that nothing happened. A documented SLA with
-actual notifications closes this gap.
+**d. Interview records**
 
-**Standard SLAs (adapt to organisation size):**
-- Acknowledgement: 3–5 business days
-- Initial triage decision (investigate / dismiss): 10–15 business days
-- Status update intervals (during investigation): 30 days
-- Closure communication: within 5 business days of investigation close
+[BEST_PRACTICE — ACFE Fraud Examiners Manual] Document investigative interviews contemporaneously. Offer the interviewee the opportunity to review and sign their summary statement.
+
+[LAW — Federal Law No. 5 of 2012 (UAE Cybercrime Law), Art. 21] Recording a person without their knowledge or consent may constitute a privacy offence in the UAE. Obtain explicit consent before audio or video recording any interview.
+
+**e. Privilege**
+
+[ADVISORY] Determine at the outset of an investigation whether legal professional privilege applies to any documents. Privileged documents should be clearly marked and kept separate; the investigator should not review them without counsel present. Privilege rules vary by jurisdiction and proceeding type — seek legal advice if proceedings are anticipated.
+
+[LAW — Federal Law No. 10 of 1992 (UAE Evidence Law)] Governs admissibility of documentary evidence in civil and commercial transactions.
+
+[LAW — Indian Evidence Act 1872, §§65A-65B] Conditions for admissibility of electronic records in Indian courts, including certification requirements.
+
+[LAW — DIFC Courts Rules of Court, Order 24] Disclosure obligations: preserved documents must be producible in original form.
 
 ---
 
-### 5. Malicious vs Good-Faith Complaint — Legally Precise Definition [MANDATORY]
+### 4. SLA for Closure Communication to Whistleblower / Reporter
+**Applies to:** `reporting_policy` (mandatory); `hr_policy`, `compliance_policy` (conditional)
 
-This section must be drafted with precision. Imprecision creates legal exposure.
+<!-- Sources: FCA SYSC 18; practitioner common practice -->
 
-**Good-faith reporting:**
-A complaint is made in good faith if the reporter:
-(a) Genuinely believed the reported conduct was improper at the time of reporting, AND
-(b) Had a reasonable basis for that belief (not purely speculative or fabricated)
+[PRODUCT_RULE] Every reporting policy drafted by this tool must specify SLA timelines for acknowledgement, status updates, and closure. A policy that describes a process without SLAs cannot be monitored for compliance.
 
-Good faith does NOT require the complaint to be correct or for an investigation to
-confirm wrongdoing. A complaint that is investigated and found unsubstantiated is not
-thereby malicious.
+[ADVISORY — practitioner common practice] The following SLAs are commonly used in mid-size organisations. Adjust based on client size, regulatory context, and investigative capacity:
 
-**Malicious complaint:**
-A complaint is malicious only if the reporter:
-(a) Knew the reported conduct had not occurred, OR
-(b) Was reckless as to whether it had occurred, AND
-(c) Made the report to cause harm to the named individual or to gain personal advantage
+- **Acknowledgement:** 3–5 business days from receipt
+- **Triage decision** (investigate or dismiss with rationale): 10–15 business days
+- **Status updates during investigation:** every 30 days
+- **Closure communication:** within 5 business days of investigation close
 
-**Why this matters:** A policy that says "malicious complainants will face disciplinary action"
-without the above precision is legally dangerous. Courts and regulators have found that
-overly broad malicious-complaint clauses suppress legitimate reporting. The policy must
-make clear that a report that turns out to be wrong is not automatically malicious.
+[ADVISORY] For anonymous reporters: a general outcome notice (e.g. intranet update, periodic bulletin) allows the reporter to know the complaint was acted on without identifying them.
 
-**Disciplinary action for malicious complaints:**
-- Applies only where malice is separately proven (the burden is on the employer, not the reporter)
-- The investigation into alleged malice must be separate from the underlying complaint investigation
-- Interim: no adverse action against the reporter until malice finding is final
+[ADVISORY] The most common reason whistleblowers go external (regulator, media) is the perception that nothing happened internally. SLA compliance and closure communication directly address this risk — this is practitioner observation, not empirically cited research.
 
-**Regulatory grounding:**
-- UK Employment Rights Act 1996 s.43B (protected disclosures) — good faith standard
-- DIFC Employment Law 2019 (Art. 59) — whistleblower protections; malice standard implicit
-- ACFE: malicious report discipline is permissible only if rigorously separated from
-  substantive complaint outcome
+[LAW — FCA SYSC 18] UK FCA-regulated firms must have procedures for handling whistleblowing disclosures, including timely acknowledgement. Specific SLA days are not mandated by the FCA — the standard is "appropriate."
 
 ---
 
-### 6. Data Protection Integration [CONDITIONAL — when jurisdiction includes India]
+### 5. Malicious vs Good-Faith Complaint — Precise Definition
+**Applies to:** `reporting_policy` (mandatory only)
 
-**Mandatory when:** client operates in India (any entity incorporated in India, or processing
-personal data of Indian residents).
+<!-- Sources: UK Employment Rights Act 1996 s.43B; DIFC Employment Law 2019 Art. 59 -->
 
-**DPDP Act 2023 (Digital Personal Data Protection Act) requirements:**
+[PRODUCT_RULE] Any reporting policy that includes disciplinary consequences for malicious complaints must define both "good faith" and "malicious" with precision. Imprecise definitions risk suppressing legitimate reporting and may create enforcement difficulties.
 
-**a. Complaint data as personal data:**
-- Complaint submissions contain personal data of both the reporter and the named respondent
-- Both are "data principals" under the DPDP Act — both have rights (access, correction, erasure)
-- Tension: erasure right of respondent vs. audit trail obligation — policy must address this
-  conflict explicitly (recommended: retain investigation records for 7 years regardless of
-  erasure requests; legal hold overrides DPDP erasure right during active investigation)
+**Good-faith reporting**
 
-**b. Cross-border data transfers:**
-- If the investigation involves transferring data to a parent company or external firm outside India,
-  the transfer must comply with DPDP Act transfer restrictions (prescribed countries to be notified)
-- Policy must specify: who is the "Data Fiduciary" for complaint data; where data is stored;
-  how long it is retained; what deletion procedure applies after retention period
+[LAW — UK Employment Rights Act 1996 s.43B (PIDA)] A disclosure is protected if the worker reasonably believed the information disclosed was substantially true and was made in the public interest. The disclosure does not need to be correct — reasonable belief is the standard.
 
-**c. Consent:**
-- The reporter's act of submitting a complaint implies consent to processing for investigation purposes
-- The named respondent's consent cannot be obtained without revealing the complaint —
-  policy must cite the lawful basis for processing respondent's data without consent
-  (DPDP Act: legitimate purpose for compliance with applicable law)
+[ADVISORY — derived from PIDA standard, widely adopted in policy practice] A complaint is made in good faith if the reporter: (a) genuinely believed the reported conduct was improper at the time of reporting, AND (b) had a reasonable basis for that belief. An unsubstantiated complaint is not automatically malicious.
 
-**d. Privacy notice:**
-- A short privacy notice must be displayed at the point of complaint submission
-- Content: what data is collected, why, how long it is retained, who processes it, rights available
+**Malicious complaint**
 
-**Also consider for all jurisdictions:**
-- UAE PDPL (Federal Decree-Law No. 45 of 2021): same data subject rights framework
-- DIFC Data Protection Law 2020 (DIFC Law No. 5 of 2020): applies to DIFC-incorporated entities
-- GDPR (if EU data subjects involved): strict consent + transfer requirements
+[ADVISORY] A complaint is malicious only if the reporter: (a) knew the reported conduct had not occurred, OR was reckless as to whether it had, AND (b) made the report to cause harm or gain personal advantage. The burden of establishing malice sits with the employer.
+
+[ADVISORY] Overly broad malicious-complaint clauses — ones that do not clearly separate "wrong" from "malicious" — risk creating a chilling effect on legitimate reporting and may attract regulatory or legal scrutiny in jurisdictions with whistleblower protection frameworks. This is practitioner guidance; specific case authority is not cited here. (open_claim: 1 of 2)
+
+**Disciplinary action for malicious complaints**
+
+[PRODUCT_RULE] The policy must state that: (1) malice must be separately proven; (2) the investigation into alleged malice is conducted separately from the original complaint investigation; (3) no adverse action is taken against the reporter while the malice determination is pending.
+
+[LAW — DIFC Employment Law 2019, Art. 59] DIFC-incorporated entities: whistleblower protections apply; the malice standard is implicit in the protection framework.
+
+[BEST_PRACTICE — ACFE] Malicious report discipline is permissible only where malice is separately established through a rigorous, independent process — not inferred from an unsubstantiated complaint outcome.
 
 ---
 
-### 7. Vendor and Third-Party Enforcement Mechanism [MANDATORY]
+### 6. Data Protection Integration
+**Applies to:** conditional on jurisdiction (see table); `compliance_policy` (mandatory)
 
-The policy must address:
+<!-- Sources: DPDP Act 2023; Federal Decree-Law No. 45 of 2021; DIFC Law No. 5 of 2020; UK GDPR -->
 
-**a. Scope of coverage:**
-- Which third parties are covered? (suppliers, contractors, agents, JV partners, distributors)
-- Coverage must be stated explicitly — a policy that covers employees but is silent on vendors
-  provides no contractual basis for enforcement against vendors
+[PRODUCT_RULE] This section is generated when: (a) client operates in India, (b) client is DIFC/ADGM-incorporated, or (c) client processes EU data subject personal data. The model identifies the applicable sub-sections from intake jurisdiction data.
 
-**b. Contractual basis:**
-- Vendor contracts must contain a clause requiring compliance with the firm's whistleblower /
-  anti-fraud policy (or equivalent standards)
-- New vendor onboarding: policy compliance clause must be in the standard agreement
-- Existing vendors: policy update trigger — when contracts renew, clause is added
+**India — DPDP Act 2023**
 
-**c. Reporting mechanism for third parties:**
-- Vendors and contractors must have a way to report concerns about the firm or other vendors
-- Dedicated channel (same as internal) or a specific external-facing channel
-- The policy must state that third-party reporters have the same protection from retaliation
-  as internal employees (to the extent the firm can enforce this)
+[LAW — Digital Personal Data Protection Act 2023, §§4-8] Personal data may be processed only for a lawful purpose, with consent or on a legitimate basis. Individuals have rights to access, correction, and erasure of their personal data.
 
-**d. Consequence for vendors:**
-- What happens if a vendor is implicated in a substantiated complaint?
-- Typical: immediate suspension pending investigation; termination of contract if substantiated
-- Policy should also address what happens if the vendor itself reports misconduct — protection
-  from retaliatory contract termination must be explicit
+[LAW — DPDP Act 2023, §9] A "Data Fiduciary" (the entity processing data) must implement reasonable security safeguards. The policy must name who is the Data Fiduciary for complaint data.
 
-**Regulatory grounding:**
-- UK Bribery Act 2010: "adequate procedures" defence requires supply chain controls
-- UAE Federal Law No. 4 of 2012 (Anti-Corruption Law): applicable to private sector dealings
-- ISO 37001:2016 §6.1.2 — due diligence on business associates is a core requirement
-- ACFE Report to the Nations: 20% of fraud schemes involve collusion with third parties
+[ADVISORY] Tension: a respondent's erasure right vs. the organisation's audit trail obligation. Recommended approach: maintain investigation records for 7 years regardless of erasure requests; a legal hold overrides the erasure right during an active investigation. Verify this with legal counsel — the DPDP Act's interaction with evidentiary retention requirements is not yet settled by regulation or case law. (open_claim: 2 of 2)
+
+[LAW — DPDP Act 2023, §5] Cross-border personal data transfers are subject to restrictions on prescribed countries (list to be notified by the Central Government). If investigation data is transferred to a parent company or external firm outside India, confirm compliance with current prescribed country list.
+
+**UAE — PDPL**
+
+[LAW — Federal Decree-Law No. 45 of 2021 (PDPL)] Data subjects have rights of access, correction, and erasure. The same audit trail vs. erasure tension applies; retain investigation records under a legal hold and document the basis.
+
+**DIFC**
+
+[LAW — DIFC Data Protection Law 2020 (DIFC Law No. 5 of 2020)] Applies to DIFC-incorporated entities. Data controller obligations, data subject rights, and transfer restrictions apply.
+
+**UK / EU**
+
+[LAW — UK GDPR / EU GDPR] Strict consent and transfer requirements. Lawful basis for processing respondent data without consent: legitimate interests or compliance with a legal obligation (document the basis).
+
+**Privacy notice**
+
+[PRODUCT_RULE] A short privacy notice must be included in the policy (or referenced as a separate document) for the point of complaint submission. Minimum content: what data is collected, why, retention period, who processes it, data subject rights, how to exercise them.
 
 ---
 
-### 8. Metrics and KPI Reporting Framework for Audit Committee [MANDATORY]
+### 7. Vendor and Third-Party Enforcement Mechanism
+**Applies to:** `compliance_policy`, `operational_policy` (mandatory); `reporting_policy` (conditional)
 
-Every policy that governs investigations must specify a reporting framework:
+<!-- Sources: UK Bribery Act 2010; ISO 37001:2016 §6.1.2; UAE Federal Law No. 4 of 2012 -->
 
-**a. Metrics to be reported (minimum set):**
+**Scope of coverage**
+
+[PRODUCT_RULE] The policy must explicitly state which third parties are covered (suppliers, contractors, agents, JV partners, distributors). A policy silent on vendors provides no contractual basis for enforcement against them.
+
+**Contractual basis**
+
+[BEST_PRACTICE — ISO 37001:2016 §6.1.2] Due diligence on business associates, including contractual anti-bribery obligations, is a core requirement of an anti-bribery management system. The same principle extends to fraud reporting and compliance policies.
+
+[LAW — UK Bribery Act 2010, §7] The "adequate procedures" defence requires that the organisation has taken proportionate steps to prevent bribery throughout its supply chain. Vendor contract clauses are a standard component.
+
+[ADVISORY — ACFE Report to the Nations] Approximately 20% of fraud schemes involve collusion with third parties. Vendor coverage is not merely a compliance exercise — it addresses a material fraud risk. (Source: ACFE Report to the Nations — specific year edition cited in sources.md.)
+
+**Reporting mechanism for third parties**
+
+[PRODUCT_RULE] The policy must state that third parties (vendors, contractors) have a way to report concerns and receive equivalent protection from retaliation as internal employees, to the extent the firm can contractually enforce this.
+
+**Consequence for vendors**
+
+[ADVISORY] Standard practice: suspend a vendor pending investigation of a substantiated complaint; terminate the contract if the complaint is substantiated. The policy should also protect vendors who themselves report misconduct from retaliatory contract termination.
+
+[LAW — UAE Federal Law No. 4 of 2012 (Anti-Corruption Law), Art. 10] Applicable to private sector dealings involving public officials; relevant when vendor relationships involve government counterparties.
+
+---
+
+### 8. Metrics and KPI Reporting Framework for Audit Committee
+**Applies to:** `compliance_policy` (mandatory); `reporting_policy` (conditional); `operational_policy` (not applicable)
+
+<!-- Sources: ISO 37001:2016 §9.1; FCA SYSC 18; SEBI Listing Obligations 2015 -->
+
+[PRODUCT_RULE] Every policy that governs investigations must specify who prepares the metrics report, who receives it, and at what frequency. A policy without a reporting framework cannot be audited for effectiveness.
+
+**Minimum metrics set**
 
 | Metric | Frequency | Notes |
 |--------|-----------|-------|
 | Total complaints received | Quarterly | By category (fraud, misconduct, harassment, safety, other) |
-| Anonymous vs named | Quarterly | Tracks reporter confidence in the system |
-| Complaints investigated vs. dismissed at triage | Quarterly | High dismissal rate = policy credibility risk |
+| Anonymous vs named split | Quarterly | Tracks reporter confidence in the system |
+| Investigated vs dismissed at triage | Quarterly | High dismissal rate = policy credibility risk |
 | Cases open > 60 days | Quarterly | Tracks investigation velocity |
-| Cases closed with substantiation | Quarterly | And outcome type: dismissal, warning, process change |
+| Cases closed with substantiation | Quarterly | Include outcome type: dismissal, warning, process change |
 | Retaliation complaints received | Quarterly | Red flag metric — should be near zero |
-| Time from complaint to closure (median, 90th pctl) | Annually | Against SLA targets |
-| Reporters who received closure communication | Annually | SLA compliance |
+| Median + 90th percentile time to closure | Annually | Measure against SLA targets |
+| % reporters who received closure communication | Annually | SLA compliance |
 
-**b. Reporting mechanism:**
-- Who prepares the report? (typically: Chief Compliance Officer, HR Director, or Ethics Officer)
-- Who reviews? (Audit Committee and/or Board — not just management)
-- Format: written report, not verbal only
-- Restricted distribution: report is restricted to Audit Committee + CEO + Board;
-  line management receives only aggregate data
+[BEST_PRACTICE — ISO 37001:2016 §9.1] Top management must review the anti-bribery management system at planned intervals, including performance data. The same principle applies to any compliance framework.
 
-**c. Trend analysis:**
-- Year-over-year comparison is required — a single-period snapshot is insufficient
-- Material decline in complaint volume: could indicate suppression (chilling effect) —
-  must be explained and investigated, not celebrated
-- Spike in a category: triggers a thematic review of root causes
+[LAW — FCA SYSC 18.4] UK FCA-regulated firms: the whistleblowing champion must report to the Board annually on the operation of the firm's whistleblowing arrangements. The FCA receives a separate annual return.
 
-**d. No data = a finding:**
-- If no complaints were received in a period, the report must still be submitted stating this
-- Zero complaints in a large organisation over a full year is a red flag, not a success metric —
-  the report should note whether zero-report quarters warrant a culture review
+[LAW — SEBI Listing Obligations and Disclosure Requirements Regulations 2015, Regulation 22] Listed entities in India must establish a vigil mechanism and disclose in the Annual Report the number of complaints received and disposed of.
 
-**Regulatory grounding:**
-- ACFE Report to the Nations 2024: hotline reporting linked to 50% reduction in fraud losses
-- UK Financial Conduct Authority (FCA): SYSC 18 — firms must report whistleblowing data
-  to Board; FCA also receives annual whistleblowing champion report
-- SEBI (India): listed entities must disclose complaints data in Annual Report
-- ISO 37001:2016 §9.1 — monitoring and measurement; top management review requirements
+**Reporting structure**
+
+[PRODUCT_RULE] Report is prepared by: CCO, HR Director, or Ethics Officer. Recipients: Audit Committee + CEO + Board. Format: written. Line management receives aggregate data only — individual case details are restricted.
+
+**Trend interpretation**
+
+[ADVISORY] Year-over-year comparison is required — a single-period snapshot cannot identify trends. A material decline in complaint volume should be investigated (possible chilling effect), not treated as a success metric. A spike in a category should trigger a thematic root cause review.
+
+[ADVISORY — ACFE Report to the Nations 2024] Organisations with hotlines report fraud losses approximately 50% lower than those without. The specific percentage varies by edition — verify against the current year report before citing to a client. (Cited in sources.md.)
 
 ---
 
 ## ZERO-INFORMATION MODE
 
-When Maher provides minimal intake (jurisdiction, organisation type, rough size):
+<!-- Sources: BA-004 (zero-info content floor definition) -->
 
-1. Generate all 8 mandatory sections above with jurisdiction-appropriate regulatory references
-2. Populate tables with the standard SLAs and metrics above as starting content
-3. Mark each section with `[BASELINE — review and adapt to client]`
-4. Generate an `open_questions` list of what Maher needs from the client to personalise:
+[PRODUCT_RULE] When Maher provides minimal intake (jurisdiction, organisation type, rough size only), the model:
+1. Generates all applicable mandatory sections with jurisdiction-appropriate regulatory references
+2. Populates tables with the standard SLAs and metrics above as starting content
+3. Labels each section `[BASELINE — review and adapt to client]`
+4. Generates an `open_questions` list for Maher to gather from the client:
    - Existing reporting mechanism (hotline, email, in-person)?
    - Current vendor contract template?
    - Any prior complaints or investigations on record?
    - Named Ethics Officer / Compliance Officer?
-   - Regulatory filings the client already makes (SEBI, FCA, etc.)?
+   - Regulatory filings already being made (SEBI, FCA, etc.)?
 
 ---
 
@@ -328,7 +349,13 @@ When Maher provides minimal intake (jurisdiction, organisation type, rough size)
 
 ---
 
+## OPEN CLAIMS (2)
+
+1. **Section 5** — "overly broad malicious-complaint clauses risk attracting regulatory or legal scrutiny" — labelled [ADVISORY]; specific case authority not cited. Acceptable at tier B. Requires specific case citation to reach tier A.
+2. **Section 6 / DPDP Act** — interaction between DPDP erasure right and evidentiary retention is not settled by regulation or case law as of 2026. Verify with legal counsel before advising a client. Flagged [ADVISORY].
+
+---
+
 ## SOURCES FILE
 
-See `knowledge/policy_sop/sources.md` for full citation list. This framework file contains
-abbreviated references; sources.md contains full URLs, document titles, and retrieval guidance.
+See `knowledge/policy_sop/sources.md` for full citation list with URLs, document titles, and retrieval guidance.
