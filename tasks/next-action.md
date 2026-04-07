@@ -4,40 +4,33 @@
 OPEN
 
 ## NEXT_PERSONA
-session-close
+junior-dev
 
 ## NEXT_TASK
-Close Session 010. BA planning complete, architecture complete. No build work started this session — planning only.
+Sprint-10A (ARCH-S-01 + ARCH-S-07) — schemas build. Two tasks, no dependencies, can start immediately:
+1. ARCH-S-01: Add RiskContextItem to schemas/artifacts.py
+2. ARCH-S-07: Add SanitisedIndexEntry to schemas/artifacts.py
+3. ARCH-S-06: Add SanitisationError to tools/knowledge_library.py (scaffold only)
 
-Sprint-10 is fully designed. Build queue in dependency order:
-1. Sprint-10A (Schemas) — ARCH-S-01 through ARCH-S-05 — no deps, build first
-2. Sprint-10B (Knowledge Files) — KF-NEW, KF-02, KF-04, KF-01, KF-00 — parallel with schemas
-3. Sprint-10C (Historical Library) — HRL-00 then HRL-01..06 — after ARCH-S-01
-4. Sprint-10D (FRM Guided Exercise) — FRM-R-01..08 — after ARCH-S-01
-5. Sprint-10E (New Service Lines) — SL-GATE-01..03 — after schemas + knowledge files
-6. Sprint-10F (Engagement Scoping) — SCOPE-WF-01/02 — after KF-NEW + ARCH-S-04
-7. Sprint-10G (Chaining) — CHAIN-00..02 — after Phase 8 (Streamlit)
-8. Sprint-10H (Disclaimers) — ARCH-GAP-01/02 — parallel with workflows
+Run these three in sequence (ARCH-S-01 + ARCH-S-07 touch the same file; ARCH-S-06 is a separate file). After: ARCH-S-02 (schemas/dd.py), ARCH-S-03 (schemas/transaction_testing.py), ARCH-S-04 (schemas/engagement_scope.py), ARCH-S-05 (state_machine.py).
+
+Parallel with schemas: KF-00 (knowledge/policy_sop/framework.md) — no code deps, pure content.
 
 ## CARRY_FORWARD_CONTEXT
-- Session 010 was a pure planning session — BA + Architect. Zero code written.
-- 10 BA entries confirmed (BA-002 through BA-011) in tasks/ba-logic.md.
-- 35+ tasks written to tasks/todo.md (Sprint-10A through 10H).
-- docs/problem-definition.md and docs/scope-brief.md are now populated (no longer stubs).
-- AKR-08b (/architect session to fill docs/hld.md gaps) is partially addressed — hld.md not yet updated this session; should be updated next architect session.
-- FRM smoke test (Option 6, P7-GATE) still pending — needs real API keys, not blocked by planning.
-- QR-17 (document ingestion live test) still pending.
-- CE Creates DD reports on Desktop/GoodWork/ are the designated seed data for the DD historical library — Maher to run HRL-01 import wizard once it's built.
-- GoodWork_Pilot_Proposal_Draft.docx = separate product (B2B training programme) — not in scope for forensic-ai/ build; flag for future product roadmap discussion.
+- Session 011: Architect session. Sprint-10A schema gaps closed (ARCH-S-06, ARCH-S-07 added). docs/hld.md populated — no longer a stub.
+- Sprint-10A..10H design is complete and AK-approved. Build queue is OPEN.
+- Critical path: Schemas (10A) → Knowledge Files (10B, parallel) → Historical Library (10C) → FRM Redesign (10D) → Service Lines (10E) → Scoping (10F) → Chaining (10G, gated on Phase 8) → Disclaimers (10H, parallel with E/F)
+- FRM smoke test (P7-GATE) still pending — must pass before FRM-R-01..08 merge. Do not start FRM-R-01 until P7-GATE passes.
+- QR-17 (document ingestion live test) still pending — gated on live API keys.
+- SanitisationError location: tools/knowledge_library.py (module-level), not schemas/ — avoids circular dep.
+- SanitisedIndexEntry: schemas/artifacts.py — no PII fields by model definition (enforced structurally).
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Phase 10–13 build GATED on AK review and approval of architecture (tasks/todo.md Sprint-10A through 10H).
+- FRM-R-01..08 GATED on P7-GATE (FRM smoke test baseline passing).
 - Sprint-10G (Chaining) GATED on Phase 8 (Streamlit) completion.
 - SCOPE-WF-01 GATED on KF-NEW (engagement_taxonomy knowledge file).
-- SL-GATE-01 through SL-GATE-03 GATED on respective knowledge files (KF-01, KF-02, KF-04).
-- FRM smoke test (P7-GATE) still pending — must pass before FRM guided exercise redesign is merged.
+- SL-GATE-01..03 GATED on respective knowledge files (KF-02, KF-04, KF-01).
 
 ## HANDOFF_NOTE
-Session 010 closed by session-close after BA + Architect. No code changes this session.
-Next session: begin Sprint-10A (schemas) or Sprint-10B (knowledge files) — both have zero dependencies and can start immediately.
-Recommended start: ARCH-S-01 (RiskContextItem) + KF-00 (policy_sop quick win) in parallel — shortest path to FRM redesign + policy quality fix.
+Architect session complete. Sprint-10A..10H fully designed and AK-approved. docs/hld.md written. ARCH-S-06 + ARCH-S-07 added to Sprint-10A. Build queue open.
+Recommended parallel start: (1) ARCH-S-01+ARCH-S-07+ARCH-S-06 in sequence → then ARCH-S-02..05; (2) KF-00 independently.
