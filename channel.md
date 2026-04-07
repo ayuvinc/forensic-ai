@@ -12,10 +12,10 @@ The Architect and skill agents own the write gate.
 
 ```
 session:        012
-sprint:         sprint-10B (pre-merge gate)
-active_persona: architect
-last_skill_run: session-open
-last_updated:   2026-04-07 16:10:14 UTC
+sprint:         sprint-10F
+active_persona: junior-dev
+last_skill_run: architect
+last_updated:   2026-04-07 17:30:00 UTC
 ```
 
 ---
@@ -23,16 +23,14 @@ last_updated:   2026-04-07 16:10:14 UTC
 ## Last Handoff
 
 ```yaml
-from:    session-open
-to:      architect
+from:    architect
+to:      junior-dev
 status:  PASS
 message: |
-  Session 012 opened. Fallback path used (MCP unavailable).
-  Standup delivered. Handing off to /architect for:
-  1. Comprehensive feature-wise status update (Status Update 1)
-  2. Next-step plan with sprint priorities (Status Update 2)
-  Ask AK if understood before proceeding to each update.
-  After architect completes, next build sprint is 10E, 10F, or 10H.
+  Sprint-10E + 10H complete. All imports clean. Committed to main.
+  Next: Sprint-10F — workflows/engagement_scoping.py + menu Option 0.
+  Gates satisfied: KF-NEW merged, ARCH-S-04 merged.
+  Read tasks/next-action.md for full task spec.
 ```
 
 ---
@@ -46,7 +44,7 @@ message: |
 ## Sprint Packet Status
 
 ```
-packet_ready:     false
+packet_ready:     true
 codex_ready:      false
 last_intake_run:  2026-04-07
 ```
