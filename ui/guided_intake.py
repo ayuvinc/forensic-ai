@@ -13,8 +13,71 @@ import uuid
 
 from rich.console import Console
 from rich.prompt import Prompt
+from rich.table import Table
 
 from schemas.case import CaseIntake
+
+
+def prompt_with_options(
+    console: Console,
+    question: str,
+    options: list[dict],
+    allow_free_text: bool = True,
+) -> dict:
+    """Display a numbered option list and return a structured selection.
+
+    Args:
+        console: Rich console instance.
+        question: The question to display above the list.
+        options: List of dicts with 'id' and 'label' keys.
+        allow_free_text: If True, adds "0. Other (type your own)" option.
+
+    Returns:
+        dict with keys: selected_id, label, is_custom
+    """
+    console.print(f"\n  [bold]{question}[/bold]")
+
+    table = Table(show_header=False, box=None, padding=(0, 2))
+    for i, opt in enumerate(options, 1):
+        table.add_row(f"[dim]{i}.[/dim]", opt["label"])
+    if allow_free_text:
+        table.add_row("[dim]0.[/dim]", "[dim]Other (type your own)[/dim]")
+    console.print(table)
+
+    valid = [str(i) for i in range(len(options) + 1)] if allow_free_text else [str(i) for i in range(1, len(options) + 1)]
+    choice = Prompt.ask("  Select", choices=valid, default="1")
+
+    if choice == "0" or (not allow_free_text and choice not in valid):
+        custom = Prompt.ask("  Enter your own value")
+        return {"selected_id": "custom", "label": custom, "is_custom": True}
+
+    idx = int(choice) - 1
+    selected = options[idx]
+    return {"selected_id": selected["id"], "label": selected["label"], "is_custom": False}
+
+
+def _load_industry_options() -> list[dict]:
+    """Load industry options from taxonomy JSON for prompt_with_options."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).parent.parent / "knowledge" / "taxonomy" / "industries.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return [{"id": ind["id"], "label": ind["label"]} for ind in data.get("industries", [])]
+    except Exception:
+        return [{"id": "other", "label": "Other"}]
+
+
+def _load_jurisdiction_options() -> list[dict]:
+    """Load jurisdiction options from taxonomy JSON for prompt_with_options."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).parent.parent / "knowledge" / "taxonomy" / "jurisdictions.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return [{"id": k, "label": v["label"]} for k, v in data.get("jurisdictions", {}).items()]
+    except Exception:
+        return [{"id": "UAE", "label": "United Arab Emirates"}]
 
 
 def run_guided_frm_intake(console: Console) -> Optional[CaseIntake]:
@@ -26,9 +89,21 @@ def run_guided_frm_intake(console: Console) -> Optional[CaseIntake]:
     if not client_name.strip():
         return None
 
-    industry = Prompt.ask(f"  What industry is {client_name} in?")
+    industry_selection = prompt_with_options(
+        console,
+        f"What industry is {client_name} in?",
+        _load_industry_options(),
+        allow_free_text=True,
+    )
+    industry = industry_selection["label"]
     company_size = Prompt.ask(f"  How large is {client_name} — roughly how many employees?", default="")
-    jurisdiction = Prompt.ask(f"  What is {client_name}'s primary operating jurisdiction?", default="UAE")
+    jurisdiction_selection = prompt_with_options(
+        console,
+        f"What is {client_name}'s primary operating jurisdiction?",
+        _load_jurisdiction_options(),
+        allow_free_text=True,
+    )
+    jurisdiction = jurisdiction_selection["label"] if not jurisdiction_selection["is_custom"] else jurisdiction_selection["label"]
     ops_j_raw = Prompt.ask(
         f"  Does {client_name} operate in any other jurisdictions? (comma-separated, or Enter to skip)",
         default="",

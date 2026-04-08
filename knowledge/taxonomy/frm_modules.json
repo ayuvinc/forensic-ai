@@ -1,0 +1,136 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "FRM module definitions — single source of truth for module IDs, labels, dependencies, and sub-areas.",
+    "last_updated": "2026-04-08"
+  },
+  "modules": [
+    {
+      "id": 1,
+      "label": "Entity & Ownership Risk",
+      "description": "Risks arising from ownership structure, beneficial ownership opacity, related-party transactions, and shell entity exposure.",
+      "dependencies": [],
+      "default_enabled": true,
+      "sub_areas": [
+        "Ultimate beneficial owner (UBO) identification gaps",
+        "Related-party transaction disclosure",
+        "Shell entity or nominee structure risk",
+        "Cross-border ownership complexity",
+        "Shareholder agreement enforcement"
+      ]
+    },
+    {
+      "id": 2,
+      "label": "Financial Crime / AML Risk",
+      "description": "AML/CFT obligations, KYC controls, transaction monitoring, sanctions screening, and suspicious activity reporting.",
+      "dependencies": [],
+      "default_enabled": true,
+      "sub_areas": [
+        "KYC and customer due diligence (CDD) controls",
+        "Transaction monitoring and STR/SAR obligations",
+        "Sanctions screening (OFAC/UN/EU/UAE)",
+        "PEP identification and enhanced due diligence",
+        "Beneficial ownership and UBO verification",
+        "AML governance and MLRO function",
+        "Record-keeping and data retention",
+        "Third-party and correspondent risk"
+      ]
+    },
+    {
+      "id": 3,
+      "label": "Procurement & Vendor Risk",
+      "description": "Fraud risks in procurement cycles: vendor selection, purchase orders, invoice processing, and contract management.",
+      "dependencies": [2],
+      "default_enabled": false,
+      "sub_areas": [
+        "Vendor onboarding and due diligence",
+        "Competitive tendering and bid manipulation",
+        "Purchase order approval and segregation of duties",
+        "Invoice processing and duplicate payment controls",
+        "Contract management and variation orders",
+        "Vendor concentration and sole-source risk",
+        "Kickback and conflict-of-interest controls"
+      ]
+    },
+    {
+      "id": 4,
+      "label": "HR & Payroll Risk",
+      "description": "Ghost employees, payroll manipulation, timesheet fraud, and HR data integrity risks.",
+      "dependencies": [2],
+      "default_enabled": false,
+      "sub_areas": [
+        "Ghost employee and fictitious payroll",
+        "Timesheet and overtime manipulation",
+        "Commission and incentive fraud",
+        "HR master data integrity and change controls",
+        "Termination and leavers process controls",
+        "Expense reimbursement fraud",
+        "Contractor vs employee misclassification"
+      ]
+    },
+    {
+      "id": 5,
+      "label": "Revenue & Receivables Risk",
+      "description": "Revenue recognition manipulation, billing fraud, collections irregularities, and receivables misstatement.",
+      "dependencies": [],
+      "default_enabled": false,
+      "sub_areas": [
+        "Revenue recognition policy compliance",
+        "Side agreements and undisclosed discounts",
+        "Billing accuracy and overbilling",
+        "Collections and write-off approvals",
+        "Credit note and refund controls",
+        "Customer master data integrity",
+        "Lapping and kiting schemes"
+      ]
+    },
+    {
+      "id": 6,
+      "label": "Fixed Assets & Capex Risk",
+      "description": "Asset misappropriation, capex vs opex misclassification, ghost assets, and disposal irregularities.",
+      "dependencies": [],
+      "default_enabled": false,
+      "sub_areas": [
+        "Capital expenditure authorisation and approval",
+        "Capex vs opex misclassification",
+        "Asset register completeness and accuracy",
+        "Ghost asset and physical verification",
+        "Asset disposal and write-off controls",
+        "Depreciation policy application",
+        "Construction-in-progress (CIP) monitoring"
+      ]
+    },
+    {
+      "id": 7,
+      "label": "Management Override & Governance Risk",
+      "description": "Tone at the top, board oversight, journal entry manipulation, and override of internal controls.",
+      "dependencies": [2, 3],
+      "default_enabled": false,
+      "sub_areas": [
+        "Board and audit committee oversight effectiveness",
+        "Management journal entry controls",
+        "Whistleblower mechanism and retaliation risk",
+        "Conflicts of interest policy and declaration",
+        "Related-party approval and disclosure",
+        "Internal audit independence and scope",
+        "Code of conduct and ethics training"
+      ]
+    },
+    {
+      "id": 8,
+      "label": "Regulatory & Compliance Risk",
+      "description": "Regulatory reporting obligations, licence compliance, AML/CFT regulatory gaps, and enforcement exposure.",
+      "dependencies": [],
+      "default_enabled": true,
+      "sub_areas": [
+        "Regulatory reporting accuracy and timeliness",
+        "Licence and registration compliance",
+        "Regulatory change management",
+        "Examination and inspection readiness",
+        "Enforcement action and penalty exposure",
+        "Cross-border regulatory obligations",
+        "Data protection and privacy compliance"
+      ]
+    }
+  ]
+}

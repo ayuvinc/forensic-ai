@@ -1,0 +1,136 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Industry taxonomy — Level 1 industries and Level 2 sub-sectors for intake and knowledge routing.",
+    "last_updated": "2026-04-08"
+  },
+  "industries": [
+    {
+      "id": "financial_services",
+      "label": "Financial Services",
+      "sub_sectors": [
+        {"id": "banking", "label": "Banking & Retail Banking"},
+        {"id": "investment", "label": "Investment Management & Asset Management"},
+        {"id": "insurance", "label": "Insurance & Reinsurance"},
+        {"id": "fintech", "label": "Fintech & Payments"},
+        {"id": "money_services", "label": "Money Services & Remittance"},
+        {"id": "capital_markets", "label": "Capital Markets & Brokerage"}
+      ],
+      "suggested_frm_modules": [1, 2, 7, 8],
+      "rationale": "High AML/CFT exposure, regulatory oversight from CBUAE/DFSA/ADGM, PEP and sanctions risk."
+    },
+    {
+      "id": "real_estate",
+      "label": "Real Estate & Construction",
+      "sub_sectors": [
+        {"id": "residential_dev", "label": "Residential Development"},
+        {"id": "commercial_dev", "label": "Commercial Development"},
+        {"id": "property_mgmt", "label": "Property Management"},
+        {"id": "construction", "label": "Construction & Contracting"},
+        {"id": "real_estate_agency", "label": "Real Estate Agency & Brokerage"}
+      ],
+      "suggested_frm_modules": [1, 2, 3, 6, 8],
+      "rationale": "High procurement fraud risk, cash-intensive transactions, AML exposure via DNFBP classification in UAE."
+    },
+    {
+      "id": "manufacturing",
+      "label": "Manufacturing & Industrial",
+      "sub_sectors": [
+        {"id": "discrete_mfg", "label": "Discrete Manufacturing"},
+        {"id": "process_mfg", "label": "Process Manufacturing"},
+        {"id": "food_beverage", "label": "Food & Beverage"},
+        {"id": "pharma_mfg", "label": "Pharmaceutical Manufacturing"},
+        {"id": "defense_mfg", "label": "Defense & Aerospace"}
+      ],
+      "suggested_frm_modules": [3, 4, 5, 6, 7],
+      "rationale": "Procurement fraud, inventory manipulation, vendor kickbacks, fixed asset misappropriation."
+    },
+    {
+      "id": "healthcare",
+      "label": "Healthcare & Life Sciences",
+      "sub_sectors": [
+        {"id": "hospitals", "label": "Hospitals & Clinics"},
+        {"id": "pharma", "label": "Pharmaceuticals & Biotech"},
+        {"id": "medical_devices", "label": "Medical Devices"},
+        {"id": "health_insurance", "label": "Health Insurance"},
+        {"id": "diagnostics", "label": "Diagnostics & Labs"}
+      ],
+      "suggested_frm_modules": [3, 4, 5, 7, 8],
+      "rationale": "Billing fraud, procurement irregularities, regulatory compliance (DHA/DOH/MOH), payroll risks."
+    },
+    {
+      "id": "retail_consumer",
+      "label": "Retail & Consumer Goods",
+      "sub_sectors": [
+        {"id": "retail_stores", "label": "Retail Stores & Chains"},
+        {"id": "ecommerce", "label": "E-Commerce"},
+        {"id": "fmcg", "label": "FMCG & Consumer Brands"},
+        {"id": "luxury", "label": "Luxury Goods"}
+      ],
+      "suggested_frm_modules": [3, 4, 5, 7],
+      "rationale": "Cash handling risk, inventory shrinkage, returns fraud, employee theft, vendor collusion."
+    },
+    {
+      "id": "government_public",
+      "label": "Government & Public Sector",
+      "sub_sectors": [
+        {"id": "federal_govt", "label": "Federal Government"},
+        {"id": "emirate_govt", "label": "Emirate / State Government"},
+        {"id": "soe", "label": "State-Owned Enterprises"},
+        {"id": "municipalities", "label": "Municipalities & Local Bodies"},
+        {"id": "public_utilities", "label": "Public Utilities"}
+      ],
+      "suggested_frm_modules": [1, 3, 6, 7, 8],
+      "rationale": "Procurement fraud, budget misappropriation, governance gaps, public accountability requirements."
+    },
+    {
+      "id": "technology",
+      "label": "Technology & Telecommunications",
+      "sub_sectors": [
+        {"id": "software", "label": "Software & SaaS"},
+        {"id": "telecom", "label": "Telecommunications"},
+        {"id": "it_services", "label": "IT Services & Outsourcing"},
+        {"id": "media_digital", "label": "Media & Digital Platforms"},
+        {"id": "cybersecurity", "label": "Cybersecurity"}
+      ],
+      "suggested_frm_modules": [1, 4, 7, 8],
+      "rationale": "Cyber fraud, data integrity risks, IP theft, revenue recognition fraud, regulatory (TRA/TDRA)."
+    },
+    {
+      "id": "professional_services",
+      "label": "Professional Services",
+      "sub_sectors": [
+        {"id": "legal", "label": "Legal Services"},
+        {"id": "accounting", "label": "Accounting & Audit"},
+        {"id": "consulting", "label": "Consulting & Advisory"},
+        {"id": "staffing", "label": "Staffing & Recruitment"}
+      ],
+      "suggested_frm_modules": [1, 2, 4, 7, 8],
+      "rationale": "DNFBP obligations (legal/accounting), billing fraud, conflicts of interest, payroll manipulation."
+    },
+    {
+      "id": "hospitality_tourism",
+      "label": "Hospitality & Tourism",
+      "sub_sectors": [
+        {"id": "hotels", "label": "Hotels & Resorts"},
+        {"id": "travel_agencies", "label": "Travel Agencies & Tour Operators"},
+        {"id": "food_beverage_hosp", "label": "Food & Beverage (Hospitality)"},
+        {"id": "entertainment", "label": "Entertainment & Events"}
+      ],
+      "suggested_frm_modules": [3, 4, 5, 7],
+      "rationale": "Cash-intensive, high employee turnover, procurement kickbacks, revenue leakage."
+    },
+    {
+      "id": "energy_utilities",
+      "label": "Energy & Utilities",
+      "sub_sectors": [
+        {"id": "oil_gas", "label": "Oil & Gas"},
+        {"id": "renewables", "label": "Renewables & Clean Energy"},
+        {"id": "power_water", "label": "Power & Water Utilities"},
+        {"id": "petrochemicals", "label": "Petrochemicals"}
+      ],
+      "suggested_frm_modules": [1, 3, 6, 7, 8],
+      "rationale": "Large-value procurement, sanctions exposure, environmental compliance, asset manipulation."
+    }
+  ]
+}
