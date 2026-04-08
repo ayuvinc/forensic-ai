@@ -15,7 +15,7 @@ from typing import Callable, Optional
 from rich.console import Console
 from rich.prompt import Prompt
 
-from config import ANTHROPIC_API_KEY, SONNET
+from config import ANTHROPIC_API_KEY, RESEARCH_MODE, SONNET
 from core.hook_engine import HookEngine
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FinalDeliverable
@@ -54,6 +54,24 @@ def run_sanctions_screening_workflow(
         console = Console()
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
+
+    # PPH-02a: Prominent warning when live sanctions data is unavailable
+    if RESEARCH_MODE != "live":
+        from rich.panel import Panel
+        console.print(Panel(
+            "[bold red]SANCTIONS SCREENING — LIVE DATA DISABLED[/bold red]\n\n"
+            "This output is based on model knowledge only.\n"
+            "No live OFAC / UN / EU / UK OFSI / UAE sanctions screening was conducted.\n\n"
+            "[bold]This result CANNOT be used as a sanctions clearance.[/bold]\n\n"
+            "To run a live screen: set [bold]RESEARCH_MODE=live[/bold] in .env "
+            "with a valid TAVILY_API_KEY, then re-run.",
+            border_style="red",
+            title="[bold red]WARNING[/bold red]",
+            padding=(1, 2),
+        ))
+        from rich.prompt import Confirm
+        if not Confirm.ask("  Proceed with knowledge-only output (not for compliance use)?", default=False):
+            raise KeyboardInterrupt
 
     # Intake
     console.print("\n  [bold]Sanctions Screening — Intake[/bold]")

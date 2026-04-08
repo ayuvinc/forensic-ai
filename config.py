@@ -25,7 +25,7 @@ TAVILY_API_KEY    = os.getenv("TAVILY_API_KEY", "")
 #   Use this for dev, demo, and any environment where Tavily is unavailable.
 # "live": Tavily API is called for web/regulatory/sanctions/company lookups.
 #   Requires a valid TAVILY_API_KEY. Set in .env: RESEARCH_MODE=live
-RESEARCH_MODE = os.getenv("RESEARCH_MODE", "knowledge_only")
+RESEARCH_MODE = os.getenv("RESEARCH_MODE", "live" if os.getenv("TAVILY_API_KEY") else "knowledge_only")
 
 # ── Models ────────────────────────────────────────────────────────────────────
 HAIKU  = "claude-haiku-4-5-20251001"

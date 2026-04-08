@@ -70,3 +70,22 @@ def print_header(console: Console, firm_name: str = "GoodWork Forensic Consultin
 def print_section(console: Console, title: str) -> None:
     """Print a section separator."""
     console.print(f"\n[bold cyan]{'─' * 5} {title} {'─' * 5}[/bold cyan]")
+
+
+def display_research_mode_banner(console: Console, mode: str) -> None:
+    """Render a one-time research mode banner at session start."""
+    if mode == "live":
+        console.print(Panel(
+            "[green]Research: LIVE[/green] — Tavily enabled. "
+            "Regulatory, sanctions, and web lookups will use live data.",
+            border_style="green",
+            padding=(0, 1),
+        ))
+    else:
+        console.print(Panel(
+            "[yellow]Research: KNOWLEDGE-ONLY[/yellow] — No external data. "
+            "All outputs are based on model knowledge. "
+            "Set [bold]RESEARCH_MODE=live[/bold] in .env with a valid TAVILY_API_KEY for live data.",
+            border_style="yellow",
+            padding=(0, 1),
+        ))
