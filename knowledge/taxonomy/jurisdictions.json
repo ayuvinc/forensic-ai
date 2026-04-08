@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Jurisdiction registry — regulators, authoritative domains, and company registries per jurisdiction. Loaded by config.py at startup.",
+    "last_updated": "2026-04-08"
+  },
+  "jurisdictions": {
+    "UAE": {
+      "label": "United Arab Emirates",
+      "regulators": ["CBUAE", "DFSA", "ADGM", "SCA", "FSRA"],
+      "domains": ["cb.gov.ae", "dfsa.ae", "adgm.com", "sca.gov.ae", "fsra.ae"],
+      "company_registries": ["dc.gov.ae", "added.gov.ae", "mohre.gov.ae"],
+      "aml_authority": "CBUAE / UAE FIU",
+      "sanctions_lists": ["UAE Cabinet Resolution List"],
+      "notes": "DFSA governs DIFC; ADGM/FSRA govern ADGM. CBUAE governs onshore licensed entities."
+    },
+    "Saudi Arabia": {
+      "label": "Kingdom of Saudi Arabia",
+      "regulators": ["SAMA", "CMA", "ZATCA"],
+      "domains": ["sama.gov.sa", "cma.org.sa", "zatca.gov.sa"],
+      "company_registries": ["mc.gov.sa", "mci.gov.sa"],
+      "aml_authority": "SAMA / SAFIU",
+      "sanctions_lists": [],
+      "notes": "SAMA governs banking and insurance. CMA governs capital markets."
+    },
+    "India": {
+      "label": "Republic of India",
+      "regulators": ["RBI", "SEBI", "MCA", "PMLA-FIU"],
+      "domains": ["rbi.org.in", "sebi.gov.in", "mca.gov.in", "fiuindia.gov.in"],
+      "company_registries": ["mca.gov.in"],
+      "aml_authority": "FIU-India under PMLA 2002",
+      "sanctions_lists": [],
+      "notes": "PMLA 2002 is the primary AML framework. DPDP Act 2023 governs data protection."
+    },
+    "United Kingdom": {
+      "label": "United Kingdom",
+      "regulators": ["FCA", "PRA", "HMRC"],
+      "domains": ["fca.org.uk", "bankofengland.co.uk", "hmrc.gov.uk"],
+      "company_registries": ["companieshouse.gov.uk"],
+      "aml_authority": "FCA / UKFIU",
+      "sanctions_lists": ["OFSI Consolidated List"],
+      "notes": "Post-Brexit UK has its own sanctions regime (OFSI) separate from EU."
+    },
+    "United States": {
+      "label": "United States of America",
+      "regulators": ["FinCEN", "OCC", "SEC", "CFTC", "FDIC"],
+      "domains": ["fincen.gov", "occ.gov", "sec.gov", "cftc.gov"],
+      "company_registries": ["sec.gov/edgar"],
+      "aml_authority": "FinCEN under BSA",
+      "sanctions_lists": ["OFAC SDN List", "OFAC Non-SDN Lists"],
+      "notes": "BSA/AML is primary framework. CTA 2024 adds UBO reporting via FinCEN."
+    },
+    "European Union": {
+      "label": "European Union",
+      "regulators": ["EBA", "ESMA", "ECB"],
+      "domains": ["eba.europa.eu", "esma.europa.eu", "ecb.europa.eu", "sanctions.ec.europa.eu"],
+      "company_registries": [],
+      "aml_authority": "AMLA (from 2025) / National FIUs",
+      "sanctions_lists": ["EU Consolidated Financial Sanctions List"],
+      "notes": "AMLD6 is current AML directive. AMLA becomes supervisor from 2025."
+    },
+    "Bahrain": {
+      "label": "Kingdom of Bahrain",
+      "regulators": ["CBB", "MOICT"],
+      "domains": ["cbb.gov.bh", "moic.gov.bh"],
+      "company_registries": ["sijilat.bh"],
+      "aml_authority": "CBB / BaFIA",
+      "sanctions_lists": [],
+      "notes": "CBB is the unified financial regulator."
+    },
+    "Qatar": {
+      "label": "State of Qatar",
+      "regulators": ["QCB", "QFCRA"],
+      "domains": ["qcb.gov.qa", "qfcra.com"],
+      "company_registries": ["moci.gov.qa"],
+      "aml_authority": "QCB / QFIU",
+      "sanctions_lists": [],
+      "notes": "QFCRA governs QFC-registered entities. QCB governs onshore."
+    }
+  }
+}

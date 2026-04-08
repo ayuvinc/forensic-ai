@@ -62,24 +62,24 @@ DOC_EXCERPT_CHARS     = 8_000
 DOC_SECTION_MAX_CHARS = 60_000
 SMALL_DOC_THRESHOLD   = 20_000   # chars — full read permitted below this
 
-# ── Jurisdiction registry ─────────────────────────────────────────────────────
-JURISDICTION_REGISTRY: dict[str, dict] = {
-    "UAE": {
-        "regulators": ["CBUAE", "DFSA", "ADGM", "SCA"],
-        "domains": ["cb.gov.ae", "dfsa.ae", "adgm.com", "sca.gov.ae", "fsra.ae"],
-        "company_registries": ["dc.gov.ae", "added.gov.ae", "mohre.gov.ae"],
-    },
-    "Saudi Arabia": {
-        "regulators": ["SAMA", "CMA"],
-        "domains": ["sama.gov.sa", "cma.org.sa"],
-        "company_registries": ["mc.gov.sa", "mci.gov.sa"],
-    },
-    "India": {
-        "regulators": ["RBI", "SEBI", "MCA"],
-        "domains": ["rbi.org.in", "sebi.gov.in", "mca.gov.in"],
-        "company_registries": ["mca.gov.in"],
-    },
-}
+# ── Jurisdiction registry — loaded from taxonomy JSON ─────────────────────────
+def _load_jurisdiction_registry() -> dict[str, dict]:
+    import json
+    _path = BASE_DIR / "knowledge" / "taxonomy" / "jurisdictions.json"
+    try:
+        data = json.loads(_path.read_text(encoding="utf-8"))
+        return data.get("jurisdictions", {})
+    except Exception:
+        # Fallback: hardcoded UAE only — prevents startup failure if file missing
+        return {
+            "UAE": {
+                "regulators": ["CBUAE", "DFSA", "ADGM", "SCA", "FSRA"],
+                "domains": ["cb.gov.ae", "dfsa.ae", "adgm.com", "sca.gov.ae", "fsra.ae"],
+                "company_registries": ["dc.gov.ae", "added.gov.ae", "mohre.gov.ae"],
+            }
+        }
+
+JURISDICTION_REGISTRY: dict[str, dict] = _load_jurisdiction_registry()
 
 
 def get_jurisdiction_domains(jurisdictions: list[str] | None = None) -> list[str]:

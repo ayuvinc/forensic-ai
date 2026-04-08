@@ -1,0 +1,111 @@
+{
+  "_meta": {
+    "version": "1.0.0",
+    "description": "Knowledge routing table — maps {industry_id, workflow_id} to knowledge file path. Agents load the matched file as domain context before drafting.",
+    "last_updated": "2026-04-08"
+  },
+  "routes": [
+    {
+      "industry_id": "financial_services",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "FRM framework covers all modules; financial_services gets full AML/CFT + regulatory emphasis."
+    },
+    {
+      "industry_id": "financial_services",
+      "workflow_id": "due_diligence",
+      "knowledge_file": "knowledge/due_diligence/due_diligence_framework.md",
+      "notes": "DD of financial services entities requires licence verification, regulatory standing, AML controls."
+    },
+    {
+      "industry_id": "financial_services",
+      "workflow_id": "sanctions_screening",
+      "knowledge_file": "knowledge/sanctions_screening/sanctions_framework.md",
+      "notes": "Financial services entities have highest sanctions exposure — full OFAC/UN/EU/OFSI/UAE screening."
+    },
+    {
+      "industry_id": "financial_services",
+      "workflow_id": "investigation_report",
+      "knowledge_file": "knowledge/investigation/investigation_framework.md",
+      "notes": "Financial crime investigations: ACFE methodology, SAR obligations, regulatory disclosure."
+    },
+    {
+      "industry_id": "real_estate",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Real estate is UAE DNFBP — AML module is mandatory regardless of scope selection."
+    },
+    {
+      "industry_id": "real_estate",
+      "workflow_id": "due_diligence",
+      "knowledge_file": "knowledge/due_diligence/due_diligence_framework.md",
+      "notes": "DD of real estate entities: ownership chain, property registration, RERA/DLD compliance."
+    },
+    {
+      "industry_id": "manufacturing",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Manufacturing FRM: procurement and inventory fraud dominant; modules 3,5,6 prioritised."
+    },
+    {
+      "industry_id": "manufacturing",
+      "workflow_id": "due_diligence",
+      "knowledge_file": "knowledge/due_diligence/due_diligence_framework.md",
+      "notes": "Manufacturing DD: supply chain, regulatory licences, environmental compliance."
+    },
+    {
+      "industry_id": "healthcare",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Healthcare FRM: billing fraud, procurement, regulatory (DHA/DOH/MOH) compliance."
+    },
+    {
+      "industry_id": "government_public",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Public sector FRM: procurement, governance, public accountability."
+    },
+    {
+      "industry_id": "technology",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Tech FRM: cyber fraud, data integrity, IP risk, revenue recognition."
+    },
+    {
+      "industry_id": "professional_services",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Professional services are DNFBP (legal/accounting) — AML module mandatory."
+    },
+    {
+      "industry_id": "_default",
+      "workflow_id": "frm_risk_register",
+      "knowledge_file": "knowledge/frm/frm_framework.md",
+      "notes": "Fallback for any industry not explicitly mapped."
+    },
+    {
+      "industry_id": "_default",
+      "workflow_id": "due_diligence",
+      "knowledge_file": "knowledge/due_diligence/due_diligence_framework.md",
+      "notes": "Fallback DD route."
+    },
+    {
+      "industry_id": "_default",
+      "workflow_id": "investigation_report",
+      "knowledge_file": "knowledge/investigation/investigation_framework.md",
+      "notes": "Fallback investigation route."
+    },
+    {
+      "industry_id": "_default",
+      "workflow_id": "transaction_testing",
+      "knowledge_file": "knowledge/transaction_testing/transaction_testing_framework.md",
+      "notes": "Fallback transaction testing route."
+    },
+    {
+      "industry_id": "_default",
+      "workflow_id": "sanctions_screening",
+      "knowledge_file": "knowledge/sanctions_screening/sanctions_framework.md",
+      "notes": "Fallback sanctions route."
+    }
+  ]
+}
