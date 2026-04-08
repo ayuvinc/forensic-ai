@@ -42,3 +42,6 @@ Must pass 3 consecutive times with no G-13/G-14 crash.
 - Sprint-10L Phase B: MISSING_BA_SIGNOFF — no BA entries for behavioral matrix in ba-logic.md
 - Sprint-10K (PPH-01..04) gated on P7-GATE
 - Sprint-10J (taxonomy) gated on P7-GATE
+
+## DEFERRED — Post P7-GATE
+- AK wants to add something to the knowledge base from "extracted knowledge" — clarify what specifically after smoke test completes.

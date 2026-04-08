@@ -94,7 +94,11 @@ Missing authoritative citations on regulatory claims are grounds for rejection.
 """
 
 
-def build_task_message(pm_output: dict, junior_output: dict | None = None) -> str:
+def build_task_message(
+    pm_output: dict,
+    junior_output: dict | None = None,
+    research_mode: str = "knowledge_only",
+) -> str:
     import json
 
     def preview(d: dict, n: int = 3000) -> str:
@@ -105,7 +109,7 @@ def build_task_message(pm_output: dict, junior_output: dict | None = None) -> st
     msg += f"PM REVIEW:\n{preview(pm_output)}\n\n"
     if junior_output:
         msg += f"UNDERLYING DRAFT (summary):\n{preview(junior_output, 2000)}\n\n"
-    msg += (
-        "Provide your approval decision in the required JSON format."
-    )
+    msg += "Provide your approval decision in the required JSON format."
+    if research_mode == "live":
+        msg += "\n\nUse regulatory_lookup to verify any regulatory claims before approving."
     return msg
