@@ -259,6 +259,7 @@ def _dispatch(
 
         console.print(f"\n[green]FRM Risk Register complete: {len(result.risk_register)} risks identified[/green]")
         console.print(f"Report: cases/{intake.case_id}/final_report.en.md")
+        _mark_deliverable_written(intake.case_id, intake.workflow)
 
     elif choice == "7":
         # Client Proposal
