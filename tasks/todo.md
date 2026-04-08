@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
-Active task:    none
-Active persona: none
+Status:         OPEN
+Active task:    Sprint-10L Phase A — SRL-02/03a/03b
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-07 17:50:45 UTC — Session 013 close by session-close (fallback)
+Last updated:   2026-04-08 13:23:00 UTC — Session 015 open by session-open (fallback)
 
 ---
 
@@ -145,10 +145,15 @@ Files: tools/document_manager.py, run.py
 
 - [ ] FE-01 Replace ui/ terminal components with Streamlit pages
 - [ ] FE-02 Conversational intake → Streamlit multi-step form per workflow
-- [ ] FE-03 Pipeline progress → Streamlit spinner + status text
+- [ ] FE-03 Pipeline progress → Streamlit spinner + status text (replaces CLI spinner that collides with input prompts — confirmed UX bug in P7-GATE test)
 - [ ] FE-04 Output display → Streamlit markdown render + file download buttons
 - [ ] FE-05 Firm profile setup → Streamlit settings page (replaces terminal wizard)
 - [ ] FE-06 Case tracker → Streamlit table with case status + open/download links
+- [ ] FE-07 Risk item review → Streamlit card per item with A/F/R buttons (replaces hidden CLI prompt — confirmed UX bug in P7-GATE test)
+- [ ] FE-08 Case folder UX — final deliverables surfaced prominently; interim artifacts (*.v{N}.json, pm_review, junior_output) moved to cases/{id}/interim/ subfolder; only final_report.* and audit_log.jsonl in root
+- [ ] FE-09 Word document design — apply firm branding template (logo, fonts, header/footer) to all .docx outputs; requires firm_profile/template.docx as base template loaded by file_tools.py
+- [ ] FE-10 FRM Risk Register — Excel output (.xlsx) in addition to .md/.docx; one row per risk item with columns: Module, Risk Title, Category, Likelihood, Impact, Rating, Owner, Recommendations; use openpyxl; add to requirements.txt
+- [ ] FE-11 FRM Risk Register — two-tier risk structure: Design-Level risks (policy/framework gaps — what should exist but doesn't) and Operational-Level risks (execution gaps — what exists but isn't working); each risk item tagged with tier in schema and rendered in separate sections in output
 
 ---
 
@@ -265,41 +270,65 @@ FRM flow design (confirmed):
 
 ---
 
-### Sprint-10L — Mode-Aware Review Chain (PRIORITY 1 — must build before P7-GATE matrix)
+### Sprint-10L Phase A — Prompt-Only Fix (PRIORITY 1 — unblocks P7-GATE)
 
-**Context:** 100-iteration Monte Carlo (Session 013) showed G-13/G-14 (PM + Partner revision loop
-exhaustion) cause 38/60 crashes — 63% of all failures. Root cause: PM and Partner review criteria
-were designed for live-research + document-backed output. In knowledge_only mode they correctly
-reject generic output → revision loop hits MAX_REVISION_ROUNDS → crash. Fix: mode-aware acceptance
-criteria in PM and Partner agents.
+**Scope decision (Session 014 Architect):** Full behavioral matrix (REVIEW_MODE, verdict spectrum,
+DocLevel, Phase, Authority axes) split into Phase B — gated on P7-GATE passing + BA sign-off.
+Phase A is the minimal targeted fix: 4 files, no schema changes, no orchestrator changes.
+Design rationale in: docs/lld/sprint-10L-review-chain-design.md
 
-**Rule:** In knowledge_only mode, PM/Partner must NEVER request revision solely because:
-- Citations are missing or have empty source_url
-- Findings lack client-specific evidence (acceptable — model works from knowledge)
-- Output is generic (flag as open_questions, not revision request)
+**Root cause of G-13/G-14 (63% of crashes):** PM/Partner don't know RESEARCH_MODE=knowledge_only,
+so they reject for citation absence → revision loop exhausts → crash.
 
-**In knowledge_only mode, PM/Partner SHOULD still reject:**
-- Factually wrong regulatory references
-- Empty findings list (zero risks identified)
-- Structural schema violations
+**Phase A fix:** Pass RESEARCH_MODE into PM/Partner prompts. In knowledge_only mode:
+- NEVER reject for missing citations or generic output
+- Flag gaps as open_questions[], not revision_requested=true
+- STILL reject: empty findings list, wrong regulator, structural schema violation
 
-**Security model:** No auth/PII changes. Audit: revision decisions must log mode in audit_log.
+**Security model:** No auth/PII changes. Audit: research_mode logged in agent context.
 
-- [ ] SRL-01 `agents/project_manager/prompts.py` — add mode-aware section to PM review system
-      prompt. When RESEARCH_MODE=knowledge_only: evaluate output on structure, logic, and
-      completeness of reasoning — not on citation presence. Flag missing evidence as
-      open_questions[] on JuniorDraft. Do NOT set revision_required=True for citation gaps alone.
+**Branch:** feature/sprint-10L-mode-aware-review-chain (partially built — see notes per task)
 
-- [ ] SRL-02 `agents/partner/prompts.py` — same pattern for Partner. In knowledge_only mode:
-      approve if structure is sound and open_questions are documented. Escalation not required
-      for absence of authoritative citations when mode is knowledge_only.
+- [x] SRL-01 `agents/project_manager/prompts.py` — DONE by junior-dev (Session 014).
+      build_system_prompt() accepts research_mode param; _build_mode_section() generates
+      mode-specific criteria block. Awaiting SRL-03a before QA.
 
-- [ ] SRL-03 `agents/project_manager/agent.py` — pass RESEARCH_MODE into PM context dict so
-      prompt can reference it. Same for partner/agent.py.
+- [x] SRL-02 `agents/partner/prompts.py` — DONE. build_task_message() now accepts research_mode
+      param; appends "Use regulatory_lookup..." only when research_mode == "live".
 
-- [ ] SRL-04 Smoke test validation: run Option 6 (FRM, 2 modules, knowledge_only). Confirm
-      PM approves or requests revision only for substantive issues, not citation absence.
-      Confirm no G-13/G-14 crash across 3 consecutive runs.
+- [x] SRL-03a `agents/project_manager/agent.py` — DONE. import config; passes
+      research_mode=config.RESEARCH_MODE to prompts.build_system_prompt().
+
+- [x] SRL-03b `agents/partner/agent.py` — DONE. import config; passes
+      research_mode=config.RESEARCH_MODE to both build_system_prompt() and build_task_message().
+
+- [x] SRL-04 Smoke test (AK manual): PASSED 2026-04-08. FRM 2 modules (AML + Regulatory),
+      knowledge_only mode. PM approved without citation revision requests. Final report written.
+      G-13/G-14 confirmed fixed. P7-GATE PASSED.
+
+---
+
+### Sprint-10L Phase B — Behavioral Matrix (GATED on P7-GATE + BA sign-off)
+
+**Scope:** Full 10-component design from docs/lld/sprint-10L-review-chain-design.md.
+MISSING_BA_SIGNOFF: REVIEW_MODE enum, verdict spectrum, DocLevel axis, Phase axis, Authority Level
+have no BA entry in ba-logic.md. Do not start until BA session completes for this feature.
+
+**Files touched:** config.py, schemas/artifacts.py, core/orchestrator.py,
+agents/project_manager/prompts.py + agent.py, agents/partner/prompts.py + agent.py,
+workflows/sanctions_screening.py, workflows/due_diligence.py,
+workflows/transaction_testing.py, workflows/investigation_report.py
+
+- [ ] SRL-B-BA Write BA entries for behavioral matrix to ba-logic.md (AK input required)
+- [ ] SRL-B-01 config.py — REVIEW_MODE flag with validation (DEMO/DEV/CLIENT_DRAFT/CLIENT_FINAL)
+- [ ] SRL-B-02 schemas/artifacts.py — ReviewVerdict enum; update ApprovalDecision + RevisionRequest
+- [ ] SRL-B-03 core/orchestrator.py — behavioral_matrix(), universal_blocker_checks(),
+      D0/D1 equivalence enforcement, FINAL-phase multiplier lock
+- [ ] SRL-B-04 agents/project_manager/prompts.py — rewrite to consume full matrix context
+- [ ] SRL-B-05 agents/partner/prompts.py — same
+- [ ] SRL-B-06 agents/project_manager/agent.py + agents/partner/agent.py — pass matrix context
+- [ ] SRL-B-07 workflows/sanctions_screening.py, due_diligence.py — BLOCK not loop for G-A
+- [ ] SRL-B-08 workflows/transaction_testing.py, investigation_report.py — intake completeness gates
 
 ---
 
@@ -446,6 +475,13 @@ map directly to Streamlit select boxes + text_input fallback. Design TAX-05 inte
 
 WARNING: FRM-R-01..08 must be built behind a new workflow path until P7-GATE (FRM smoke test) has a baseline passing run. See R-010.
 
+- [ ] FRM-R-00 Custom risk areas — Maher can add unlimited custom risk areas after the 8 standard modules. Three input modes per area:
+      (a) Name only → model generates BASELINE indicative risks (3–5 items)
+      (b) Maher's notes → free-text narration of observations/findings; model structures into risk items
+      (c) Document upload (interview transcripts, meeting notes, emails) → DocumentManager ingests; model reads and extracts risk signals; asks structured follow-up questions where gaps exist; then structures into formal risk items
+      All three modes feed the same 4-question guided flow and approve/flag/rewrite loop.
+      Custom areas tagged as CUSTOM in state.json; source mode (BASELINE/CONSULTANT_NOTES/FROM_DOCUMENT) recorded per item in audit_log. Final register treats custom items identically to standard module items.
+      BA sign-off required (extends BA-002) before build.
 - [ ] FRM-R-01 workflows/frm_risk_register.py: after module selection, present plan summary → "We will assess X sub-areas across Y modules. Proceed?"
 - [ ] FRM-R-02 Per-module loop: present sub-areas list → consultant confirms which apply (Y/N/Partial)
 - [ ] FRM-R-03 Per-risk-area: 4-question sequence (incidents? controls? probability? impact?). Store in RiskContextItem; pass to model for item generation.

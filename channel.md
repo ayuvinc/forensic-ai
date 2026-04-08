@@ -11,10 +11,10 @@ The Architect and skill agents own the write gate.
 ## Current Status
 
 ```
-session:        012
-sprint:         sprint-10F
-active_persona: AK
-last_skill_run: architect
+session:        014
+sprint:         sprint-10L
+active_persona: junior-dev
+last_skill_run: session-open
 last_updated:   2026-04-07 18:00:00 UTC
 ```
 

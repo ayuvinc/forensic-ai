@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+import config
+
 from core.agent_base import BaseAgent
 from core.hook_engine import HookEngine
 from core.plugin_loader import plugin_loader
@@ -46,7 +48,7 @@ class ProjectManager:
         intake_dict = context.get("intake", {})
         intake = CaseIntake(**intake_dict) if intake_dict else _minimal_intake(context)
 
-        system_prompt = prompts.build_system_prompt(self._workflow, intake)
+        system_prompt = prompts.build_system_prompt(self._workflow, intake, research_mode=config.RESEARCH_MODE)
         task_message  = prompts.build_task_message(junior_output)
 
         result = self._agent.run(

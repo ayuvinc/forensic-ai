@@ -5,6 +5,8 @@ from __future__ import annotations
 import json
 import logging
 
+import config
+
 from core.agent_base import BaseAgent
 from core.hook_engine import HookEngine
 from core.plugin_loader import plugin_loader
@@ -53,8 +55,8 @@ class Partner:
 
         junior_output = context.get("junior_output")
 
-        system_prompt = prompts.build_system_prompt(self._workflow, intake)
-        task_message  = prompts.build_task_message(pm_output, junior_output)
+        system_prompt = prompts.build_system_prompt(self._workflow, intake, research_mode=config.RESEARCH_MODE)
+        task_message  = prompts.build_task_message(pm_output, junior_output, research_mode=config.RESEARCH_MODE)
 
         result = self._agent.run(
             system_prompt=system_prompt,
