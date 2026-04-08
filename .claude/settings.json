@@ -71,6 +71,10 @@
           {
             "type": "command",
             "command": "bash scripts/hooks/set-codex-prep-flag.sh"
+          },
+          {
+            "type": "command",
+            "command": "bash scripts/hooks/set-codex-read-flag.sh"
           }
         ]
       },
@@ -129,19 +133,19 @@
     "ak-state-machine": {
       "command": "python3",
       "args": [
-        "mcp-servers/state_machine_server.py"
+        "/Users/akaushal011/forensic-ai/mcp-servers/state_machine_server.py"
       ],
       "env": {
-        "PROJECT_ROOT": "."
+        "PROJECT_ROOT": "/Users/akaushal011/forensic-ai"
       }
     },
     "ak-audit-log": {
       "command": "python3",
       "args": [
-        "mcp-servers/audit_log_server.py"
+        "/Users/akaushal011/forensic-ai/mcp-servers/audit_log_server.py"
       ],
       "env": {
-        "PROJECT_ROOT": ".",
+        "PROJECT_ROOT": "/Users/akaushal011/forensic-ai",
         "AUDIT_LOG_PATH": "tasks/audit-log.md"
       }
     }
