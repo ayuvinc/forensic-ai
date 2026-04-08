@@ -4,44 +4,36 @@
 CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+architect
 
 ## NEXT_TASK
-**Sprint-10L Phase A — complete remaining tasks on feature/sprint-10L-mode-aware-review-chain**
+**Phase 8 — Streamlit Frontend Migration**
 
-**Step 1 (junior-dev):** Fix SRL-02 defect in `agents/partner/prompts.py`:
-- Add `research_mode: str = "knowledge_only"` param to `build_task_message()`
-- When `research_mode == "live"`: append "Use regulatory_lookup to verify any regulatory claims before approving." to the task message
-- When `research_mode == "knowledge_only"`: omit that line (model has no live tool access)
+Wire all 10 menu options as Streamlit sidebar navigation. Replace terminal UI with browser-based interface. Fixes UX problems confirmed in Session 015 P7-GATE test:
+- Risk item review hidden behind spinner (FE-07)
+- No clean case output view (FE-08)
+- Word document branding (FE-09)
 
-**Step 2 (junior-dev):** SRL-03a — `agents/project_manager/agent.py`:
-- `from config import RESEARCH_MODE` at top
-- Pass `research_mode=RESEARCH_MODE` to `prompts.build_system_prompt()` call in `__call__`
-
-**Step 3 (junior-dev):** SRL-03b — `agents/partner/agent.py`:
-- Same import
-- Pass `research_mode=RESEARCH_MODE` to `prompts.build_system_prompt()` AND `prompts.build_task_message()`
-
-**Step 4 (junior-dev):** Verify imports clean — run:
-`python -c "from agents.project_manager.agent import ProjectManager; from agents.partner.agent import Partner; print('OK')"`
-
-**Step 5 (AK, manual):** SRL-04 — P7-GATE:
-Run `python run.py` → Option 6 → FRM → 2 modules → complete end-to-end.
-Must pass 3 consecutive times with no G-13/G-14 crash.
+Start with /architect to design the Streamlit page map and component breakdown before any build begins. Phase 8 has 9 tasks (FE-01..09) and is a significant migration — plan mode required.
 
 ## CARRY_FORWARD_CONTEXT
-- Session 014: Sprint-10L scoped + split (Phase A = prompt fix, Phase B = behavioral matrix)
-- SRL-01 done: agents/project_manager/prompts.py rewritten with RESEARCH_MODE-aware criteria
-- SRL-02 written but defect: build_task_message() dropped regulatory_lookup instruction for live mode — must fix before merge
-- Phase B (REVIEW_MODE + verdict spectrum + behavioral matrix) gated on P7-GATE + BA sign-off
-- Feature branch: feature/sprint-10L-mode-aware-review-chain
+Session 015 completed:
+- Sprint-10L Phase A: MERGED — PM/Partner now receive RESEARCH_MODE; G-13/G-14 fixed
+- P7-GATE: PASSED — FRM 2-module run in knowledge_only, no crash
+- BUG-12: FIXED — FRM state now advances to DELIVERABLE_WRITTEN after pipeline
+- Sprint-10K: MERGED — smart RESEARCH_MODE default, sanctions warning panel, mode banner, guardrails.md
+- Sprint-10J: MERGED — 4 taxonomy JSON files (industries, frm_modules, jurisdictions, routing_table), prompt_with_options(), FRM intake uses taxonomy selectors
+
+Deferred:
+- Phase 8 (Streamlit) — next priority
+- Sprint-10D (FRM guided exercise — BA-002 confirmed, Sprint-10J done)
+- Sprint-10C (Historical library — BA-003 confirmed)
+- Sprint-10L Phase B (behavioral matrix — MISSING_BA_SIGNOFF)
+- FRM-R-00 (custom risk areas with stakeholder docs — MISSING_BA_SIGNOFF)
+- AK: clarify what "extracted knowledge" to add to knowledge base (noted in next-action)
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- SRL-02 defect must be fixed before any merge to main
-- P7-GATE gated on Phase A completing (SRL-01..03b all merged)
-- Sprint-10L Phase B: MISSING_BA_SIGNOFF — no BA entries for behavioral matrix in ba-logic.md
-- Sprint-10K (PPH-01..04) gated on P7-GATE
-- Sprint-10J (taxonomy) gated on P7-GATE
-
-## DEFERRED — Post P7-GATE
-- AK wants to add something to the knowledge base from "extracted knowledge" — clarify what specifically after smoke test completes.
+- Sprint-10L Phase B: MISSING_BA_SIGNOFF — do not start
+- FRM-R-00: MISSING_BA_SIGNOFF — extends BA-002, needs sign-off before build
+- 6 stale feature branches — delete after confirming merged to main
+- RESEARCH_MODE now defaults to live if TAVILY_API_KEY present — verify on next live run
