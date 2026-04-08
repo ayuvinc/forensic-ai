@@ -178,6 +178,12 @@ class BaseAgent:
                     "Output based on model knowledge and knowledge-base files. "
                     "Verify regulatory references independently before client delivery.]"
                 )
+                import sys
+                print(
+                    f"[WARN] {self.manifest.plugin_id}: knowledge-only output — "
+                    "no live regulatory/sanctions data. Review before client delivery.",
+                    file=sys.stderr,
+                )
 
             return {"text": text, "tool_calls": tool_calls}
 

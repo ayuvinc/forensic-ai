@@ -350,48 +350,17 @@ be resolved before any client-facing use of the system.
 A consultant with a valid key who doesn't set `RESEARCH_MODE=live` gets silently degraded output
 with no live regulatory/sanctions data. The degradation is not visible at session start.
 
-- [ ] PPH-01a `config.py` — Change RESEARCH_MODE default:
-      `RESEARCH_MODE = os.getenv("RESEARCH_MODE", "live" if TAVILY_API_KEY else "knowledge_only")`
-      Key present → live by default. No key → knowledge_only automatically. Explicit env var always wins.
+- [x] PPH-01a `config.py` — DONE. RESEARCH_MODE defaults to "live" if TAVILY_API_KEY present, "knowledge_only" if not. Explicit env var always wins.
 
-- [ ] PPH-01b `run.py` — At startup, after validate_config(), print one line showing active research mode:
-      `[Research: LIVE — Tavily enabled]` or `[Research: KNOWLEDGE-ONLY — no external data]`
-      So consultant sees it on every run, not buried in output.
+- [x] PPH-01b `run.py` — DONE. display_research_mode_banner() called at startup after validate_config().
 
-#### PPH-02 — Sanctions screening degraded-mode warning (P1 — must fix before production)
+- [x] PPH-02a `workflows/sanctions_screening.py` — DONE. Red warning panel + explicit confirm before workflow runs in knowledge_only mode.
 
-**Risk:** In knowledge_only mode, sanctions_screening workflow returns model-knowledge output with a
-disclaimer buried in text. A consultant could interpret this as a live screen result — "no match found"
-when no live screen was conducted. This is a compliance and liability issue.
+- [x] PPH-03a `ui/display.py` — DONE. display_research_mode_banner() added.
 
-- [ ] PPH-02a `workflows/sanctions_screening.py` — At top of workflow, before any agent run:
-      if RESEARCH_MODE != "live": print a prominent warning panel (Rich Panel, red border):
-      "SANCTIONS SCREENING — LIVE DATA DISABLED. This output is based on model knowledge only.
-       No live OFAC/UN/EU screening was conducted. This result CANNOT be used as a sanctions clearance.
-       Set RESEARCH_MODE=live in .env and re-run with a valid TAVILY_API_KEY for a live screen."
-      Workflow still runs (consultant may want the template structure) but warning is unmissable.
+- [x] PPH-03b `core/agent_base.py` — DONE. stderr warn line after knowledge-only disclaimer append.
 
-#### PPH-03 — Knowledge-only disclaimer surfaced as UI warning (P2 — before first client delivery)
-
-**Risk:** Knowledge-only disclaimer is appended as plain text inside agent output. Consultant sees it
-inline with the draft content and may not register it as a system-level limitation.
-
-- [ ] PPH-03a `ui/display.py` — Add `display_research_mode_banner(mode: str)` function. Called once
-      at session start (by run.py PPH-01b). Renders Rich panel appropriate to mode.
-
-- [ ] PPH-03b `core/agent_base.py` — After appending knowledge-only disclaimer text, also call a
-      lightweight `warn_knowledge_only()` that writes one line to stderr/console so it's visible
-      separate from the draft output. Keep the text disclaimer in the output for audit trail.
-
-#### PPH-04 — Guardrail mode-awareness rule (P2 — engineering practice)
-
-**Learning:** Any guardrail that enforces external-data quality (citations, sources, live lookups) must
-check RESEARCH_MODE before firing. This is now a design constraint, not a one-off fix.
-
-- [ ] PPH-04a `docs/lld/guardrails.md` — Document the mode-awareness rule: "Every guardrail that
-      references external data (citations, authoritative sources, live lookups) MUST condition on
-      RESEARCH_MODE == 'live'. In knowledge_only mode, replace hard block with disclaimer."
-      This is the rule junior-dev applies to any new guardrail going forward.
+- [x] PPH-04a `docs/lld/guardrails.md` — DONE. Mode-awareness rule documented with rationale and required pattern.
 
 ---
 

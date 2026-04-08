@@ -26,12 +26,15 @@ def main() -> None:
         return
 
     # ── Validate config ───────────────────────────────────────────────────────
-    from config import validate_config
+    from config import validate_config, RESEARCH_MODE
     missing = validate_config()
     if missing:
         console.print(f"[red]Configuration errors:[/red] {missing}")
         console.print("Please update your .env file and restart.")
         sys.exit(1)
+
+    from ui.display import display_research_mode_banner
+    display_research_mode_banner(console, RESEARCH_MODE)
 
     # ── Load firm name ────────────────────────────────────────────────────────
     firm_name = _load_firm_name()
