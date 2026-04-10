@@ -137,19 +137,71 @@ def load_envelope(case_id: str, role: str, artifact_type: str) -> Optional[dict]
     return data
 
 
+def mark_deliverable_written(case_id: str, workflow: str) -> None:
+    """Advance case state to DELIVERABLE_WRITTEN (terminal).
+
+    Called by both run.py (CLI) and Streamlit pages after a workflow completes.
+    Extracted from run.py so Streamlit pages can import it without importing the
+    CLI entry point.
+    """
+    from core.state_machine import CaseStatus
+    from datetime import datetime, timezone
+
+    state = read_state(case_id) or {}
+    state["status"] = CaseStatus.DELIVERABLE_WRITTEN.value
+    state["last_updated"] = datetime.now(timezone.utc).isoformat()
+    write_state(case_id, state)
+    append_audit_event(case_id, {"event": "deliverable_written", "workflow": workflow})
+
+
 def write_final_report(case_id: str, content: str, language: str = "en") -> Path:
-    """Write final_report.{language}.md and final_report.{language}.docx atomically."""
+    """Write final_report.{language}.md and final_report.{language}.docx atomically.
+
+    After writing, moves all *.v*.json pipeline artifacts to cases/{id}/interim/
+    so the case root contains only the deliverable and permanent files.
+    Permanent files kept in root: final_report.*, state.json, audit_log.jsonl,
+    citations_index.json, intake.json, document_index.json.
+    """
+    import shutil
+
     target = case_dir(case_id) / f"final_report.{language}.md"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)
 
-    # Also generate Word document — graceful skip if python-docx unavailable
+    # Word document — apply firm branding template if available (FE-09)
     try:
         from tools.output_generator import OutputGenerator
+        from pathlib import Path as _Path
         docx_path = case_dir(case_id) / f"final_report.{language}.docx"
-        OutputGenerator().generate_docx(content, docx_path)
+        template = _Path("firm_profile/template.docx")
+        OutputGenerator().generate_docx(
+            content,
+            docx_path,
+            template_path=template if template.exists() else None,
+        )
     except Exception:
         pass
+
+    # FE-08: move pipeline artifacts to interim/ subfolder (best-effort, non-atomic)
+    # Keeps case root clean — only deliverables and permanent files remain at root level
+    _KEEP_IN_ROOT = {
+        "state.json", "audit_log.jsonl", "citations_index.json",
+        "intake.json", "document_index.json",
+    }
+    cdir = case_dir(case_id)
+    interim = cdir / "interim"
+
+    versioned = [
+        p for p in cdir.glob("*.v*.json")
+        if p.name not in _KEEP_IN_ROOT
+    ]
+    if versioned:
+        interim.mkdir(exist_ok=True)
+        for artifact in versioned:
+            try:
+                shutil.move(str(artifact), str(interim / artifact.name))
+            except Exception:
+                pass  # best-effort — artifact remains in root, no data loss
 
     return target

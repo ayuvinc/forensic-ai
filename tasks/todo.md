@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
-Active task:    none
-Active persona: none
+Status:         OPEN
+Active task:    Phase 8 — Streamlit Frontend Migration
+Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-08 14:46:44 UTC — Session 015 close by session-close (fallback)
+Last updated:   2026-04-10T04:08:37 UTC — Session 016 open by session-open (fallback)
 
 ---
 
@@ -152,8 +152,8 @@ Files: tools/document_manager.py, run.py
 - [ ] FE-07 Risk item review → Streamlit card per item with A/F/R buttons (replaces hidden CLI prompt — confirmed UX bug in P7-GATE test)
 - [ ] FE-08 Case folder UX — final deliverables surfaced prominently; interim artifacts (*.v{N}.json, pm_review, junior_output) moved to cases/{id}/interim/ subfolder; only final_report.* and audit_log.jsonl in root
 - [ ] FE-09 Word document design — apply firm branding template (logo, fonts, header/footer) to all .docx outputs; requires firm_profile/template.docx as base template loaded by file_tools.py
-- [ ] FE-10 FRM Risk Register — Excel output (.xlsx) in addition to .md/.docx; one row per risk item with columns: Module, Risk Title, Category, Likelihood, Impact, Rating, Owner, Recommendations; use openpyxl; add to requirements.txt
-- [ ] FE-11 FRM Risk Register — two-tier risk structure: Design-Level risks (policy/framework gaps — what should exist but doesn't) and Operational-Level risks (execution gaps — what exists but isn't working); each risk item tagged with tier in schema and rendered in separate sections in output
+- [ ] FE-10 FRM Risk Register — Excel output (.xlsx) — **BLOCKED: MISSING_BA_SIGNOFF** — no BA entry for Excel as required output format; needs /ba session before build
+- [ ] FE-11 FRM Risk Register — two-tier risk structure (Design-Level vs Operational-Level) — **BLOCKED: MISSING_BA_SIGNOFF** — no BA entry for tier taxonomy or schema change to RiskItem; needs /ba session before build
 
 ---
 
@@ -170,7 +170,7 @@ P7-06 ← P7-04 ─────── P7-07
 P7-07 ← P7-05, P7-06
 ```
 
-- [ ] P7-GATE Run `python run.py` with live API keys; complete one FRM workflow end-to-end; verify final_report.en.md written, audit_log.jsonl populated, state.json = OWNER_APPROVED
+- [x] P7-GATE Run `python run.py` with live API keys — PASSED Session 015 (knowledge_only mode, 2 FRM modules, no crash, final_report.en.md written)
 - [ ] P7-01a Grep for "GoodWork", "Maher", "forensic" as string literals. Confirm only 4 locations: run.py:331, partner/prompts.py:8, setup_wizard.py:161, run.py:2.
 - [ ] P7-02a Create `instance_config/` directory
 - [ ] P7-02b Create `instance_config/firm.json` — {firm_name, firm_type, primary_industry, primary_jurisdiction, enabled_workflows[], persona_set[], language_default, billing_currency}
@@ -190,14 +190,180 @@ P7-07 ← P7-05, P7-06
 
 ---
 
-### Phase 8 — Streamlit Frontend Migration (GATED on FE-01..06)
+### Phase 8 — Streamlit Frontend Migration (Session 016 — Corrected Plan)
 
-- [ ] P8-01 Add Streamlit to requirements.txt; pin version
-- [ ] P8-02 Create app.py (Streamlit entry point) alongside run.py (CLI kept for dev)
-- [ ] P8-03 Wire all 10 menu options as Streamlit sidebar navigation
-- [ ] P8-04 Document ingestion UI — file upload widget → DocumentManager.register_document()
-- [ ] P8-05 Case tracker → Streamlit dataframe with case status + download buttons
-- [ ] P8-06 End-to-end smoke test via Streamlit: Option 4 + Option 6
+**Design authority:** Architect Session 016. Supersedes P8-01..06 from prior stub plan.
+**CLI stays intact:** `run.py` unchanged. Streamlit is an additive layer only.
+**Security model:** local localhost:8501 only; all data stays in cases/ and firm_profile/; same hooks/sanitisation chain applies; no new audit events required.
+
+**Ultraplan corrections applied:**
+- P8-00-EXTRACT is a hard prerequisite for all page tasks (missing from ultraplan)
+- FE-09 fix is in `tools/file_tools.py:150`, not `tools/output_generator.py` (template support already exists in output_generator)
+- FE-08: post-run migration preferred over `interim=True` flag (version counter gap in next_version())
+- Review loop expanded to all modules in Streamlit (aligns with BA-002 Step 5 — Module 2-only was a CLI shortcut, not a requirement)
+- FE-10, FE-11: BLOCKED pending BA sign-off
+
+```
+PHASE 8 DEPENDENCY GRAPH:
+P8-00-EXTRACT ─────────────────────────────── P8-03-SHARED, P8-06-FRM, P8-08-PAGES
+P8-01 (requirements.txt)  ── no deps, trivial
+P8-02-SPLIT (FRM workflow) ─────────────────── P8-06-FRM
+P8-03-SHARED ← P8-00-EXTRACT ───────────────── P8-04-APP, P8-06-FRM, P8-08-PAGES, P8-09-TRACKER, P8-10-SETTINGS
+P8-04-APP ← P8-03-SHARED ───────────────────── P8-14-SMOKE
+P8-05-FE08 (interim folder) ── no deps ──────── P8-14-SMOKE
+P8-06-FRM ← P8-02-SPLIT + P8-03-SHARED ─────── P8-14-SMOKE
+P8-07-FE09 (docx branding) ── no deps ──────── P8-14-SMOKE
+P8-08-PAGES ← P8-03-SHARED ────────────────── P8-11-DOCIN, P8-14-SMOKE
+P8-09-TRACKER ← P8-03-SHARED ──────────────── P8-14-SMOKE
+P8-10-SETTINGS ← P8-03-SHARED ─────────────── P8-14-SMOKE
+P8-11-DOCIN ← P8-08-PAGES ─────────────────── P8-14-SMOKE
+P8-12-EXCEL — BLOCKED: MISSING_BA_SIGNOFF
+P8-13-TIER  — BLOCKED: MISSING_BA_SIGNOFF
+P8-14-SMOKE ← all above
+```
+
+---
+
+#### P8-00-EXTRACT — Extract _mark_deliverable_written() from run.py [PREREQUISITE]
+**Files:** `run.py`, `tools/file_tools.py`
+**Why:** Defined at `run.py:423` — Streamlit pages cannot import from run.py. All page completions need this to advance state to DELIVERABLE_WRITTEN. Must be extracted to `tools/file_tools.py` first.
+**Change:** Move function body to `file_tools.py`; `run.py` imports it from there. No behaviour change.
+
+- [x] P8-00a Move `_mark_deliverable_written()` from `run.py:423` to `tools/file_tools.py` as `mark_deliverable_written(case_id, workflow)`
+- [x] P8-00b Update `run.py` to import from `tools.file_tools` (shim kept for existing call sites)
+- [ ] P8-00c Verify CLI smoke: `python run.py` Option 6 still advances state after completion — MANUAL, requires AK + API key
+
+---
+
+#### P8-01 — Add streamlit to requirements.txt
+**File:** `requirements.txt`
+
+- [x] P8-01a Add `streamlit>=1.32.0` to requirements.txt
+
+---
+
+#### P8-02-SPLIT — FRM workflow split: run_frm_pipeline + run_frm_finalize
+**File:** `workflows/frm_risk_register.py`
+**Gate for:** P8-06-FRM
+**Constraint:** `run_frm_workflow()` signature and behaviour unchanged — CLI regression must be zero.
+**Behavioral note:** Review loop currently fires for Module 2 only (line 153). `run_frm_pipeline()` returns all modules' risk items unreviewed. Streamlit page applies A/F/R to all items — aligns with BA-002 Step 5. CLI retains Module 2-only review loop inside `run_frm_workflow()`.
+
+- [x] P8-02a Extract pipeline body into `run_frm_pipeline()` — returns (risk_items, citations, completed_modules, exec_summary)
+- [x] P8-02b Create `run_frm_finalize()` — assembles deliverable, writes report, calls mark_deliverable_written
+- [x] P8-02c Keep `run_frm_workflow()` intact — signature unchanged, verified by import test
+- [ ] P8-02d Verify CLI: `python run.py` Option 6 produces identical output to pre-split — MANUAL, requires AK + API key
+
+---
+
+#### P8-03-SHARED — streamlit_app/shared/ utilities
+**New files:** `streamlit_app/shared/session.py`, `streamlit_app/shared/intake.py`, `streamlit_app/shared/pipeline.py`
+**Deps:** P8-00-EXTRACT
+
+- [x] P8-03a `session.py` — `bootstrap(st)` written; idempotent session init
+- [x] P8-03b `intake.py` — `generic_intake_form()` + `frm_intake_form()` with module dep validation and st.warning
+- [x] P8-03c `pipeline.py` — `run_in_status()` with live log via st.empty().text()
+
+---
+
+#### P8-04-APP — app.py entry point
+**New file:** `app.py`
+**Deps:** P8-03-SHARED
+
+- [x] P8-04a Create `app.py` — st.set_page_config, firm name header, RESEARCH_MODE banner, landing screen
+
+---
+
+#### P8-05-FE08 — Case folder interim restructure
+**File:** `tools/file_tools.py` — `write_final_report()` only
+**Approach:** Post-run migration (not `interim=True` flag — version counter in `next_version()` scans root only; adding interim/ routing would silently reset version counters)
+
+- [x] P8-05a Post-run migration added to `write_final_report()` — shutil.move() for *.v*.json → interim/; FE-09 template_path fix included in same change
+- [ ] P8-05b Verify interim folder structure after live run — MANUAL, requires AK + API key
+
+---
+
+#### P8-06-FRM — pages/6_FRM.py (highest priority — fixes FE-07)
+**New file:** `pages/6_FRM.py`
+**Deps:** P8-02-SPLIT, P8-03-SHARED, P8-00-EXTRACT
+**Stage machine:** `st.session_state["frm_stage"]` ∈ {intake, running, reviewing, done}
+
+- [x] P8-06a Intake stage: frm_intake_form() wired; module dep validation with st.warning
+- [x] P8-06b Running stage: run_in_status() calling run_frm_pipeline(); result in session_state
+- [x] P8-06c Reviewing stage: st.expander per RiskItem; A/F/R selectbox + note; all modules (not Module 2 only)
+- [x] P8-06d Done stage: run_frm_finalize() with reviewed items; st.download_button; mark_deliverable_written called
+- [ ] P8-06e Verify: FRM end-to-end in Streamlit — A/F/R visible and clickable — MANUAL, requires AK + streamlit run
+
+---
+
+#### P8-07-FE09 — Word doc branding fix
+**File:** `tools/file_tools.py:150` (NOT output_generator.py — template support already exists there at lines 35-38)
+**Note:** `generate_docx()` already accepts `template_path` and uses it. The bug is that `write_final_report()` calls it without passing the path.
+
+- [x] P8-07a Completed as part of P8-05a — template_path check added to write_final_report() in same change
+
+---
+
+#### P8-08-PAGES — Remaining workflow pages
+**New files:** 10 pages (listed below)
+**Deps:** P8-03-SHARED, P8-00-EXTRACT
+**Pattern:** `bootstrap(st)` → `generic_intake_form()` → `run_in_status(workflow_fn)` → `st.download_button`
+
+- [ ] P8-08a `pages/2_Investigation.py` — `run_investigation_workflow`
+- [ ] P8-08b `pages/3_Persona_Review.py` — `run_persona_review_workflow`
+- [ ] P8-08c `pages/4_Policy_SOP.py` — `run_policy_sop_workflow`
+- [ ] P8-08d `pages/5_Training.py` — `run_training_material_workflow`
+- [ ] P8-08e `pages/7_Proposal.py` — `run_client_proposal_workflow`; post-run `st.checkbox` "Also generate PPT prompt pack?" chains to Option 8
+- [ ] P8-08f `pages/8_PPT_Pack.py` — `run_proposal_deck_workflow`
+- [ ] P8-08g `pages/0_Scope.py` — `run_engagement_scoping_workflow`
+- [ ] P8-08h `pages/11_Due_Diligence.py` — `run_due_diligence_workflow`
+- [ ] P8-08i `pages/12_Sanctions.py` — `run_sanctions_screening_workflow`; must render red warning panel when `RESEARCH_MODE=knowledge_only` before allowing workflow to run (mirrors CLI PPH-02 behaviour)
+- [ ] P8-08j `pages/13_Transaction_Testing.py` — `run_transaction_testing_workflow`
+
+---
+
+#### P8-09-TRACKER — pages/9_Case_Tracker.py
+**New file:** `pages/9_Case_Tracker.py`
+**Deps:** P8-03-SHARED
+
+- [ ] P8-09a Read all `cases/*/state.json` → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button.
+
+---
+
+#### P8-10-SETTINGS — pages/settings.py
+**New file:** `pages/settings.py`
+**Deps:** P8-03-SHARED
+
+- [ ] P8-10a Read/write `firm_profile/firm.json` via existing setup_wizard functions. `st.text_input` per field + Save button. Load at startup; write on save.
+
+---
+
+#### P8-11-DOCIN — Document ingestion UI
+**Files:** pages that support docs (Investigation, FRM, DD, TT)
+**Deps:** P8-08-PAGES
+
+- [ ] P8-11a Add `st.file_uploader("Upload case documents (optional)", accept_multiple_files=True)` to Investigation, FRM, DD, TT pages. Feed into `DocumentManager.register_document()`. Registration happens before pipeline runs.
+
+---
+
+#### P8-12-EXCEL — BLOCKED: MISSING_BA_SIGNOFF
+FE-10 Excel output. No BA entry exists for Excel as a required output format.
+Do not build until /ba session produces entry in tasks/ba-logic.md.
+
+#### P8-13-TIER — BLOCKED: MISSING_BA_SIGNOFF
+FE-11 Two-tier risk structure (Design-Level vs Operational-Level). No BA entry for tier taxonomy or schema change to RiskItem.
+Do not build until /ba session produces entry in tasks/ba-logic.md.
+
+---
+
+#### P8-14-SMOKE — End-to-end smoke test
+**Deps:** P8-04-APP, P8-05-FE08, P8-06-FRM, P8-07-FE09, P8-08-PAGES, P8-09-TRACKER, P8-10-SETTINGS, P8-11-DOCIN
+
+- [ ] P8-14a `streamlit run app.py` — browser opens, sidebar shows all pages
+- [ ] P8-14b FRM page: intake → pipeline → review 3+ risk items (A/F/R visible, not hidden) → finalize → verify `cases/{id}/final_report.en.md` written
+- [ ] P8-14c Case Tracker: new FRM case appears with DELIVERABLE_WRITTEN status
+- [ ] P8-14d Investigation page: intake → pipeline → download output
+- [ ] P8-14e Interim folder check: `ls cases/{id}/` root has only `final_report.*`, `state.json`, `audit_log.jsonl`, `citations_index.json`; `ls cases/{id}/interim/` has `*.v*.json`
+- [ ] P8-14f CLI regression: `python run.py` → Rich menu renders → Option 6 completes → no crash
 
 ---
 
@@ -399,26 +565,26 @@ TAX-01 + TAX-02 + TAX-03 + TAX-04 ──── TAX-05 (prompt_with_options UI he
 TAX-05 ──── TAX-06 (wire into all intake flows)
 ```
 
-- [ ] TAX-01 Create `knowledge/taxonomy/industries.json` — Level 1 industries + Level 2 sub-sectors.
+- [x] TAX-01 Create `knowledge/taxonomy/industries.json` — Level 1 industries + Level 2 sub-sectors.
       Minimum: Manufacturing, Financial Services, Real Estate, Healthcare, Retail, Government, Technology, Construction.
       Each entry: `{id, label, sub_sectors[], suggested_frm_modules[], rationale}`.
 
-- [ ] TAX-02 Create `knowledge/taxonomy/frm_modules.json` — extract FRM module definitions from
+- [x] TAX-02 Create `knowledge/taxonomy/frm_modules.json` — extract FRM module definitions from
       frm_risk_register.py. Each entry: `{id, label, description, dependencies[], default_enabled}`.
       frm_risk_register.py reads from this file — no module definitions in code.
 
-- [ ] TAX-03 Move `JURISDICTION_REGISTRY` from `config.py` to `knowledge/taxonomy/jurisdictions.json`.
+- [x] TAX-03 Move `JURISDICTION_REGISTRY` from `config.py` to `knowledge/taxonomy/jurisdictions.json`.
       config.py loads the file at startup and exposes the same API (get_jurisdiction_domains etc).
       No behaviour change — pure data extraction.
 
-- [ ] TAX-04 Create `knowledge/taxonomy/routing_table.json` — maps `{industry_id, workflow_id}` →
+- [x] TAX-04 Create `knowledge/taxonomy/routing_table.json` — maps `{industry_id, workflow_id}` →
       `knowledge_file_path`. Agents read this to load the right knowledge baseline. Start with FRM + DD.
 
-- [ ] TAX-05 Add `prompt_with_options(question, options, allow_free_text=True)` to `ui/guided_intake.py`.
+- [x] TAX-05 Add `prompt_with_options(question, options, allow_free_text=True)` to `ui/guided_intake.py`.
       Displays numbered list + "0. Other (type your own)" option. Returns structured value with
       `{selected_id, label, is_custom}` so downstream code knows if it was a taxonomy pick or free text.
 
-- [ ] TAX-06 Wire `prompt_with_options` into all workflow intake flows that currently ask free-text for
+- [x] TAX-06 Wire `prompt_with_options` into all workflow intake flows that currently ask free-text for
       industry, sub-sector, jurisdiction, and engagement type:
       `workflows/frm_risk_register.py`, `workflows/engagement_scoping.py`,
       `workflows/due_diligence.py`, `workflows/investigation_report.py`.
