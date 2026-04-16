@@ -7,41 +7,41 @@ CLOSED
 junior-dev
 
 ## NEXT_TASK
-**Phase 8 — Streamlit Frontend (continued) + Architecture Improvements**
+**Phase 8 — Streamlit Frontend Build (Design + UX approved, ready to build)**
 
-Build order (strict — each unblocks the next):
-1. ARCH-INS-01 (severity-tagged events) — `streamlit_app/shared/pipeline.py` — 3 sub-tasks
-2. ARCH-INS-02 (materialized case index) — `tools/file_tools.py` + `write_state()` — 3 sub-tasks
-3. P8-08a..j — 10 remaining workflow pages (all depend on ARCH-INS-01)
-4. P8-09a — Case Tracker page (depends on ARCH-INS-02)
-5. P8-10a — Settings page
-6. P8-11a — Document ingestion UI
-7. P8-14a..f — End-to-end smoke test
+Strict build order:
+1. ARCH-INS-01 — severity-tagged pipeline events (`streamlit_app/shared/pipeline.py`) — 3 sub-tasks
+2. ARCH-INS-02 — materialized case index (`tools/file_tools.py` + `write_state()`) — 3 sub-tasks
+3. P8-08a..e — 5 workflow pages (Investigation, Persona Review, Policy SOP, Training, Proposal)
+4. P8-08f..j — 5 workflow pages (PPT Pack, Scope, DD, Sanctions, TT)
+5. P8-09a — Case Tracker (reads cases/index.json from ARCH-INS-02)
+6. P8-10a — Settings page
+7. P8-10b — Team page (pages/10_Team.py — UX-D-04 approved)
+8. P8-11a — Document ingestion UI (inline on Investigation, FRM, DD, TT)
+9. P8-14a..f — End-to-end smoke test (manual, AK)
 
-ARCH-INS-03 (circuit breaker) — post Phase 8, pre-production. Do not start until P8-14 passes.
-
-Manual verification AK must run before next build session:
-- P8-00c: `python run.py` → Option 6 → confirm state advances to DELIVERABLE_WRITTEN
-- P8-02d: Same — confirm FRM output identical to pre-split
-- P8-05b: Check cases/{id}/ — final_report.* in root, *.v*.json in interim/
-- P8-06e: `streamlit run app.py` → FRM page → A/F/R buttons visible and clickable
+Post Phase 8 (separate sprint):
+- ARCH-INS-03 — circuit breaker for Tavily/Anthropic
 
 ## CARRY_FORWARD_CONTEXT
-Session 017 (planning only — no session-open run):
-- Reviewed Transplant-workflow HLD/LLD (9-service EDA, strangler-fig, frontend integration LLD)
-- Assessed forensic-ai % completion: 48%
-- Identified 6 transferable patterns from Transplant architecture
-- Wrote 3 high-priority architecture tasks into tasks/todo.md:
-  - ARCH-INS-01: severity-tagged pipeline events (prerequisite for P8-08)
-  - ARCH-INS-02: materialized case index (prerequisite for P8-09)
-  - ARCH-INS-03: circuit breaker for Tavily/Anthropic (post-Phase 8)
-- Updated Phase 8 dependency graph to include new prerequisites
-- Patterns deferred for later: ResearchProvider adapter, dead-letter for failed runs
+Session 017 (continued — design + UX):
+- GoodWork logo fetched from thegoodwork.online, saved to assets/logo.png
+- app.py updated — logo in sidebar (180px) and landing (280px)
+- .streamlit/config.toml created — light theme, #D50032 primary, #F5F2F0 secondary, #282827 text
+- tasks/design-system.md written — full brand system extracted from site (Montserrat, red palette, warm neutrals, semantic colors, tokens, custom CSS)
+- Montserrat loaded via Google Fonts in session.py bootstrap CSS injection
+- tasks/ux-specs.md written — 6 specs (UX-001..006), all states, mobile 375px
+- 4 UX decisions reviewed and APPROVED by AK:
+  - D-01: Intake collapses to expander during run
+  - D-02: Case tracker uses row expander
+  - D-03: Start New Case keeps firm name, clears client data
+  - D-04: Team bios get separate page (P8-10b added)
+- All commits on branch: feature/P8-phase8-streamlit
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
 - P8-12-EXCEL: MISSING_BA_SIGNOFF
 - P8-13-TIER: MISSING_BA_SIGNOFF
-- SRL-B-BA: MISSING_BA_SIGNOFF — behavioral matrix blocked
-- FRM-R-00: MISSING_BA_SIGNOFF — custom risk areas blocked
+- SRL-B-BA: MISSING_BA_SIGNOFF
+- FRM-R-00: MISSING_BA_SIGNOFF
 - feature/P8-phase8-streamlit not pushed to remote
-- Manual verification (P8-00c, P8-02d, P8-05b, P8-06e) requires live API key + streamlit installed
+- Manual verification (P8-00c, P8-02d, P8-05b, P8-06e, P8-14) requires live API key + streamlit
