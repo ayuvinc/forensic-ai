@@ -365,6 +365,14 @@ P8-14-SMOKE ← all above
 
 ---
 
+#### P8-10b-TEAM — pages/10_Team.py (UX-D-04 approved 2026-04-16)
+**New file:** `pages/10_Team.py`
+**Deps:** P8-03-SHARED
+
+- [ ] P8-10b Read/write `firm_profile/team.json`. One `st.expander` per team member — name, title, credentials, bio. "Add Member" button appends new entry. "Remove" per member. Save writes atomically.
+
+---
+
 #### P8-11-DOCIN — Document ingestion UI
 **Files:** pages that support docs (Investigation, FRM, DD, TT)
 **Deps:** P8-08-PAGES

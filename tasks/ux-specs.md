@@ -284,11 +284,13 @@ Selectbox options: Approve / Flag for revision / Skip.
 
 ---
 
-## Open UX Decisions (AK Review Required)
+## Open UX Decisions — RESOLVED
 
-| ID | Question | Options | Impact |
-|---|---|---|---|
-| UX-D-01 | Should intake form collapse during pipeline run? | A: Collapse to expander (current spec) — B: Hide entirely | Low — affects Zone A visibility during run |
-| UX-D-02 | Case Tracker: click-to-expand row OR separate detail panel? | A: Expander below row (current spec) — B: Side panel | Medium — affects layout complexity |
-| UX-D-03 | After FRM "Start New Case" — clear all session state or keep firm/intake defaults? | A: Clear all — B: Keep firm name, clear case data | Low — UX convenience |
-| UX-D-04 | Should Settings page show team member bios (from firm_profile/team.json)? | A: Yes, extend settings — B: Separate "Team" page | Medium — scope of Settings page |
+| ID | Decision | AK Choice |
+|---|---|---|
+| UX-D-01 | Intake form during pipeline run | **Option A** — Collapse to closed expander "Intake Summary". User can re-open to check inputs, cannot edit. |
+| UX-D-02 | Case Tracker detail view | **Option A** — Expander below clicked row. Native Streamlit, no side panel hacks. |
+| UX-D-03 | "Start New Case" reset scope | **Option B** — Keep firm name pre-filled. Clear client name, jurisdiction, company size, module selections. |
+| UX-D-04 | Team bios in Settings | **Option B** — Separate "Team" page in sidebar. Settings stays focused on firm config (name, pricing, currency). |
+
+All 4 decisions approved by AK — 2026-04-16. UX specs are APPROVED. Junior-dev may build.
