@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
-Active task:    Phase 8 — Streamlit Frontend Migration
-Active persona: architect
+Status:         CLOSED
+Active task:    none
+Active persona: none
 Blocking issue: none
-Last updated:   2026-04-10T04:08:37 UTC — Session 016 open by session-open (fallback)
+Last updated:   2026-04-16T17:20:06 UTC — Session 017 close by session-close (planning session)
 
 ---
 
@@ -43,6 +43,9 @@ Sprint-10F (scoping) ← KF-NEW + ARCH-S-04
 Sprint-10I (Tavily resilience) ← config.py — blocks P7-GATE
 Sprint-10G (chaining) ← Phase 8 (FE-01..06)
 Phase 8 (Streamlit) ← FE-01..06
+ARCH-INS-01 (severity events) ← P8-03-SHARED ──── P8-08-PAGES
+ARCH-INS-02 (case index) ← write_state() ──────── P8-09-TRACKER
+ARCH-INS-03 (circuit breaker) ← Phase 8 ─────── pre-production
 Phase 9 (chaining UI) ← Sprint-10G
 Phase 7 (blank framework) ← P7-GATE
 ```
@@ -213,8 +216,10 @@ P8-04-APP ← P8-03-SHARED ─────────────────�
 P8-05-FE08 (interim folder) ── no deps ──────── P8-14-SMOKE
 P8-06-FRM ← P8-02-SPLIT + P8-03-SHARED ─────── P8-14-SMOKE
 P8-07-FE09 (docx branding) ── no deps ──────── P8-14-SMOKE
-P8-08-PAGES ← P8-03-SHARED ────────────────── P8-11-DOCIN, P8-14-SMOKE
-P8-09-TRACKER ← P8-03-SHARED ──────────────── P8-14-SMOKE
+ARCH-INS-01 ← P8-03-SHARED ─────────────────── P8-08-PAGES
+ARCH-INS-02 ← write_state() ────────────────── P8-09-TRACKER
+P8-08-PAGES ← P8-03-SHARED + ARCH-INS-01 ──── P8-11-DOCIN, P8-14-SMOKE
+P8-09-TRACKER ← P8-03-SHARED + ARCH-INS-02 ── P8-14-SMOKE
 P8-10-SETTINGS ← P8-03-SHARED ─────────────── P8-14-SMOKE
 P8-11-DOCIN ← P8-08-PAGES ─────────────────── P8-14-SMOKE
 P8-12-EXCEL — BLOCKED: MISSING_BA_SIGNOFF
@@ -303,9 +308,21 @@ P8-14-SMOKE ← all above
 
 ---
 
+#### ARCH-INS-01 — Severity-tagged pipeline events (PREREQUISITE for P8-08)
+**File:** `streamlit_app/shared/pipeline.py`
+**Deps:** P8-03-SHARED
+**Why:** Inspired by Transplant CRITICAL/WARNING/INFO severity model. `run_in_status()` currently emits flat text — consultant cannot distinguish a normal progress line from PM flagging empty findings. Severity tagging fixes this before all 10 workflow pages are built on top of it.
+**Security model:** No auth/PII/audit changes. Severity is display-only. No injection surface — severity values are an enum, not user input.
+
+- [ ] INS-01a Define `PipelineEvent` dataclass in `streamlit_app/shared/pipeline.py` — fields: `severity: Literal["CRITICAL","WARNING","INFO"]`, `message: str`, `agent: str`
+- [ ] INS-01b Update `run_in_status()` to render `st.error()` for CRITICAL, `st.warning()` for WARNING, `st.info()` for INFO. Existing flat text log replaced by severity-aware rendering.
+- [ ] INS-01c Wire severity into `run_frm_pipeline()` call site in `pages/6_FRM.py` — empty findings list → CRITICAL; knowledge_only mode active → WARNING; normal agent progress → INFO.
+
+---
+
 #### P8-08-PAGES — Remaining workflow pages
 **New files:** 10 pages (listed below)
-**Deps:** P8-03-SHARED, P8-00-EXTRACT
+**Deps:** P8-03-SHARED, P8-00-EXTRACT, ARCH-INS-01
 **Pattern:** `bootstrap(st)` → `generic_intake_form()` → `run_in_status(workflow_fn)` → `st.download_button`
 
 - [ ] P8-08a `pages/2_Investigation.py` — `run_investigation_workflow`
@@ -321,11 +338,22 @@ P8-14-SMOKE ← all above
 
 ---
 
+#### ARCH-INS-02 — Materialized case index (PREREQUISITE for P8-09-TRACKER)
+**Files:** `tools/file_tools.py`, `write_state()`
+**Why:** Inspired by Transplant read-model / CQRS pattern. Case Tracker scanning `cases/*/state.json` at runtime is O(n) directory reads. With 50+ cases this is slow and fragile. A write-through index (`cases/index.json`) updated on every state transition makes tracker load instant.
+**Security model:** No auth/PII changes. `cases/index.json` contains no PHI — only case_id, workflow, status, last_updated. Atomic write via existing `os.replace()` pattern in `file_tools.py`.
+
+- [ ] INS-02a Add `_update_case_index(case_id, workflow, status, last_updated)` to `tools/file_tools.py` — reads `cases/index.json` (creates if missing), upserts entry by case_id, writes atomically via `.tmp` → `os.replace()`.
+- [ ] INS-02b Call `_update_case_index()` at end of `write_state()` — fires on every state transition automatically.
+- [ ] INS-02c Backfill helper: on first load, if `cases/index.json` missing, scan `cases/*/state.json` once to build it. Subsequent loads use index only.
+
+---
+
 #### P8-09-TRACKER — pages/9_Case_Tracker.py
 **New file:** `pages/9_Case_Tracker.py`
-**Deps:** P8-03-SHARED
+**Deps:** P8-03-SHARED, ARCH-INS-02
 
-- [ ] P8-09a Read all `cases/*/state.json` → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button.
+- [ ] P8-09a Read `cases/index.json` (not directory scan) → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button.
 
 ---
 
@@ -364,6 +392,32 @@ Do not build until /ba session produces entry in tasks/ba-logic.md.
 - [ ] P8-14d Investigation page: intake → pipeline → download output
 - [ ] P8-14e Interim folder check: `ls cases/{id}/` root has only `final_report.*`, `state.json`, `audit_log.jsonl`, `citations_index.json`; `ls cases/{id}/interim/` has `*.v*.json`
 - [ ] P8-14f CLI regression: `python run.py` → Rich menu renders → Option 6 completes → no crash
+
+---
+
+### ARCH-INS-03 — Circuit Breaker for External API Calls (GATED on Phase 8 — pre-production)
+
+**Context:** Inspired by Transplant Insight & Compliance circuit breaker pattern that isolates Anthropic latency from audit writes. Sprint-10I exposed the root problem: Tavily hangs 60s × 3 retries = 3min before graceful fallback. Current mitigation is `RESEARCH_MODE=knowledge_only` default. That is a workaround. The circuit breaker makes `RESEARCH_MODE=live` safe to use even on flaky networks — OPEN state returns fallback immediately without attempting the call.
+
+**State machine:** CLOSED (normal) → OPEN (after failure threshold) → HALF_OPEN (probe) → CLOSED (if probe succeeds).
+
+**Security model:**
+- Auth: N/A
+- Data boundaries: no change — fallback returns same `ResearchResult` shape with `disclaimer="circuit_open_fallback"`
+- PII: no change — sanitisation hooks still fire on returned result
+- Audit: no new events; existing research_mode logging unchanged
+- Abuse surface: OPEN state returns fixed string — no injection surface
+
+**Config:**
+- `CIRCUIT_BREAKER_FAILURE_THRESHOLD=2` — failures within window before OPEN
+- `CIRCUIT_BREAKER_WINDOW_SECONDS=30` — rolling window
+- `CIRCUIT_BREAKER_RESET_SECONDS=60` — OPEN → HALF_OPEN after this delay
+
+- [ ] INS-03a Create `tools/research/circuit_breaker.py` — `CircuitBreaker` class. State: CLOSED/OPEN/HALF_OPEN. Tracks failure timestamps in a deque. `call(fn, fallback_fn)` — if CLOSED, calls fn; on failure increments counter; if threshold reached within window → OPEN. If OPEN and reset elapsed → HALF_OPEN; probe fn once; success → CLOSED, failure → OPEN. Thread-safe (threading.Lock).
+- [ ] INS-03b Wrap `TavilyClient.search()` in `tools/research/general_search.py` with circuit breaker. On OPEN state: return `ResearchResult(query=query, results=[], authoritative_citations=[], disclaimer="circuit_open_fallback — Tavily unreachable")` immediately.
+- [ ] INS-03c Apply same breaker instance to `regulatory_lookup.py`, `sanctions_check.py`, `company_lookup.py`. One shared breaker per provider (not per call).
+- [ ] INS-03d Add `CIRCUIT_BREAKER_FAILURE_THRESHOLD`, `CIRCUIT_BREAKER_WINDOW_SECONDS`, `CIRCUIT_BREAKER_RESET_SECONDS` to `config.py` with defaults above.
+- [ ] INS-03e Smoke test: set `RESEARCH_MODE=live`, disable network, run FRM workflow — confirm no 3min hang; confirm `disclaimer="circuit_open_fallback"` appears in citations index.
 
 ---
 
