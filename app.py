@@ -10,6 +10,7 @@ Page routing is handled by Streamlit's pages/ convention:
 each file in pages/ becomes a sidebar entry, ordered by filename prefix.
 """
 
+import os
 import streamlit as st
 
 st.set_page_config(
@@ -25,7 +26,11 @@ session = bootstrap(st)
 
 # ── Sidebar chrome ────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown(f"### {session.firm_name}")
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=180)
+    else:
+        st.markdown(f"### {session.firm_name}")
 
     # RESEARCH_MODE banner — mirrors CLI banner from ui/display.py
     mode = session.research_mode
@@ -38,7 +43,12 @@ with st.sidebar:
     st.caption("Navigate using the pages above.")
 
 # ── Landing screen ────────────────────────────────────────────────────────────
-st.title("GoodWork Forensic AI")
+logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+if os.path.exists(logo_path):
+    st.image(logo_path, width=280)
+    st.markdown("##### Forensic AI — Internal Consulting Platform")
+else:
+    st.title("GoodWork Forensic AI")
 st.markdown(
     "Select a workflow from the sidebar to begin. "
     "All outputs are saved to the local `cases/` folder with a full audit trail."

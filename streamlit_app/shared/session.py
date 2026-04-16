@@ -8,13 +8,52 @@ already-set state.
 from __future__ import annotations
 
 
+_CSS = """
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+* { font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif !important; }
+
+[data-testid="stSidebar"] { padding-top: 1rem; }
+
+.stButton > button[kind="primary"] {
+  background-color: #D50032 !important;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+.stButton > button[kind="primary"]:hover { background-color: #761E2F !important; }
+
+.severity-critical { border-left: 4px solid #D50032; background: #FFF0F2; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
+.severity-warning  { border-left: 4px solid #B8860B; background: #FFFBEA; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
+.severity-info     { border-left: 4px solid #0088CB; background: #F0F8FF; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
+
+.case-id-chip {
+  font-family: 'JetBrains Mono', monospace !important;
+  font-size: 12px;
+  background: #F5F2F0;
+  border: 1px solid #D5D5D5;
+  border-radius: 4px;
+  padding: 2px 8px;
+  color: #4F4F4E;
+}
+
+h2 { color: #282827; font-weight: 600 !important; border-bottom: 2px solid #D50032; padding-bottom: 8px; }
+</style>
+"""
+
+
 def bootstrap(st) -> dict:
-    """Initialise registry, hook_engine, and firm_name in st.session_state.
+    """Initialise registry, hook_engine, firm_name, and design system in st.session_state.
 
     Returns the session state dict for convenience.
     """
     if "bootstrapped" in st.session_state:
         return st.session_state
+
+    # Inject design system CSS (Montserrat + brand tokens)
+    st.markdown(_CSS, unsafe_allow_html=True)
 
     import config
     from core.hook_engine import HookEngine
