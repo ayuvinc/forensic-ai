@@ -4,18 +4,17 @@
 CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+qa (write AC for P8-09a), then junior-dev (build), then qa-run + qa (approve), then architect (commit + advance)
 
 ## NEXT_TASK
-**Phase 8 — Streamlit Frontend Build (Design + UX approved, ready to build)**
+**P8-09a — Case Tracker page (pages/9_Case_Tracker.py)**
 
-Strict build order:
-1. ARCH-INS-01 — severity-tagged pipeline events (`streamlit_app/shared/pipeline.py`) — 3 sub-tasks
-2. ARCH-INS-02 — materialized case index (`tools/file_tools.py` + `write_state()`) — 3 sub-tasks
-3. P8-08a..e — 5 workflow pages (Investigation, Persona Review, Policy SOP, Training, Proposal)
-4. P8-08f..j — 5 workflow pages (PPT Pack, Scope, DD, Sanctions, TT)
-5. P8-09a — Case Tracker (reads cases/index.json from ARCH-INS-02)
-6. P8-10a — Settings page
+Reads `cases/index.json` (written by ARCH-INS-02 write_state()) — O(1) load.
+Build: `st.dataframe()` of cases with click-to-expand: deliverables, audit_log link, download final_report.
+Depends on: P8-03-SHARED (bootstrap), ARCH-INS-02 (index.json).
+
+After P8-09a (in order):
+6. P8-10a — Settings page (firm_profile/firm.json read/write)
 7. P8-10b — Team page (pages/10_Team.py — UX-D-04 approved)
 8. P8-11a — Document ingestion UI (inline on Investigation, FRM, DD, TT)
 9. P8-14a..f — End-to-end smoke test (manual, AK)

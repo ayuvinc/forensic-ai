@@ -16,3 +16,5 @@
 | 2026-04-17T02:52:00Z | qa | QA_APPROVED | qa-019-ARCH-INS-02-approved-20260417T025200Z | ARCH-INS-02 QA_APPROVED — 18/18 qa-run pass; Codex gate waived; no UI, no auth surface |
 | 2026-04-17T03:30:41Z | qa-run | PASS | qa-run-019-P8-08-PAGES-20260417T034500Z | P8-08-PAGES qa-run — 19/19 criteria PASS — 10 workflow pages built, all shell + page-specific + mobile + security AC satisfied |
 | 2026-04-17T03:31:38Z | qa | QA_APPROVED | qa-019-P8-08-PAGES-20260417T035000Z | P8-08-PAGES QA_APPROVED — 10 workflow pages, 19/19 AC pass, mobile safe, security clean, 1 accepted warning (persona review inline display) |
+| 2026-04-17T04:01:17Z | architect | COMPLETE | architect-019-P8-merge-20260417T035500Z | Merged ARCH-INS-01, ARCH-INS-02, P8-08-PAGES to feature/P8-phase8-streamlit (commit 65d50c1). Next: P8-09a QA AC. |
+| 2026-04-17T04:02:46Z | qa | COMPLETE | qa-019-P8-09a-AC-20260417T040000Z | P8-09a AC written — 18 criteria covering data load, backfill, table display, row detail, error states, mobile, security |

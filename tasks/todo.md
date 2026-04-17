@@ -456,6 +456,43 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 
 - [ ] P8-09a Read `cases/index.json` (not directory scan) → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button.
 
+#### AC — P8-09a
+
+**Data loading**
+- [ ] Page reads `cases/index.json` — no `os.listdir()` / `glob("cases/*/")` directory scan at runtime (code inspection: only `_INDEX_PATH.read_text()` or `json.load(open(_INDEX_PATH))` pattern permitted)
+- [ ] If `cases/index.json` exists → `st.dataframe()` renders with columns: Case ID | Workflow | Status | Last Updated — sorted by Last Updated descending (newest first)
+- [ ] If `cases/index.json` is absent AND `cases/` directory is empty (or no `state.json` files exist) → `st.info("No cases yet. Run a workflow to create your first case.")` — no error, no blank page
+- [ ] If `cases/index.json` is absent BUT `cases/*/state.json` files exist → `build_case_index()` called to backfill, then table renders; `st.warning("Case index rebuilt from folder scan.")` shown
+- [ ] "Refresh" button re-reads `cases/index.json` without full page reload (`st.rerun()` or equivalent)
+
+**Table display**
+- [ ] `st.dataframe()` used (not `st.table()` or raw HTML) — importable via code inspection
+- [ ] Workflow column displays human-readable label (e.g. "FRM Risk Register" not "frm_risk_register") — either via format_func or rename dict applied before render
+- [ ] `DELIVERABLE_WRITTEN` and `OWNER_APPROVED` status values map to a green visual indicator in the table (column value, emoji prefix, or highlight — any consistent approach)
+- [ ] `PIPELINE_ERROR` status maps to a red visual indicator
+- [ ] In-progress states (`INTAKE_CREATED`, `JUNIOR_DRAFT_COMPLETE`, etc.) map to a neutral/blue indicator
+
+**Row detail (case expander)**
+- [ ] After selecting a case (via `st.selectbox`, `st.dataframe` row selection, or equivalent), an expander or detail section renders below the table — not a separate page navigation
+- [ ] Detail section shows all `final_report.*.md` files present in `cases/{case_id}/` as `st.download_button()` entries — one button per file
+- [ ] Detail section notes whether `audit_log.jsonl` exists in the case folder (present/absent label) — does not read or render its contents inline
+- [ ] If no deliverable files exist for a case, detail section shows `st.caption("No deliverables yet for this case.")` — not a blank expander
+
+**Error and edge states**
+- [ ] `cases/index.json` exists but is corrupt JSON → `st.error("Case index is corrupt. Delete cases/index.json and refresh to rebuild.")` — no unhandled exception
+- [ ] Case in index references a `case_id` whose folder does not exist on disk → row still renders (index entry shown), download buttons absent with `st.caption("Case folder not found on disk.")` — no crash
+- [ ] Empty index (valid JSON, empty list `[]`) → renders as empty state with `st.info(...)` — not a blank table
+
+**Mobile (375px)**
+- [ ] `st.dataframe()` renders without multi-column layout wrapper — table itself scrolls natively on mobile (no `st.columns()` wrapping the table)
+
+**Security**
+- [ ] Index data displayed is only `case_id`, `workflow`, `status`, `last_updated` — no `client_name`, intake fields, or document content rendered in the table (index.json contains no PHI per ARCH-INS-02 design)
+- [ ] `st.download_button()` reads file via `Path.read_text()` or `Path.read_bytes()` on the resolved `cases/{case_id}/final_report.*.md` path — no shell command or `subprocess` call
+- [ ] `case_id` values from index are used only as path components via `tools.file_tools.case_dir()` — not interpolated into shell commands or SQL
+
+**Auth:** N/A — localhost:8501, no auth layer
+
 ---
 
 #### P8-10-SETTINGS — pages/settings.py
