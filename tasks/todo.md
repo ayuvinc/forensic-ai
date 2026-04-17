@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: none
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-16T17:43:45 UTC — Session 017 close by session-close (fallback)
+Last updated:   2026-04-17T02:18:39Z — state transition by MCP server
 
 ---
 

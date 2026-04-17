@@ -16,7 +16,7 @@
 
 ### UX-001 — Landing Page (app.py)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-04-APP
 
 **User goal:** Orient quickly and navigate to the right workflow.
@@ -44,7 +44,7 @@
 
 ### UX-002 — FRM Risk Register (pages/6_FRM.py)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-06-FRM
 
 **User goal:** Generate a structured fraud risk register for a client, review each risk item, and download the final report.
@@ -150,7 +150,7 @@ Selectbox options: Approve / Flag for revision / Skip.
 
 ### UX-003 — Generic Workflow Page Shell (applies to pages 2,3,4,5,7,8,0,11,12,13)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-08a..j
 
 **User goal:** Complete a specific workflow (Investigation, DD, Proposal, etc.) and download the output.
@@ -197,7 +197,7 @@ Selectbox options: Approve / Flag for revision / Skip.
 
 ### UX-004 — Case Tracker (pages/9_Case_Tracker.py)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-09a + ARCH-INS-02
 
 **User goal:** See all cases at a glance, check status, and download deliverables without navigating to the file system.
@@ -231,7 +231,7 @@ Selectbox options: Approve / Flag for revision / Skip.
 
 ### UX-005 — Settings / Firm Profile (pages/settings.py)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-10a
 
 **User goal:** Update firm profile (name, logo path, pricing, team credentials) without re-running the setup wizard.
@@ -258,7 +258,7 @@ Selectbox options: Approve / Flag for revision / Skip.
 
 ### UX-006 — Document Upload (P8-11, inline on Investigation / FRM / DD / TT pages)
 
-- Status: DRAFT
+- Status: APPROVED
 - Task: P8-11a
 
 **User goal:** Upload case documents before running the pipeline so the agent reads them during draft generation.
