@@ -1,10 +1,14 @@
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 from config import CASES_DIR
+
+# Write-through index for Case Tracker — O(1) read instead of O(n) dir scan
+_INDEX_PATH = CASES_DIR / "index.json"
 
 
 def case_dir(case_id: str) -> Path:
@@ -58,12 +62,97 @@ def write_artifact(case_id: str, agent: str, artifact_type: str, data: Any, vers
     return target
 
 
+def _update_case_index(case_id: str, workflow: str, status: str, last_updated: str) -> None:
+    """Upsert one entry in cases/index.json by case_id.
+
+    Index exists so Case Tracker reads O(1) from a single file rather than
+    scanning O(n) case directories. Written atomically via .tmp → os.replace().
+    Contains no PHI — only case_id, workflow, status, last_updated.
+
+    Raises ValueError if index.json exists but is corrupt JSON.
+    """
+    if _INDEX_PATH.exists():
+        try:
+            entries: list[dict] = json.loads(_INDEX_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"cases/index.json is corrupt — fix or delete it: {exc}") from exc
+    else:
+        entries = []
+
+    entry = {
+        "case_id": case_id,
+        "workflow": workflow,
+        "status": status,
+        "last_updated": last_updated,
+    }
+
+    # Upsert: replace in-place to preserve ordering of existing entries
+    updated = False
+    for i, e in enumerate(entries):
+        if e.get("case_id") == case_id:
+            entries[i] = entry
+            updated = True
+            break
+    if not updated:
+        entries.append(entry)
+
+    tmp = _INDEX_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    os.replace(tmp, _INDEX_PATH)
+
+
+def build_case_index() -> Path:
+    """Backfill cases/index.json by scanning all cases/*/state.json files.
+
+    Called when index.json is missing. Idempotent — safe to call multiple times.
+    Skips case dirs where state.json is absent or malformed (does not crash).
+    Returns the path to cases/index.json.
+    """
+    CASES_DIR.mkdir(parents=True, exist_ok=True)
+    entries: list[dict] = []
+
+    for state_path in sorted(CASES_DIR.glob("*/state.json")):
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue  # skip corrupt or unreadable state files
+
+        case_id = state.get("case_id") or state_path.parent.name
+        if not case_id:
+            continue
+
+        entries.append({
+            "case_id": case_id,
+            "workflow": state.get("workflow", ""),
+            "status": state.get("status", ""),
+            "last_updated": state.get("last_updated", ""),
+        })
+
+    tmp = _INDEX_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    os.replace(tmp, _INDEX_PATH)
+    return _INDEX_PATH
+
+
 def write_state(case_id: str, state: dict) -> Path:
-    """Atomically write case state.json."""
+    """Atomically write case state.json, then update cases/index.json."""
     target = case_dir(case_id) / "state.json"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
     os.replace(tmp, target)
+
+    # Update write-through index after state.json is safely persisted.
+    # Index failure is non-fatal (Case Tracker can backfill) — log and continue.
+    try:
+        _update_case_index(
+            case_id=case_id,
+            workflow=state.get("workflow", ""),
+            status=state.get("status", ""),
+            last_updated=state.get("last_updated", datetime.now(timezone.utc).isoformat()),
+        )
+    except Exception as exc:
+        print(f"[WARN] case index update failed for {case_id}: {exc}", file=sys.stderr)
+
     return target
 
 

@@ -12,9 +12,10 @@ modules (not just Module 2 as in CLI) — this aligns with BA-002 Step 5.
 """
 
 import streamlit as st
+import config
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import frm_intake_form
-from streamlit_app.shared.pipeline import run_in_status
+from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 
 # ── Session bootstrap ─────────────────────────────────────────────────────────
 session = bootstrap(st)
@@ -55,6 +56,15 @@ elif st.session_state.frm_stage == "running":
 
     from workflows.frm_risk_register import run_frm_pipeline
 
+    # Emit WARNING before pipeline starts if running in degraded research mode
+    if config.RESEARCH_MODE == "knowledge_only":
+        warn = PipelineEvent(
+            severity="WARNING",
+            message="Running in Knowledge Only mode — no live regulatory data. Citations will be limited.",
+            agent="frm_page",
+        )
+        st.warning(f"[{warn.agent}] {warn.message}")
+
     try:
         risk_items, citations, completed_modules, exec_summary = run_in_status(
             st,
@@ -65,6 +75,19 @@ elif st.session_state.frm_stage == "running":
             session.registry,
             session.hook_engine,
         )
+
+        # Zero items is a CRITICAL pipeline outcome — surface clearly before advancing
+        if not risk_items:
+            crit = PipelineEvent(
+                severity="CRITICAL",
+                message="Pipeline returned 0 risk items. Check intake data or switch to live research mode.",
+                agent="frm_page",
+            )
+            st.error(f"[{crit.agent}] {crit.message}")
+            st.session_state.frm_stage = "reviewing"  # advance so empty-state UX renders
+        else:
+            st.session_state.frm_stage = "reviewing"
+
         st.session_state.frm_result = {
             "risk_items": risk_items,
             "citations": citations,
@@ -73,7 +96,6 @@ elif st.session_state.frm_stage == "running":
         }
         # Initialise review decisions: default all to "approve"
         st.session_state.frm_reviewed = {r.risk_id: {"action": "approve", "note": ""} for r in risk_items}
-        st.session_state.frm_stage = "reviewing"
         st.rerun()
     except Exception:
         st.session_state.frm_stage = "intake"

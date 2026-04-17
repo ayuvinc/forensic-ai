@@ -79,6 +79,7 @@ def run_engagement_scoping_workflow(
     intake: CaseIntake,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> ConfirmedScope:
     """Run the 5-step engagement scoping conversation.
 
@@ -98,14 +99,21 @@ def run_engagement_scoping_workflow(
     taxonomy_text = _load_taxonomy()
 
     # ── Step 2: Contextual intake ─────────────────────────────────────────────
-    console.print("\n  [bold]Tell me about the client situation.[/bold]")
-    console.print("  [dim]Answer in plain language — no need to know which service applies yet.[/dim]\n")
+    if headless_params:
+        situation = headless_params.get("situation", intake.description)
+        trigger = headless_params.get("trigger", "Consultant request")
+        desired_outcome = headless_params.get("desired_outcome", "Scope document and engagement recommendation")
+        constraints = headless_params.get("constraints", "")
+        red_flags = headless_params.get("red_flags", "")
+    else:
+        console.print("\n  [bold]Tell me about the client situation.[/bold]")
+        console.print("  [dim]Answer in plain language — no need to know which service applies yet.[/dim]\n")
 
-    situation = Prompt.ask("  What is the client facing? (describe the problem)")
-    trigger = Prompt.ask("  What triggered this engagement? (complaint, audit finding, suspicion, etc.)")
-    desired_outcome = Prompt.ask("  What does the client want to walk away with?")
-    constraints = Prompt.ask("  Any constraints? (timeline, budget, data access, confidentiality)", default="")
-    red_flags = Prompt.ask("  Any specific red flags or suspicions Maher already has?", default="")
+        situation = Prompt.ask("  What is the client facing? (describe the problem)")
+        trigger = Prompt.ask("  What triggered this engagement? (complaint, audit finding, suspicion, etc.)")
+        desired_outcome = Prompt.ask("  What does the client want to walk away with?")
+        constraints = Prompt.ask("  Any constraints? (timeline, budget, data access, confidentiality)", default="")
+        red_flags = Prompt.ask("  Any specific red flags or suspicions Maher already has?", default="")
 
     scope_intake = ScopeIntake(
         client_situation=situation,
@@ -123,21 +131,23 @@ def run_engagement_scoping_workflow(
 
     _display_recommendation(console, recommendation)
 
-    # ── Step 4: Follow-up to refine ───────────────────────────────────────────
-    wants_refinement = not Confirm.ask("\n  Does this look right, or do you want to refine it?",
-                                       default=True)
-    if wants_refinement:
-        on_progress("Asking follow-up questions to refine...")
-        followup_answers = _collect_followup(console, recommendation, scope_intake)
-        on_progress("Revising scope recommendation...")
-        recommendation = _revise_scope(intake, scope_intake, taxonomy_text, recommendation, followup_answers)
-        _display_recommendation(console, recommendation)
+    # ── Step 4: Follow-up to refine (skipped in headless mode) ────────────────
+    if not headless_params:
+        wants_refinement = not Confirm.ask("\n  Does this look right, or do you want to refine it?",
+                                           default=True)
+        if wants_refinement:
+            on_progress("Asking follow-up questions to refine...")
+            followup_answers = _collect_followup(console, recommendation, scope_intake)
+            on_progress("Revising scope recommendation...")
+            recommendation = _revise_scope(intake, scope_intake, taxonomy_text, recommendation, followup_answers)
+            _display_recommendation(console, recommendation)
 
     # ── Step 5: Confirm and produce scope document ────────────────────────────
-    confirmed = Confirm.ask("\n  Confirm this scope and produce the scope document?")
-    if not confirmed:
-        console.print("  [yellow]Scope not confirmed. Returning to menu.[/yellow]")
-        raise ValueError("Engagement scope not confirmed by consultant.")
+    if not headless_params:
+        confirmed = Confirm.ask("\n  Confirm this scope and produce the scope document?")
+        if not confirmed:
+            console.print("  [yellow]Scope not confirmed. Returning to menu.[/yellow]")
+            raise ValueError("Engagement scope not confirmed by consultant.")
 
     humint_required = any(
         "humint" in c.lower() or "source enquir" in c.lower() or "human source" in c.lower()

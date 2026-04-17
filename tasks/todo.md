@@ -5,7 +5,7 @@ Status:         OPEN
 Active task:    none
 Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-17T02:18:39Z — state transition by MCP server
+Last updated:   2026-04-17T02:43:10Z — state transition by MCP server
 
 ---
 
@@ -314,9 +314,41 @@ P8-14-SMOKE ← all above
 **Why:** Inspired by Transplant CRITICAL/WARNING/INFO severity model. `run_in_status()` currently emits flat text — consultant cannot distinguish a normal progress line from PM flagging empty findings. Severity tagging fixes this before all 10 workflow pages are built on top of it.
 **Security model:** No auth/PII/audit changes. Severity is display-only. No injection surface — severity values are an enum, not user input.
 
-- [ ] INS-01a Define `PipelineEvent` dataclass in `streamlit_app/shared/pipeline.py` — fields: `severity: Literal["CRITICAL","WARNING","INFO"]`, `message: str`, `agent: str`
-- [ ] INS-01b Update `run_in_status()` to render `st.error()` for CRITICAL, `st.warning()` for WARNING, `st.info()` for INFO. Existing flat text log replaced by severity-aware rendering.
-- [ ] INS-01c Wire severity into `run_frm_pipeline()` call site in `pages/6_FRM.py` — empty findings list → CRITICAL; knowledge_only mode active → WARNING; normal agent progress → INFO.
+- [x] INS-01a Define `PipelineEvent` dataclass in `streamlit_app/shared/pipeline.py` — fields: `severity: Literal["CRITICAL","WARNING","INFO"]`, `message: str`, `agent: str`
+- [x] INS-01b Update `run_in_status()` to render `st.error()` for CRITICAL, `st.warning()` for WARNING, `st.info()` for INFO. Existing flat text log replaced by severity-aware rendering.
+- [x] INS-01c Wire severity into `run_frm_pipeline()` call site in `pages/6_FRM.py` — empty findings list → CRITICAL; knowledge_only mode active → WARNING; normal agent progress → INFO.
+
+**Status: QA_APPROVED**
+
+#### AC — ARCH-INS-01
+
+**INS-01a — PipelineEvent dataclass**
+- [ ] `PipelineEvent` is importable from `streamlit_app/shared/pipeline.py` with no import errors
+- [ ] Dataclass has exactly three fields: `severity: Literal["CRITICAL","WARNING","INFO"]`, `message: str`, `agent: str`
+- [ ] `PipelineEvent(severity="INVALID", message="x", agent="junior")` raises `ValueError` or `TypeError` (Literal enforcement must be active — use Pydantic or explicit `__post_init__` guard)
+- [ ] Constructing with `severity` omitted raises `TypeError` — no default value
+- [ ] `PipelineEvent(severity="INFO", message="", agent="junior")` is accepted — empty message valid at dataclass level
+
+**INS-01b — run_in_status() severity rendering**
+- [ ] `run_in_status()` accepts `PipelineEvent` objects — flat-string path removed, not left as a parallel branch
+- [ ] `severity="CRITICAL"` → rendered via `st.error()` (code inspection: call contains `st.error(...)`)
+- [ ] `severity="WARNING"` → rendered via `st.warning()`
+- [ ] `severity="INFO"` → rendered via `st.info()`
+- [ ] No bare `st.text()` or `st.write()` calls remain in `run_in_status()` for log lines
+- [ ] Any callers of `run_in_status()` outside `pages/6_FRM.py` either migrated or do not crash (no silent breakage of other pages)
+
+**INS-01c — FRM page severity wiring**
+- [ ] `pages/6_FRM.py` Stage 2 passes `PipelineEvent` objects to `run_in_status()` — not raw strings
+- [ ] Zero risk items returned → at least one `CRITICAL` event emitted → `st.error()` visible in Stage 2 (per UX-002 Stage 2)
+- [ ] `config.RESEARCH_MODE == "knowledge_only"` → at least one `WARNING` event emitted at pipeline start (per UX-002 Stage 2 knowledge_only banner requirement)
+- [ ] Normal agent progress (Junior, PM, Partner steps) → `INFO` events → rendered as `st.info()`
+- [ ] Severity values sourced from `PipelineEvent` Literal — no bare `"CRITICAL"` / `"WARNING"` string literals scattered in the page file
+
+**Security**
+- [ ] `PipelineEvent.message` populated only from agent status strings or fixed constants — not raw user input or unescaped model output (no injection surface)
+- [ ] No new files written, no audit events added — severity is display-only (per task security model)
+
+**Auth:** N/A — local CLI tool, no auth layer
 
 ---
 
@@ -325,16 +357,52 @@ P8-14-SMOKE ← all above
 **Deps:** P8-03-SHARED, P8-00-EXTRACT, ARCH-INS-01
 **Pattern:** `bootstrap(st)` → `generic_intake_form()` → `run_in_status(workflow_fn)` → `st.download_button`
 
-- [ ] P8-08a `pages/2_Investigation.py` — `run_investigation_workflow`
-- [ ] P8-08b `pages/3_Persona_Review.py` — `run_persona_review_workflow`
-- [ ] P8-08c `pages/4_Policy_SOP.py` — `run_policy_sop_workflow`
-- [ ] P8-08d `pages/5_Training.py` — `run_training_material_workflow`
-- [ ] P8-08e `pages/7_Proposal.py` — `run_client_proposal_workflow`; post-run `st.checkbox` "Also generate PPT prompt pack?" chains to Option 8
-- [ ] P8-08f `pages/8_PPT_Pack.py` — `run_proposal_deck_workflow`
-- [ ] P8-08g `pages/0_Scope.py` — `run_engagement_scoping_workflow`
-- [ ] P8-08h `pages/11_Due_Diligence.py` — `run_due_diligence_workflow`
-- [ ] P8-08i `pages/12_Sanctions.py` — `run_sanctions_screening_workflow`; must render red warning panel when `RESEARCH_MODE=knowledge_only` before allowing workflow to run (mirrors CLI PPH-02 behaviour)
-- [ ] P8-08j `pages/13_Transaction_Testing.py` — `run_transaction_testing_workflow`
+- [x] P8-08a `pages/2_Investigation.py` — `run_investigation_workflow`
+- [x] P8-08b `pages/3_Persona_Review.py` — `run_persona_review_workflow`
+- [x] P8-08c `pages/4_Policy_SOP.py` — `run_policy_sop_workflow`
+- [x] P8-08d `pages/5_Training.py` — `run_training_material_workflow`
+- [x] P8-08e `pages/7_Proposal.py` — `run_client_proposal_workflow`; post-run `st.checkbox` "Also generate PPT prompt pack?" chains to Option 8
+- [x] P8-08f `pages/8_PPT_Pack.py` — `run_proposal_deck_workflow`
+- [x] P8-08g `pages/0_Scope.py` — `run_engagement_scoping_workflow`
+- [x] P8-08h `pages/11_Due_Diligence.py` — `run_due_diligence_workflow`
+- [x] P8-08i `pages/12_Sanctions.py` — `run_sanctions_screening_workflow`; must render red warning panel when `RESEARCH_MODE=knowledge_only` before allowing workflow to run (mirrors CLI PPH-02 behaviour)
+- [x] P8-08j `pages/13_Transaction_Testing.py` — `run_transaction_testing_workflow`
+
+**Status: QA_APPROVED**
+
+#### AC — P8-08-PAGES
+
+All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared pattern + per-page overrides.
+
+**Shell pattern (applies to all 10 pages)**
+- [ ] All 10 page files importable with no errors (`python3 -c "import pages.2_Investigation"` etc.)
+- [ ] Each page calls `bootstrap(st)` at module level — RESEARCH_MODE banner rendered on every page
+- [ ] `generic_intake_form()` used in Zone A — no bespoke form fields built inline
+- [ ] "Run [Workflow Name]" submit button uses `type="primary"` — renders in brand red (#D50032) per design system
+- [ ] Submit button disabled (greyed) while pipeline is running — user cannot double-submit
+- [ ] Zone A collapses to a closed `st.expander("Intake Summary")` when pipeline starts (UX-D-01 approved) — intake data visible but not editable during run
+- [ ] `run_in_status()` used for pipeline execution — severity-tagged log (ARCH-INS-01 dependency satisfied)
+- [ ] Pipeline error → `st.error("Pipeline failed: [message]")` + "Start Over" button that resets to Zone A
+- [ ] Empty output (workflow returns None or empty) → `st.warning("No output was generated...")` in Zone C — not a blank page
+- [ ] Success → `st.success()` banner + case ID chip + `st.download_button()` for the deliverable file
+- [ ] "Start New Case" button resets page state: clears client/intake fields, keeps firm name pre-filled (UX-D-03 approved)
+- [ ] No hardcoded workflow names, case IDs, or file paths as string literals — all derived from intake or pipeline return values
+
+**Page-specific overrides**
+
+- [ ] P8-08e (`pages/7_Proposal.py`): after success, `st.checkbox("Also generate PPT prompt pack for this engagement?")` renders — if checked, invokes PPT Pack workflow with same case_id (UX-003 Proposal-specific addition)
+- [ ] P8-08i (`pages/12_Sanctions.py`): if `config.RESEARCH_MODE == "knowledge_only"`, `st.error()` warning panel renders BEFORE the intake form with message about live screening unavailability; `st.checkbox("I understand this is not a live screening — proceed anyway.")` required; Run button disabled until checkbox is ticked (UX-003 Sanctions-specific override)
+- [ ] P8-08i: Run button remains disabled if knowledge_only checkbox is NOT ticked — verified by code inspection (`disabled=not st.session_state.get(...)` pattern or equivalent)
+
+**Mobile (375px) — per UX-003**
+- [ ] No multi-column layouts used in any page (`st.columns()` not called at page level) — Streamlit single-column on mobile is the default; verified by code inspection
+
+**Security**
+- [ ] No `st.text_input()` values passed directly into shell commands, file paths, or SQL — all intake data flows only into workflow function arguments
+- [ ] No secrets, API keys, or firm_profile credentials rendered to the page via `st.write()` or `st.markdown()`
+- [ ] `run_in_status()` `on_progress` messages sourced from pipeline constants only — not echoed user input (injection surface check, inherited from ARCH-INS-01)
+
+**Auth:** N/A — local localhost:8501, no auth layer
 
 ---
 
@@ -343,9 +411,42 @@ P8-14-SMOKE ← all above
 **Why:** Inspired by Transplant read-model / CQRS pattern. Case Tracker scanning `cases/*/state.json` at runtime is O(n) directory reads. With 50+ cases this is slow and fragile. A write-through index (`cases/index.json`) updated on every state transition makes tracker load instant.
 **Security model:** No auth/PII changes. `cases/index.json` contains no PHI — only case_id, workflow, status, last_updated. Atomic write via existing `os.replace()` pattern in `file_tools.py`.
 
-- [ ] INS-02a Add `_update_case_index(case_id, workflow, status, last_updated)` to `tools/file_tools.py` — reads `cases/index.json` (creates if missing), upserts entry by case_id, writes atomically via `.tmp` → `os.replace()`.
-- [ ] INS-02b Call `_update_case_index()` at end of `write_state()` — fires on every state transition automatically.
-- [ ] INS-02c Backfill helper: on first load, if `cases/index.json` missing, scan `cases/*/state.json` once to build it. Subsequent loads use index only.
+- [x] INS-02a Add `_update_case_index(case_id, workflow, status, last_updated)` to `tools/file_tools.py` — reads `cases/index.json` (creates if missing), upserts entry by case_id, writes atomically via `.tmp` → `os.replace()`.
+- [x] INS-02b Call `_update_case_index()` at end of `write_state()` — fires on every state transition automatically.
+- [x] INS-02c Backfill helper: on first load, if `cases/index.json` missing, scan `cases/*/state.json` once to build it. Subsequent loads use index only.
+
+**Status: QA_APPROVED**
+
+#### AC — ARCH-INS-02
+
+**INS-02a — _update_case_index function**
+- [ ] `_update_case_index` is importable from `tools/file_tools.py` with no import errors
+- [ ] Calling `_update_case_index("CASE-001", "frm_risk_register", "OWNER_APPROVED", "2026-04-17T00:00:00Z")` when `cases/index.json` does not exist creates the file (no FileNotFoundError)
+- [ ] Index entry has exactly 4 fields: `case_id`, `workflow`, `status`, `last_updated` — no PHI, no client name, no case content
+- [ ] Calling twice with the same `case_id` upserts — resulting index has exactly one entry for that case_id, not two
+- [ ] Write is atomic: a `.tmp` file is created and `os.replace()` is used — verifiable by code inspection (pattern matches `write_artifact()` in same file)
+- [ ] Calling with a different `case_id` appends a second entry — index grows to 2 entries
+- [ ] If `cases/index.json` is corrupt JSON, function raises a clear exception rather than silently overwriting with partial data
+
+**INS-02b — write_state() integration**
+- [ ] `write_state()` function signature is unchanged: `(case_id: str, state: dict) -> Path` — all existing callers unaffected
+- [ ] After `write_state()` completes, `cases/index.json` is updated with the case's current `workflow`, `status`, and `last_updated` extracted from the state dict
+- [ ] `_update_case_index()` failure (e.g., index file locked) does NOT silently swallow the error — either propagates or logs a warning; `state.json` write must already have succeeded before index update is attempted
+- [ ] `write_state()` still writes `state.json` atomically regardless of whether `_update_case_index()` is called — primary write is never skipped
+
+**INS-02c — Backfill helper**
+- [ ] A public function `build_case_index()` (or equivalent) exists and is importable from `tools/file_tools.py`
+- [ ] Calling `build_case_index()` when `cases/index.json` is absent but `cases/*/state.json` files exist → creates `cases/index.json` with one entry per scanned case
+- [ ] Calling `build_case_index()` when `cases/` is empty (no case subdirs) → creates `cases/index.json` with an empty list `[]` (not a missing file, not an error)
+- [ ] Calling `build_case_index()` twice produces identical output (idempotent)
+- [ ] `state.json` files missing `workflow` or `status` keys are skipped without crashing — backfill continues with remaining cases
+
+**Security**
+- [ ] `cases/index.json` entries contain only `case_id`, `workflow`, `status`, `last_updated` — confirmed by code inspection (no `client_name`, `intake`, or document content written to index)
+- [ ] Atomic write in `_update_case_index()` uses `.tmp` → `os.replace()` — a process kill mid-write leaves `.tmp` (recoverable), not a corrupt `index.json`
+
+**Auth:** N/A — local CLI tool, no auth layer
+**Mobile:** N/A — no UI components in this task
 
 ---
 

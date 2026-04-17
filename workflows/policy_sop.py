@@ -42,6 +42,7 @@ def run_policy_sop_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Generate policy or SOP document with regulatory citations."""
     if console is None:
@@ -49,30 +50,35 @@ def run_policy_sop_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    doc_type = Prompt.ask("  Document type", choices=["policy", "sop"], default="policy")
-
-    if doc_type == "policy":
-        console.print("\n  Policy type:")
-        for k, v in POLICY_TYPES.items():
-            console.print(f"    {k}. {v.replace('_', ' ').title()}")
-        choice = Prompt.ask("  Select", choices=list(POLICY_TYPES.keys()), default="1")
-        doc_subtype = POLICY_TYPES[choice]
-        if doc_subtype == "custom":
-            doc_subtype = Prompt.ask("  Custom policy name")
+    if headless_params:
+        doc_type = headless_params.get("doc_type", "policy")
+        doc_subtype = headless_params.get("doc_subtype", "aml_cft_policy")
+        gap_analysis = headless_params.get("gap_analysis", "new")
     else:
-        console.print("\n  SOP type:")
-        for k, v in SOP_TYPES.items():
-            console.print(f"    {k}. {v.replace('_', ' ').title()}")
-        choice = Prompt.ask("  Select", choices=list(SOP_TYPES.keys()), default="1")
-        doc_subtype = SOP_TYPES[choice]
-        if doc_subtype == "custom":
-            doc_subtype = Prompt.ask("  Custom SOP name")
+        doc_type = Prompt.ask("  Document type", choices=["policy", "sop"], default="policy")
 
-    gap_analysis = Prompt.ask(
-        "  Mode: new document or gap analysis of existing?",
-        choices=["new", "gap"],
-        default="new",
-    )
+        if doc_type == "policy":
+            console.print("\n  Policy type:")
+            for k, v in POLICY_TYPES.items():
+                console.print(f"    {k}. {v.replace('_', ' ').title()}")
+            choice = Prompt.ask("  Select", choices=list(POLICY_TYPES.keys()), default="1")
+            doc_subtype = POLICY_TYPES[choice]
+            if doc_subtype == "custom":
+                doc_subtype = Prompt.ask("  Custom policy name")
+        else:
+            console.print("\n  SOP type:")
+            for k, v in SOP_TYPES.items():
+                console.print(f"    {k}. {v.replace('_', ' ').title()}")
+            choice = Prompt.ask("  Select", choices=list(SOP_TYPES.keys()), default="1")
+            doc_subtype = SOP_TYPES[choice]
+            if doc_subtype == "custom":
+                doc_subtype = Prompt.ask("  Custom SOP name")
+
+        gap_analysis = Prompt.ask(
+            "  Mode: new document or gap analysis of existing?",
+            choices=["new", "gap"],
+            default="new",
+        )
 
     # Fetch regulatory citations first
     on_progress("Fetching regulatory requirements...")

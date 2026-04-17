@@ -49,6 +49,7 @@ def run_transaction_testing_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Run a Transaction Testing engagement — 2-stage intake + testing plan review."""
     if console is None:
@@ -56,46 +57,70 @@ def run_transaction_testing_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    # ── Stage 1 + 2: Collect intake ───────────────────────────────────────────
-    tt_intake = _collect_intake(console)
+    if headless_params:
+        from schemas.transaction_testing import TTIntakeContext
+        tt_intake = TTIntakeContext(
+            engagement_context=headless_params.get("engagement_context", "fraud_discovery"),
+            fraud_typology=headless_params.get("fraud_typology"),
+            suspects_identified=headless_params.get("suspects", []),
+            controls_framework=headless_params.get("controls_framework", ""),
+            specific_controls=headless_params.get("specific_controls", []),
+            target_financial_systems=headless_params.get("target_financial_systems", ""),
+            regulator=headless_params.get("regulator", ""),
+            prescribed_methodology=headless_params.get("prescribed_methodology", ""),
+            reporting_deadline=headless_params.get("reporting_deadline", ""),
+            data_inventory=headless_params.get("data_inventory", "TBD"),
+            population_size=headless_params.get("population_size", "unknown"),
+            date_range=headless_params.get("date_range", ""),
+            evidence_standard=headless_params.get("evidence_standard", "internal_review"),
+            full_population_or_sample=headless_params.get("sampling", "full_population"),
+            timeline=headless_params.get("timeline", ""),
+        )
+    else:
+        # ── Stage 1 + 2: Collect intake ───────────────────────────────────────
+        tt_intake = _collect_intake(console)
 
     # ── Propose testing plan ──────────────────────────────────────────────────
     on_progress("Proposing testing plan based on engagement context...")
     testing_plan = _propose_testing_plan(intake, tt_intake)
 
-    # ── Show plan to Maher for review ─────────────────────────────────────────
-    console.print("\n  [bold yellow]Proposed Testing Plan[/bold yellow]")
-    console.print(f"  Engagement: {testing_plan.engagement_context}")
-    if testing_plan.fraud_typology:
-        console.print(f"  Fraud typology: {_FRAUD_TYPOLOGY_LABELS.get(testing_plan.fraud_typology, testing_plan.fraud_typology)}")
-    console.print(f"  Population: {testing_plan.population}")
-    console.print(f"  Date range: {testing_plan.date_range}")
-    console.print(f"  Method: {testing_plan.method_summary}")
-    console.print(f"\n  [bold]Proposed tests ({len(testing_plan.tests)}):[/bold]")
-    for obj in testing_plan.tests:
-        console.print(f"    [{obj.test_id}] {obj.name}")
-        console.print(f"         {obj.method}")
-    if testing_plan.caveats:
-        console.print("\n  [yellow]Caveats:[/yellow]")
-        for c in testing_plan.caveats:
-            console.print(f"    • {c}")
-
-    console.print()
-    confirmed = Confirm.ask("  Confirm this testing plan and proceed?")
-    if not confirmed:
-        # Allow Maher to provide feedback and regenerate once
-        feedback = Prompt.ask("  Describe adjustments needed")
-        on_progress("Revising testing plan...")
-        testing_plan = _revise_testing_plan(intake, tt_intake, testing_plan, feedback)
-        console.print("\n  [bold yellow]Revised Testing Plan[/bold yellow]")
+    if headless_params:
+        # Auto-confirm testing plan in headless mode
+        testing_plan.confirmed = True
+    else:
+        # ── Show plan to Maher for review ─────────────────────────────────────
+        console.print("\n  [bold yellow]Proposed Testing Plan[/bold yellow]")
+        console.print(f"  Engagement: {testing_plan.engagement_context}")
+        if testing_plan.fraud_typology:
+            console.print(f"  Fraud typology: {_FRAUD_TYPOLOGY_LABELS.get(testing_plan.fraud_typology, testing_plan.fraud_typology)}")
+        console.print(f"  Population: {testing_plan.population}")
+        console.print(f"  Date range: {testing_plan.date_range}")
+        console.print(f"  Method: {testing_plan.method_summary}")
+        console.print(f"\n  [bold]Proposed tests ({len(testing_plan.tests)}):[/bold]")
         for obj in testing_plan.tests:
             console.print(f"    [{obj.test_id}] {obj.name}")
-        confirmed = Confirm.ask("  Confirm revised plan and proceed?")
-        if not confirmed:
-            console.print("  [yellow]Testing plan not confirmed. Workflow cancelled.[/yellow]")
-            raise ValueError("Transaction testing plan not confirmed by consultant.")
+            console.print(f"         {obj.method}")
+        if testing_plan.caveats:
+            console.print("\n  [yellow]Caveats:[/yellow]")
+            for c in testing_plan.caveats:
+                console.print(f"    • {c}")
 
-    testing_plan.confirmed = True
+        console.print()
+        confirmed = Confirm.ask("  Confirm this testing plan and proceed?")
+        if not confirmed:
+            # Allow Maher to provide feedback and regenerate once
+            feedback = Prompt.ask("  Describe adjustments needed")
+            on_progress("Revising testing plan...")
+            testing_plan = _revise_testing_plan(intake, tt_intake, testing_plan, feedback)
+            console.print("\n  [bold yellow]Revised Testing Plan[/bold yellow]")
+            for obj in testing_plan.tests:
+                console.print(f"    [{obj.test_id}] {obj.name}")
+            confirmed = Confirm.ask("  Confirm revised plan and proceed?")
+            if not confirmed:
+                console.print("  [yellow]Testing plan not confirmed. Workflow cancelled.[/yellow]")
+                raise ValueError("Transaction testing plan not confirmed by consultant.")
+
+        testing_plan.confirmed = True
 
     # ── Write SCOPE_CONFIRMED state ───────────────────────────────────────────
     _write_scope_confirmed(intake.case_id, testing_plan)
@@ -108,12 +133,13 @@ def run_transaction_testing_workflow(
     })
     on_progress("Testing plan confirmed. State: SCOPE_CONFIRMED.")
 
-    # ── Document ingestion prompt ─────────────────────────────────────────────
-    console.print("\n  [bold]Document Ingestion[/bold]")
-    console.print("  Upload transaction data files to the case folder, then press Enter.")
-    console.print(f"  Case folder: cases/{intake.case_id}/")
-    console.print("  Accepted: Excel (.xlsx), CSV, exported GL/ERP data")
-    input("  Press Enter when documents are ready (or Enter to proceed without documents)...")
+    # ── Document ingestion (headless: skip interactive prompt) ────────────────
+    if not headless_params:
+        console.print("\n  [bold]Document Ingestion[/bold]")
+        console.print("  Upload transaction data files to the case folder, then press Enter.")
+        console.print(f"  Case folder: cases/{intake.case_id}/")
+        console.print("  Accepted: Excel (.xlsx), CSV, exported GL/ERP data")
+        input("  Press Enter when documents are ready (or Enter to proceed without documents)...")
 
     # ── Generate testing report ───────────────────────────────────────────────
     on_progress("Drafting Transaction Testing report...")

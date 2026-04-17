@@ -51,6 +51,7 @@ def run_due_diligence_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Run a Due Diligence engagement — Individual or Entity branch."""
     if console is None:
@@ -58,13 +59,52 @@ def run_due_diligence_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    console.print("\n  [bold]Due Diligence — Subject Type[/bold]")
-    subject_type = Prompt.ask("  Subject type", choices=["individual", "entity"], default="individual")
-
-    if subject_type == "individual":
-        dd_intake = _collect_individual_intake(console)
+    if headless_params:
+        subject_type = headless_params.get("subject_type", "individual")
+        if subject_type == "individual":
+            dd_intake = DDIntakeIndividual(
+                full_legal_name=headless_params.get("subject_name", intake.client_name),
+                date_of_birth=headless_params.get("dob", "not provided"),
+                place_of_birth=headless_params.get("place_of_birth", "not provided"),
+                nationalities=headless_params.get("nationalities", [intake.primary_jurisdiction]),
+                passport_number=headless_params.get("passport_number") or None,
+                corporate_affiliations=headless_params.get("affiliations", []),
+                dd_purpose=headless_params.get("dd_purpose", "onboarding"),
+                screening_level=headless_params.get("screening_level", "standard_phase1"),
+                screening_lists=headless_params.get("screening_lists", ["all"]),
+                screen_associates=headless_params.get("screen_associates", False),
+                operating_jurisdictions=headless_params.get("jurisdictions", [intake.primary_jurisdiction]),
+                specific_concerns=headless_params.get("specific_concerns", ""),
+                subject_aware=headless_params.get("subject_aware", False),
+                deliverable_format=headless_params.get("deliverable_format", "full_report"),
+                timeline=headless_params.get("timeline", ""),
+            )
+        else:
+            dd_intake = DDIntakeEntity(
+                registered_legal_name=headless_params.get("subject_name", intake.client_name),
+                company_registration_number=headless_params.get("reg_number") or None,
+                jurisdiction_of_incorporation=headless_params.get("jurisdiction_inc", intake.primary_jurisdiction),
+                principal_operating_jurisdictions=headless_params.get("jurisdictions", [intake.primary_jurisdiction]),
+                business_activity=headless_params.get("business_activity", intake.industry),
+                key_principals=headless_params.get("principals", []),
+                dd_purpose=headless_params.get("dd_purpose", "investment"),
+                screening_level=headless_params.get("screening_level", "standard_phase1"),
+                screening_lists=headless_params.get("screening_lists", ["all"]),
+                screen_beneficial_owners=headless_params.get("ubo_scope", "above_25pct_threshold"),
+                is_group_entity=headless_params.get("is_group", False),
+                specific_concerns=headless_params.get("specific_concerns", ""),
+                target_aware=headless_params.get("target_aware", False),
+                deliverable_format=headless_params.get("deliverable_format", "full_report"),
+                timeline=headless_params.get("timeline", ""),
+            )
     else:
-        dd_intake = _collect_entity_intake(console)
+        console.print("\n  [bold]Due Diligence — Subject Type[/bold]")
+        subject_type = Prompt.ask("  Subject type", choices=["individual", "entity"], default="individual")
+
+        if subject_type == "individual":
+            dd_intake = _collect_individual_intake(console)
+        else:
+            dd_intake = _collect_entity_intake(console)
 
     humint_required = (
         getattr(dd_intake, "screening_level", "") == "enhanced_phase2"

@@ -34,6 +34,7 @@ def run_client_proposal_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Generate forensic client proposal."""
     if console is None:
@@ -46,18 +47,24 @@ def run_client_proposal_workflow(
     team = _load_team()
     pricing = _load_pricing()
 
-    # Gather proposal-specific inputs
-    console.print("\n  [bold]Proposal details[/bold]")
-    prospect_name = Prompt.ask("  Prospect / client name", default=intake.client_name)
-    contact_person = Prompt.ask("  Contact person at prospect", default="")
-    proposal_scope = Prompt.ask("  Specific scope to address in proposal", default=intake.description)
+    if headless_params:
+        prospect_name = headless_params.get("prospect_name", intake.client_name)
+        contact_person = headless_params.get("contact_person", "")
+        proposal_scope = headless_params.get("proposal_scope", intake.description)
+        fee_notes = headless_params.get("fee_notes", "")
+    else:
+        # Gather proposal-specific inputs
+        console.print("\n  [bold]Proposal details[/bold]")
+        prospect_name = Prompt.ask("  Prospect / client name", default=intake.client_name)
+        contact_person = Prompt.ask("  Contact person at prospect", default="")
+        proposal_scope = Prompt.ask("  Specific scope to address in proposal", default=intake.description)
 
-    console.print("\n  [bold]Fee approach for this proposal[/bold]")
-    console.print(f"  Default model: {pricing.get('model', 'daily')}")
-    use_default = Confirm.ask("  Use default pricing model?", default=True)
-    fee_notes = ""
-    if not use_default:
-        fee_notes = Prompt.ask("  Fee notes / custom structure for this proposal")
+        console.print("\n  [bold]Fee approach for this proposal[/bold]")
+        console.print(f"  Default model: {pricing.get('model', 'daily')}")
+        use_default = Confirm.ask("  Use default pricing model?", default=True)
+        fee_notes = ""
+        if not use_default:
+            fee_notes = Prompt.ask("  Fee notes / custom structure for this proposal")
 
     # Auto-select team members
     on_progress("Selecting relevant team members...")
