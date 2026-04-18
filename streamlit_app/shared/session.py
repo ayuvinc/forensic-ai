@@ -60,7 +60,7 @@ def bootstrap(st) -> dict:
     from core.tool_registry import ToolRegistry
     from hooks.pre_hooks import validate_input, normalize_language, sanitize_pii, attach_case_metadata
     from hooks.post_hooks import (
-        validate_schema, persist_artifact, append_audit_event as audit_hook,
+        validate_schema, persist_artifact, append_audit_event_hook as audit_hook,
         extract_citations, render_markdown,
     )
 

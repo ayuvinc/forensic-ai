@@ -106,6 +106,16 @@ class JuniorAnalyst:
         """
         import re
 
+        _VALID_CONFIDENCE = {"high", "medium", "low"}
+
+        def _normalize_citations(data: dict) -> dict:
+            for c in data.get("citations", []):
+                if isinstance(c, dict):
+                    conf = str(c.get("confidence", "medium")).lower()
+                    if conf not in _VALID_CONFIDENCE:
+                        c["confidence"] = "high" if "high" in conf else "low" if "low" in conf else "medium"
+            return data
+
         def _try_parse(candidate: str) -> dict | None:
             try:
                 data = json.loads(candidate)
@@ -113,7 +123,7 @@ class JuniorAnalyst:
                     data["case_id"] = intake.case_id
                     data.setdefault("version", context.get("revision_round", 0) + 1)
                     data.setdefault("revision_round", context.get("revision_round", 0))
-                    return data
+                    return _normalize_citations(data)
             except json.JSONDecodeError:
                 pass
             return None
@@ -137,7 +147,7 @@ class JuniorAnalyst:
                 return result
 
         # Fallback: preserve summary text so the run is not a total loss
-        return {
+        return _normalize_citations({
             "case_id": intake.case_id,
             "version": 1,
             "summary": text[:500],
@@ -148,4 +158,4 @@ class JuniorAnalyst:
             "open_questions": [],
             "citations": [],
             "revision_round": context.get("revision_round", 0),
-        }
+        })

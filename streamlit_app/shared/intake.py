@@ -6,6 +6,7 @@ been submitted yet. Pages call these before running any pipeline.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Optional
 import uuid
 
@@ -52,6 +53,7 @@ def generic_intake_form(st, workflow_id: str, title: str):
         description=description.strip(),
         workflow=workflow_id,
         language=language,
+        created_at=datetime.now(timezone.utc),
     )
 
 
@@ -66,7 +68,7 @@ def frm_intake_form(st) -> Optional[tuple]:
 
     st.subheader("FRM Risk Register — Intake")
 
-    with st.form(key="frm_intake"):
+    with st.form(key="frm_intake_form"):
         client_name = st.text_input("Client name")
         industry = st.text_input("Industry / sector")
         primary_jurisdiction = st.text_input("Primary jurisdiction", value="UAE")
@@ -118,6 +120,7 @@ def frm_intake_form(st) -> Optional[tuple]:
         description=scope,
         workflow="frm_risk_register",
         language=language,
+        created_at=datetime.now(timezone.utc),
     )
 
     return intake, selected_modules
