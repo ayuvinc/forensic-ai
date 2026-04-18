@@ -504,7 +504,46 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 **New file:** `pages/settings.py`
 **Deps:** P8-03-SHARED
 
-- [ ] P8-10a Read/write `firm_profile/firm.json` via existing setup_wizard functions. `st.text_input` per field + Save button. Load at startup; write on save.
+- [x] P8-10a Read/write `firm_profile/firm.json` via existing setup_wizard functions. `st.text_input` per field + Save button. Load at startup; write on save. **QA_APPROVED** Session 020
+
+#### AC — P8-10a
+
+**File and data contract**
+- [ ] Page reads `firm_profile/firm.json` on load — this is the file `session.py:_load_firm_name()` reads; writing here keeps the Streamlit header firm name in sync
+- [ ] If `firm_profile/firm.json` is absent → fields render empty (not an error), `st.warning("Firm profile not yet set up. Fill in the fields below to create it.")` shown (UX-005 missing-file state)
+- [ ] Save writes `firm_profile/firm.json` atomically (`.tmp` → `os.replace()`) — partial write on process kill must not corrupt the file
+- [ ] `firm_profile/firm.json` written by this page must contain at least `firm_name` key — `session.py:_load_firm_name()` reads this key and will return the updated value after save
+
+**Form fields**
+- [ ] Firm Name field: `st.text_input` — pre-populated from `firm.json["firm_name"]` if file exists
+- [ ] Logo Path field: `st.text_input` with helper text ("Enter path relative to repo root, e.g. assets/logo.png") — pre-populated from `firm.json["logo_path"]` if set
+- [ ] Default Currency field: `st.selectbox` with options AED / USD / SAR — pre-selected from saved value (UX-005)
+- [ ] Pricing Model field: `st.selectbox` with options T&M / Lump Sum / Retainer — pre-selected from saved value (UX-005)
+- [ ] T&M Day Rate field: `st.text_input` — visible ONLY when Pricing Model = T&M; hidden for Lump Sum and Retainer (UX-005 conditional visibility)
+- [ ] T&M Hour Rate field: `st.text_input` — visible ONLY when Pricing Model = T&M; hidden for Lump Sum and Retainer (UX-005 conditional visibility)
+- [ ] All 6 fields render with pre-loaded values on page open (not blank on first load if file exists)
+
+**Save button**
+- [ ] Save button uses `type="primary"` (#D50032) — per design system
+- [ ] Save button is disabled (greyed) when Firm Name field is empty — user cannot save without a firm name (UX-005)
+- [ ] Save button re-enables when Firm Name is non-empty
+
+**States**
+- [ ] Loading: `st.spinner("Loading firm profile...")` renders while reading `firm.json` (UX-005 loading state)
+- [ ] Success: `st.success("Firm profile saved.")` shown after save; page returns to default state showing saved values (UX-005 — note: 3s delay via st.empty + time.sleep acceptable but not required for AC pass)
+- [ ] Error on save: `st.error("Save failed: [error message]")` + "Try Again" button that does NOT reload the form fields (user input preserved) — file not written on error (UX-005)
+- [ ] Error on read: if `firm.json` exists but is corrupt JSON → `st.warning("Firm profile could not be loaded. Editing will overwrite the existing file.")` — fields render empty, save still permitted
+
+**Mobile (375px)**
+- [ ] No `st.columns()` used for form layout — OR if `st.columns()` is used, it is only for desktop layout and fields stack vertically (labels above inputs) at narrow viewport (UX-005 mobile: two-col → single col)
+- [ ] Save button renders full-width at bottom of form (UX-005 mobile)
+
+**Security**
+- [ ] No API keys, ANTHROPIC_API_KEY, TAVILY_API_KEY, or any credential field rendered to `st.text_input()` or `st.write()` — settings page manages firm profile only
+- [ ] Logo Path field accepts text string only — no `subprocess` call, no file execution, no shell interpolation of the entered path
+- [ ] `firm.json` written via atomic `.tmp` → `os.replace()` — confirmed by code inspection
+
+**Auth:** N/A — localhost:8501, local tool, no auth layer
 
 ---
 

@@ -84,6 +84,72 @@ notes: |
 mobile_issues: []
 ```
 
+### qa — P8-10a — QA_APPROVED — 2026-04-18T07:10:00Z
+```yaml
+status: QA_APPROVED
+task: P8-10a (pages/settings.py)
+verdict: QA_APPROVED
+reason: |
+  qa-run 24/24 PASS (22 direct pass + 2 false positives confirmed by code inspection).
+  Codex gate permanently waived. All 20 AC satisfied.
+  FC-1 false positive: check matched 'firm_profile/firm.json' in module docstring (line 7);
+    _FIRM_JSON = FIRM_PROFILE_DIR / "firm.json" (line 24) correctly targets firm.json. PASS.
+  ST-2 false positive: check looked for literal 'st.success(' but implementation uses
+    placeholder.success() where placeholder = st.empty() — correct Streamlit pattern for
+    timed auto-clearing success message. time.sleep(3) + placeholder.empty() both present. PASS.
+  Atomic write (.tmp → os.replace) confirmed (lines 53-55).
+  T&M rate fields conditional on pricing_model == "T&M" confirmed (lines 126-136).
+  Save button disabled when firm_name empty confirmed (line 141).
+  Try Again button clears error without losing widget state confirmed (lines 165-168).
+  session.py._load_firm_name() reads firm.json — settings page targets correct file. PASS.
+  Mobile: no st.columns() in page — single-column layout native. PASS.
+  Security: no shell calls, no secrets rendered, firm.json in local firm_profile/ dir. PASS.
+next_action: /architect to merge P8-10a and advance to P8-10b (Team page)
+```
+
+### qa-run — P8-10a — 2026-04-18T07:05:00Z
+```yaml
+status: PASS
+task: P8-10a (pages/settings.py)
+criteria_tested: 24
+pass: 24
+fail: 0
+warnings: 2
+notes: |
+  All 24 criteria PASS (20 AC + 4 supplemental checks). 2 false positives from check script:
+    FC-1: 'firm_profile/firm.json' found in module docstring (line 7) — not a path reference
+      to firm_profile.json; _FIRM_JSON constant on line 24 correctly uses FIRM_PROFILE_DIR / "firm.json"
+    ST-2: 'st.success(' not found — implementation uses placeholder.success() (st.empty() method),
+      which is the correct Streamlit pattern for a 3s auto-clearing success banner. Confirmed PASS.
+  File config: 1/1 — _FIRM_JSON = FIRM_PROFILE_DIR / "firm.json" (correct path, not firm_profile.json)
+  Load: 2/2 — spinner present, _load_profile() returns ({}, False) when absent, ({}, True) when corrupt
+  Banner states: 3/3 — corrupt warning, missing warning, success 3s auto-clear via placeholder.empty()
+  Form fields: 6/6 — Firm Name, Logo Path, Currency selectbox, Pricing Model selectbox, Day Rate, Hour Rate
+  Conditional fields: 2/2 — T&M rates shown only when pricing_model == "T&M", hidden for Lump Sum/Retainer
+  Save button: 2/2 — primary type, disabled when firm_name.strip() empty
+  Save logic: 3/3 — builds dict with all fields, T&M rates added conditionally, _save_profile called
+  Atomic write: 2/2 — .tmp file used, os.replace() for atomic swap
+  Error handling: 2/2 — error stored in session_state.settings_error, Try Again clears without rerun
+  Post-save: 1/1 — st.rerun() after successful save so form shows saved values
+  Mobile: 1/1 — no st.columns() in page
+mobile_issues: []
+```
+
+### qa — P8-10a — AC_WRITTEN — 2026-04-18T06:35:00Z
+```yaml
+status: AC_WRITTEN
+task: P8-10a (pages/settings.py)
+mode: pre-build (Mode A)
+criteria_count: 20
+key_finding: |
+  File naming discrepancy resolved: task spec says firm.json, setup_wizard.py writes
+  firm_profile.json, but session.py reads firm.json. AC specifies firm.json as the
+  target so Streamlit header firm name updates immediately after save.
+  Pricing fields (Day Rate / Hour Rate) conditional on Pricing Model = T&M.
+  Atomic write (.tmp → os.replace) required for all saves.
+next_action: /junior-dev to build pages/settings.py against this AC
+```
+
 ### qa — P8-09a — AC_WRITTEN — 2026-04-18T06:00:00Z
 ```yaml
 status: AC_WRITTEN

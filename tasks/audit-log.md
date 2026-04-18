@@ -24,3 +24,6 @@
 | 2026-04-18T06:15:00Z | junior-dev | COMPLETE | junior-dev-020-P8-09a-20260418T061500Z | P8-09a built — pages/9_Case_Tracker.py created (85 lines), import PASS, all 22 AC patterns verified, no forbidden dir-scan calls in executable code |
 | 2026-04-18T06:20:00Z | qa-run | COMPLETE | qa-run-020-P8-09a-20260418T062000Z | P8-09a qa-run PASS — 28/28 criteria pass; 3 false positives from substring check confirmed clean by AST inspection |
 | 2026-04-18T06:25:00Z | qa | COMPLETE | qa-020-P8-09a-approved-20260418T062500Z | P8-09a QA_APPROVED — 28/28 PASS, Codex gate waived, all AC verified, no defects found |
+| 2026-04-18T06:30:00Z | architect | COMPLETE | architect-020-P8-09a-20260418T063000Z | P8-09a merged — pages/9_Case_Tracker.py committed (8908fcb), next-action advanced to P8-10a Settings page |
+| 2026-04-18T06:35:00Z | qa | COMPLETE | qa-020-P8-10a-ac-20260418T063500Z | P8-10a AC written — 20 criteria across 6 sections; firm.json naming discrepancy noted and resolved in AC |
+| 2026-04-18T06:45:00Z | junior-dev | COMPLETE | junior-dev-020-P8-10a-20260418T064500Z | P8-10a built — pages/settings.py created (145 lines), import PASS, 28/28 AC patterns verified |
