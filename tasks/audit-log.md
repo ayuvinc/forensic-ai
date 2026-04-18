@@ -27,3 +27,8 @@
 | 2026-04-18T06:30:00Z | architect | COMPLETE | architect-020-P8-09a-20260418T063000Z | P8-09a merged — pages/9_Case_Tracker.py committed (8908fcb), next-action advanced to P8-10a Settings page |
 | 2026-04-18T06:35:00Z | qa | COMPLETE | qa-020-P8-10a-ac-20260418T063500Z | P8-10a AC written — 20 criteria across 6 sections; firm.json naming discrepancy noted and resolved in AC |
 | 2026-04-18T06:45:00Z | junior-dev | COMPLETE | junior-dev-020-P8-10a-20260418T064500Z | P8-10a built — pages/settings.py created (145 lines), import PASS, 28/28 AC patterns verified |
+| 2026-04-18T07:15:00Z | architect | COMPLETE | architect-020-P8-phase8-20260418T0715Z | P8-10a merged (62126e6) — Settings page QA_APPROVED. next-action.md updated: P8-10b Team page, /qa for AC next. |
+| 2026-04-18T07:20:00Z | qa | COMPLETE | qa-020-P8-10b-AC-20260418T0720Z | P8-10b AC written — 18 criteria (FC/LD/DI/AM/RM/SV/MOB/SEC) grounded in ba-logic.md:76 + UX-D-04 + Settings pattern |
+| 2026-04-18T07:30:00Z | junior-dev | COMPLETE | junior-dev-020-P8-10b-20260418T0730Z | P8-10b implemented — pages/10_Team.py created, 21/21 AC checks PASS, marked READY_FOR_REVIEW |
+| 2026-04-18T07:35:00Z | qa-run | COMPLETE | qa-run-020-P8-10b-20260418T0735Z | P8-10b qa-run 21/21 PASS — 1 warning (Bio uses st.text_area vs st.text_input, acceptable UX improvement) |
+| 2026-04-18T07:40:00Z | qa | COMPLETE | qa-020-P8-10b-APPROVED-20260418T0740Z | P8-10b QA_APPROVED — 21/21 PASS, DI-2 st.text_area warning accepted (UX improvement, not defect) |

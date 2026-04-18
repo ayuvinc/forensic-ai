@@ -84,6 +84,70 @@ notes: |
 mobile_issues: []
 ```
 
+### qa — P8-10b — QA_APPROVED — 2026-04-18T07:40:00Z
+```yaml
+status: QA_APPROVED
+task: P8-10b (pages/10_Team.py)
+verdict: QA_APPROVED
+reason: |
+  qa-run 21/21 PASS. Codex gate permanently waived. All 18 AC satisfied.
+  DI-2 warning (Bio uses st.text_area vs st.text_input) accepted:
+    st.text_area stores/reads via session_state identically to st.text_input.
+    Pre-population, Save collection, and data flow are unchanged.
+    st.text_area is better UX for multi-line bio content — not a defect.
+  Stable _id pattern ensures Remove + Add never collides widget keys.
+  Save clears team_members/_next_id/team_corrupt from session_state then reruns
+    so next load re-reads saved file — confirmed persistence mechanism. PASS.
+  RM-2 AST-confirmed: Remove block does not call _save_team(). PASS.
+  Security: read_bytes/write_text only, _TEAM_JSON constant, no user-controlled path. PASS.
+  Mobile: no st.columns() in AST. PASS.
+  Auth: N/A — localhost:8501, local tool.
+next_action: /architect to merge P8-10b and advance to P8-11a (Document ingestion UI)
+```
+
+### qa-run — P8-10b — 2026-04-18T07:35:00Z
+```yaml
+status: PASS
+task: P8-10b (pages/10_Team.py)
+criteria_tested: 21
+pass: 21
+fail: 0
+warnings: 1
+notes: |
+  All 18 AC criteria PASS plus 3 supplemental AST checks.
+  1 warning (acceptable): DI-2 specifies "four st.text_input fields" but Bio uses st.text_area.
+    st.text_area stores/reads via session_state identically to st.text_input.
+    Data flow on Save is identical. Widget type is a UX improvement for multi-line bio content.
+    Not a defect — flagged for /qa review only.
+  File config: 2/2 — _TEAM_JSON constant, bootstrap at module level
+  Load: 3/3 — spinner, absent→empty (no error), corrupt→warning+zero members
+  Display: 4/4 — expander per member, four fields pre-populated, empty state, count caption
+  Add Member: 2/2 — appends blank _new=True, expander expanded, blank fields
+  Remove Member: 2/2 — removes from session_state only, no _save_team call (AST confirmed)
+  Save: 5/5 — primary always enabled, blank-name filter+warning, atomic .tmp→os.replace,
+         3s placeholder success banner, st.error+Try Again
+  Mobile: 1/1 — zero st.columns() calls in AST
+  Security: 2/2 — no shell functions, all writes via _TEAM_JSON constant
+mobile_issues: []
+```
+
+### qa — P8-10b — AC_WRITTEN — 2026-04-18T07:20:00Z
+```yaml
+status: AC_WRITTEN
+task: P8-10b (pages/10_Team.py)
+mode: pre-build (Mode A)
+criteria_count: 18
+key_finding: |
+  No dedicated UX spec beyond UX-D-04 decision (Separate Team page). AC grounded in:
+    - BA sign-off ba-logic.md:76: setup wizard collects team bios into firm_profile/
+    - Task spec: firm_profile/team.json, st.expander per member, Add/Remove, atomic save
+    - Pattern consistency with Settings page (P8-10a): same atomic write, same 3s success banner
+  Member identity: index-based in session_state list. No unique member ID needed.
+  Blank-name filtering: SV-2 requires either filter-on-save or warning — implementation choice.
+  Remove is deferred (not auto-saved); Save always enabled (zero members = clear team is valid).
+next_action: /junior-dev to build pages/10_Team.py against this AC
+```
+
 ### qa — P8-10a — QA_APPROVED — 2026-04-18T07:10:00Z
 ```yaml
 status: QA_APPROVED

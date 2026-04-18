@@ -551,7 +551,46 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 **New file:** `pages/10_Team.py`
 **Deps:** P8-03-SHARED
 
-- [ ] P8-10b Read/write `firm_profile/team.json`. One `st.expander` per team member — name, title, credentials, bio. "Add Member" button appends new entry. "Remove" per member. Save writes atomically.
+- [x] P8-10b Read/write `firm_profile/team.json`. One `st.expander` per team member — name, title, credentials, bio. "Add Member" button appends new entry. "Remove" per member. Save writes atomically. **QA_APPROVED** Session 020
+
+#### AC — P8-10b
+
+**File config (FC)**
+- [ ] FC-1: `_TEAM_JSON` constant points to `FIRM_PROFILE_DIR / "team.json"` — not a hardcoded string path
+- [ ] FC-2: `bootstrap(st)` called at module level via `streamlit_app.shared.session`
+
+**Load (LD)**
+- [ ] LD-1: Loading spinner shown while reading team.json ("Loading team..." or equivalent)
+- [ ] LD-2: When `team.json` absent: no error banner; page renders empty state with "Add Member" prompt — file absence is normal (first run)
+- [ ] LD-3: When `team.json` exists but is corrupt JSON: `st.warning` shown; page still renders with zero members so user can build a new list and overwrite
+
+**Display (DI)**
+- [ ] DI-1: One `st.expander` rendered per team member; expander label uses the member's name (or "New Member" when name is blank)
+- [ ] DI-2: Inside each expander: four `st.text_input` fields — Name, Title, Credentials, Bio — pre-populated from loaded data
+- [ ] DI-3: Empty state (zero members): `st.info` shown prompting user to add their first team member; expander section absent
+- [ ] DI-4: Member count shown above the expander list (e.g. "3 team members")
+
+**Add Member (AM)**
+- [ ] AM-1: "Add Member" button appends a blank entry to `st.session_state` member list; triggers rerun so new expander appears
+- [ ] AM-2: New member expander is expanded by default; all four fields are blank
+
+**Remove Member (RM)**
+- [ ] RM-1: Each expander contains a "Remove" button; clicking it removes that entry from `st.session_state` and triggers rerun — member disappears immediately
+- [ ] RM-2: Remove does NOT auto-save to disk — user must click "Save" to persist the removal
+
+**Save (SV)**
+- [ ] SV-1: "Save" button is `type="primary"`; it is always enabled (saving zero members is valid — clears the team)
+- [ ] SV-2: Blank-name members are either filtered out before save or a `st.warning` is shown before proceeding — no silent empty entries written to team.json
+- [ ] SV-3: Atomic write: `.tmp` file written first, then `os.replace()` — never direct write to `team.json`
+- [ ] SV-4: On success: auto-clearing success banner shown for 3 s then cleared (consistent with Settings page pattern — `placeholder = st.empty()`)
+- [ ] SV-5: On write failure: `st.error` shown with a "Try Again" button; session state preserves current edits (no data loss)
+
+**Mobile (MOB)**
+- [ ] MOB-1: No `st.columns()` call in page-level executable code — single-column layout at 375px
+
+**Security (SEC)**
+- [ ] SEC-1: No shell execution from text inputs — all four fields used as data values only
+- [ ] SEC-2: `team.json` written only into `firm_profile/` via the `_TEAM_JSON` constant — no user-controlled file path
 
 ---
 
