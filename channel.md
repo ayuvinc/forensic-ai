@@ -42,6 +42,75 @@ message: |
 
 <!-- Agents append messages here. Architect clears at session close. -->
 
+### qa — P8-09a — QA_APPROVED — 2026-04-18T06:25:00Z
+```yaml
+status: QA_APPROVED
+task: P8-09a (pages/9_Case_Tracker.py)
+verdict: QA_APPROVED
+reason: |
+  qa-run 28/28 PASS. Codex gate permanently waived. All AC satisfied.
+  4-tier status badges verified (green/amber/red/blue). O(1) index load confirmed —
+  no executable dir scan; build_case_index() delegates to file_tools.py.
+  One-expander-at-a-time enforced by selectbox mechanism. PIPELINE_ERROR shows
+  pre-defined guidance text only — no traceback rendered (AST confirmed).
+  Security: read_bytes() for downloads, path-only case_id usage, no PHI in table.
+  Mobile: no st.columns() in executable code, Case ID truncated at 16 chars.
+  Auth: N/A — localhost:8501, local tool.
+  Note: cdir.glob("final_report.*.md") in _render_case_detail is per-case file
+  discovery (not an index scan) — correct usage, not a defect.
+next_action: /architect to merge P8-09a and advance to P8-10a (Settings page)
+```
+
+### qa-run — P8-09a — 2026-04-18T06:20:00Z
+```yaml
+status: PASS
+task: P8-09a (pages/9_Case_Tracker.py)
+criteria_tested: 28
+pass: 28
+fail: 0
+warnings: 3
+notes: |
+  All 28 criteria PASS (26 AC + 2 AST security checks).
+  3 false positives from substring-based check script (all confirmed PASS by AST):
+    - DL-2: os.listdir() in doc comment on line 4 and 72 only — no executable call
+    - RD-6: 'traceback' in comment on line 124 only — no traceback rendered to user
+    - MOB-1: 'st.columns(' in comment on line 168 only — no executable st.columns() call
+  Data loading: 6/6 — spinner, O(1) read, sort desc, empty state, backfill, refresh
+  Table display: 6/6 — st.dataframe, human labels, green/amber/red/blue badges
+  Row detail: 6/6 — expander below table, one-at-a-time, downloads, audit log, no-deliverables caption, PIPELINE_ERROR guidance
+  Error states: 3/3 — corrupt JSON, missing folder, empty index
+  Mobile: 2/2 — no st.columns wrapper, Case ID truncated at 16 chars
+  Security: 3/3 — no PHI, read_bytes only, case_id path-only
+mobile_issues: []
+```
+
+### qa — P8-09a — AC_WRITTEN — 2026-04-18T06:00:00Z
+```yaml
+status: AC_WRITTEN
+task: P8-09a (pages/9_Case_Tracker.py)
+mode: pre-build (Mode A)
+criteria_count: 22
+gaps_filled: 6
+gaps: |
+  Existing AC skeleton (Session 019) was missing vs UX-004:
+  1. Loading spinner criterion (UX-004 loading state)
+  2. Amber indicator for PM_REVISION_REQUESTED / PARTNER_REVISION_REQ
+  3. PIPELINE_ERROR expander: guidance text, no raw stack trace
+  4. One expander open at a time (UX-D-02)
+  5. Mobile Case ID truncation (≤16 chars / tooltip)
+  6. PARTNER_REVISION_REQ added to in-progress status list
+  All 6 added. Existing 16 criteria retained unchanged.
+ba_coverage: |
+  BA: multi-session case work is primary — tracker is the resume entry point.
+  Case IDs are format {YYYYMMDD}-{6char}. DELIVERABLE_WRITTEN terminal state (BA open decision resolved).
+  No PHI in index per ARCH-INS-02 data rules.
+ux_coverage: |
+  UX-004 fully covered: spinner, table columns, 4-tier status colours (green/amber/red/blue),
+  expander below row, one at a time, download buttons, audit_log present/absent, error.json guidance,
+  corrupt index error, empty state, mobile scrollable, refresh button.
+next_action: /junior-dev to build pages/9_Case_Tracker.py against this AC
+```
+
 ### qa — P8-08-PAGES — QA_APPROVED — 2026-04-17T03:50:00Z
 ```yaml
 status: QA_APPROVED

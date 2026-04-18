@@ -1,41 +1,39 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
-qa (write AC for P8-09a), then junior-dev (build), then qa-run + qa (approve), then architect (commit + advance)
+junior-dev (build P8-10a), then qa-run + qa (approve), then junior-dev (P8-10b), then junior-dev (P8-11a), then architect (advance to P8-14 smoke test gate)
 
 ## NEXT_TASK
-**P8-09a — Case Tracker page (pages/9_Case_Tracker.py)**
+**P8-10a — Settings page (pages/settings.py)**
 
-Reads `cases/index.json` (written by ARCH-INS-02 write_state()) — O(1) load.
-Build: `st.dataframe()` of cases with click-to-expand: deliverables, audit_log link, download final_report.
-Depends on: P8-03-SHARED (bootstrap), ARCH-INS-02 (index.json).
+Read/write `firm_profile/firm.json` via existing setup_wizard functions.
+`st.text_input` per field + Save button. Load at startup; write on save.
+Depends on: P8-03-SHARED (bootstrap).
 
-After P8-09a (in order):
-6. P8-10a — Settings page (firm_profile/firm.json read/write)
-7. P8-10b — Team page (pages/10_Team.py — UX-D-04 approved)
-8. P8-11a — Document ingestion UI (inline on Investigation, FRM, DD, TT)
-9. P8-14a..f — End-to-end smoke test (manual, AK)
+UX-005 spec (APPROVED): two-column layout (label 40% / input 60%), fields: Firm Name,
+Logo Path, Default Currency (select), Pricing Model (select), T&M Day Rate, T&M Hour Rate.
+Pricing fields visible only when Pricing Model = T&M.
+Save button: primary (#D50032), enabled only when Firm Name non-empty.
+Success: st.success("Firm profile saved.") for 3s, return to default.
+Error on file read: st.warning (missing profile — empty fields, not broken).
+Error on save: st.error + "Try Again" button.
+Mobile (375px): two-column collapses to single column — labels above inputs.
 
-Post Phase 8 (separate sprint):
-- ARCH-INS-03 — circuit breaker for Tavily/Anthropic
+After P8-10a (in order):
+- P8-10b — Team page (pages/10_Team.py — UX-D-04 approved)
+- P8-11a — Document ingestion UI (inline on Investigation, FRM, DD, TT)
+- P8-14a..f — End-to-end smoke test (manual, AK)
 
 ## CARRY_FORWARD_CONTEXT
-Session 017 (continued — design + UX):
-- GoodWork logo fetched from thegoodwork.online, saved to assets/logo.png
-- app.py updated — logo in sidebar (180px) and landing (280px)
-- .streamlit/config.toml created — light theme, #D50032 primary, #F5F2F0 secondary, #282827 text
-- tasks/design-system.md written — full brand system extracted from site (Montserrat, red palette, warm neutrals, semantic colors, tokens, custom CSS)
-- Montserrat loaded via Google Fonts in session.py bootstrap CSS injection
-- tasks/ux-specs.md written — 6 specs (UX-001..006), all states, mobile 375px
-- 4 UX decisions reviewed and APPROVED by AK:
-  - D-01: Intake collapses to expander during run
-  - D-02: Case tracker uses row expander
-  - D-03: Start New Case keeps firm name, clears client data
-  - D-04: Team bios get separate page (P8-10b added)
-- All commits on branch: feature/P8-phase8-streamlit
+Session 020 built P8-09a (Case Tracker page):
+- pages/9_Case_Tracker.py created — O(1) index read, 4-tier status badges,
+  one-expander-at-a-time via selectbox, PIPELINE_ERROR guidance, Case ID truncated at 16 chars
+- 28/28 AC criteria passed, QA_APPROVED
+- All ARCH-INS-01 + ARCH-INS-02 + P8-08-PAGES + P8-09a now QA_APPROVED
+- Branch: feature/P8-phase8-streamlit (all Phase 8 work)
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
 - P8-12-EXCEL: MISSING_BA_SIGNOFF
@@ -43,4 +41,4 @@ Session 017 (continued — design + UX):
 - SRL-B-BA: MISSING_BA_SIGNOFF
 - FRM-R-00: MISSING_BA_SIGNOFF
 - feature/P8-phase8-streamlit not pushed to remote
-- Manual verification (P8-00c, P8-02d, P8-05b, P8-06e, P8-14) requires live API key + streamlit
+- Manual verification (P8-00c, P8-02d, P8-05b, P8-06e, P8-14) requires live API key + streamlit run

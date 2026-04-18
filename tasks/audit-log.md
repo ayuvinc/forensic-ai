@@ -18,3 +18,9 @@
 | 2026-04-17T03:31:38Z | qa | QA_APPROVED | qa-019-P8-08-PAGES-20260417T035000Z | P8-08-PAGES QA_APPROVED — 10 workflow pages, 19/19 AC pass, mobile safe, security clean, 1 accepted warning (persona review inline display) |
 | 2026-04-17T04:01:17Z | architect | COMPLETE | architect-019-P8-merge-20260417T035500Z | Merged ARCH-INS-01, ARCH-INS-02, P8-08-PAGES to feature/P8-phase8-streamlit (commit 65d50c1). Next: P8-09a QA AC. |
 | 2026-04-17T04:02:46Z | qa | COMPLETE | qa-019-P8-09a-AC-20260417T040000Z | P8-09a AC written — 18 criteria covering data load, backfill, table display, row detail, error states, mobile, security |
+| 2026-04-17T04:05:20Z | session-close | COMPLETE | session-close-019-P8-phase8-streamlit-20260417T0405Z | Session 019 closed — ARCH-INS-01/02 + P8-08-PAGES (10 pages, 26 files) QA_APPROVED; P8-09a AC written; P8-09a..P8-14 deferred PENDING |
+| 2026-04-18T05:55:30Z | session-open | COMPLETE | session-open-020-2026-04-18T055530Z | Session 020 opened — CLOSED→OPEN, active persona set to qa, standup generated for P8-09a Case Tracker |
+| 2026-04-18T06:00:00Z | qa | COMPLETE | qa-020-P8-09a-ac-20260418T060000Z | P8-09a AC written — 22 criteria, 6 gaps filled vs UX-004 (spinner, amber status, PIPELINE_ERROR guidance, one-expander-at-a-time, mobile truncation, PARTNER_REVISION_REQ) |
+| 2026-04-18T06:15:00Z | junior-dev | COMPLETE | junior-dev-020-P8-09a-20260418T061500Z | P8-09a built — pages/9_Case_Tracker.py created (85 lines), import PASS, all 22 AC patterns verified, no forbidden dir-scan calls in executable code |
+| 2026-04-18T06:20:00Z | qa-run | COMPLETE | qa-run-020-P8-09a-20260418T062000Z | P8-09a qa-run PASS — 28/28 criteria pass; 3 false positives from substring check confirmed clean by AST inspection |
+| 2026-04-18T06:25:00Z | qa | COMPLETE | qa-020-P8-09a-approved-20260418T062500Z | P8-09a QA_APPROVED — 28/28 PASS, Codex gate waived, all AC verified, no defects found |

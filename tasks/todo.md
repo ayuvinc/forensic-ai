@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: junior-dev
+Active persona: qa
 Blocking issue: none
-Last updated:   2026-04-17T02:43:10Z — state transition by MCP server
+Last updated:   2026-04-18T05:55:30Z — state transition by MCP server
 
 ---
 
@@ -454,11 +454,12 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 **New file:** `pages/9_Case_Tracker.py`
 **Deps:** P8-03-SHARED, ARCH-INS-02
 
-- [ ] P8-09a Read `cases/index.json` (not directory scan) → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button.
+- [x] P8-09a Read `cases/index.json` (not directory scan) → build dataframe (case_id, workflow, status, date). `st.dataframe()` with click-to-expand: shows deliverables, audit_log link, download final_report button. **QA_APPROVED Session 020**
 
 #### AC — P8-09a
 
 **Data loading**
+- [ ] Page shows `st.spinner("Loading cases...")` while reading `cases/index.json` — spinner visible before table renders (UX-004 loading state)
 - [ ] Page reads `cases/index.json` — no `os.listdir()` / `glob("cases/*/")` directory scan at runtime (code inspection: only `_INDEX_PATH.read_text()` or `json.load(open(_INDEX_PATH))` pattern permitted)
 - [ ] If `cases/index.json` exists → `st.dataframe()` renders with columns: Case ID | Workflow | Status | Last Updated — sorted by Last Updated descending (newest first)
 - [ ] If `cases/index.json` is absent AND `cases/` directory is empty (or no `state.json` files exist) → `st.info("No cases yet. Run a workflow to create your first case.")` — no error, no blank page
@@ -470,13 +471,16 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 - [ ] Workflow column displays human-readable label (e.g. "FRM Risk Register" not "frm_risk_register") — either via format_func or rename dict applied before render
 - [ ] `DELIVERABLE_WRITTEN` and `OWNER_APPROVED` status values map to a green visual indicator in the table (column value, emoji prefix, or highlight — any consistent approach)
 - [ ] `PIPELINE_ERROR` status maps to a red visual indicator
-- [ ] In-progress states (`INTAKE_CREATED`, `JUNIOR_DRAFT_COMPLETE`, etc.) map to a neutral/blue indicator
+- [ ] `PM_REVISION_REQUESTED` and `PARTNER_REVISION_REQ` status values map to an amber/yellow visual indicator — distinct from both green and red (UX-004 amber pill)
+- [ ] In-progress states (`INTAKE_CREATED`, `JUNIOR_DRAFT_COMPLETE`, `PM_REVIEW_COMPLETE`, etc.) map to a neutral/blue indicator
 
 **Row detail (case expander)**
 - [ ] After selecting a case (via `st.selectbox`, `st.dataframe` row selection, or equivalent), an expander or detail section renders below the table — not a separate page navigation
+- [ ] Only one case expander is open at a time — opening a second case collapses the previous one (UX-004 D-02: expander below row, one at a time)
 - [ ] Detail section shows all `final_report.*.md` files present in `cases/{case_id}/` as `st.download_button()` entries — one button per file
 - [ ] Detail section notes whether `audit_log.jsonl` exists in the case folder (present/absent label) — does not read or render its contents inline
 - [ ] If no deliverable files exist for a case, detail section shows `st.caption("No deliverables yet for this case.")` — not a blank expander
+- [ ] If case status is `PIPELINE_ERROR` and an `error.json` or equivalent error artifact exists in the case folder, expander shows a "What to do" guidance message — no raw Python stack trace rendered to the user (UX-004 PIPELINE_ERROR guidance)
 
 **Error and edge states**
 - [ ] `cases/index.json` exists but is corrupt JSON → `st.error("Case index is corrupt. Delete cases/index.json and refresh to rebuild.")` — no unhandled exception
@@ -485,6 +489,7 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 
 **Mobile (375px)**
 - [ ] `st.dataframe()` renders without multi-column layout wrapper — table itself scrolls natively on mobile (no `st.columns()` wrapping the table)
+- [ ] Case ID column does not overflow on 375px viewport — value truncated or ellipsed at ≤16 chars (UX-004: Case ID truncated to 12 chars with tooltip)
 
 **Security**
 - [ ] Index data displayed is only `case_id`, `workflow`, `status`, `last_updated` — no `client_name`, intake fields, or document content rendered in the table (index.json contains no PHI per ARCH-INS-02 design)
