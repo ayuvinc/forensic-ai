@@ -1,13 +1,23 @@
 """Transaction Testing — Streamlit page.
 
-UX-003 shell: Zone A (intake + 2-stage context) → Zone B (pipeline with auto-confirmed plan) → Zone C (output + download).
+UX-003 shell: Zone A (intake + 2-stage context + doc upload) → Zone B (pipeline) → Zone C (output + download).
 """
+
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
 
 import streamlit as st
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir
+
+
+def _infer_doc_type(filename: str) -> str:
+    """Map file extension to DocumentManager doc_type string (RG-3)."""
+    ext = Path(filename).suffix.lower()
+    return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
 
 session = bootstrap(st)
 
@@ -43,7 +53,7 @@ if "tt_stage" not in st.session_state:
 
 if st.session_state.tt_stage != "intake":
     if st.sidebar.button("Start New Case"):
-        for k in ["tt_stage", "tt_intake", "tt_params", "tt_result"]:
+        for k in ["tt_stage", "tt_intake", "tt_params", "tt_result", "tt_reg_results"]:
             st.session_state.pop(k, None)
         st.rerun()
 
@@ -81,10 +91,54 @@ if st.session_state.tt_stage == "intake":
             format_func=lambda k: EVIDENCE_STANDARDS[k],
         )
 
+        # ── Document upload — Zone A (UX-006, below intake, above Run) ──────────
+        uploaded_files = st.file_uploader(
+            "Upload case documents (optional)",
+            accept_multiple_files=True,
+            type=["pdf", "docx", "txt", "xlsx"],
+            key="tt_docs",
+        )
+        st.warning("Maximum file size is 10MB per document.")
+        if uploaded_files and len(uploaded_files) > 10:
+            st.warning("Maximum 10 documents per case.")
+
         if st.button("Run Transaction Testing", type="primary"):
             if not date_range.strip():
                 st.error("Required: Transaction date range")
             else:
+                # RT-1: registration on Run click
+                from tools.document_manager import DocumentManager
+                from schemas.documents import DocumentProvenance
+
+                reg_results = []
+                if uploaded_files:
+                    cdir = case_dir(intake.case_id)  # RT-2
+                    dm = DocumentManager(intake.case_id)  # RG-1
+                    for f in uploaded_files:
+                        try:
+                            file_bytes = bytes(f.getbuffer())  # FW-1
+                            dest = cdir / f.name               # FW-2
+                            dest.write_bytes(file_bytes)
+                            provenance = DocumentProvenance(
+                                collection_method="uploaded_by_consultant",
+                                collected_at=datetime.now(timezone.utc),
+                                collector_role="consultant",
+                                scope_authorized_by=f"case_{intake.case_id}",
+                                source_hash=hashlib.sha256(file_bytes).hexdigest(),
+                            )
+                            dm.register_document(  # RG-2
+                                str(dest),
+                                folder="uploaded",
+                                doc_type=_infer_doc_type(f.name),  # RG-3
+                                provenance=provenance,
+                            )
+                            size_mb = round(f.size / (1024 * 1024), 1)
+                            reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
+                        except Exception as e:  # RG-4: per-file isolation
+                            reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
+                    # WI-4: dm NOT passed to workflow — registration only
+
+                st.session_state.tt_reg_results = reg_results
                 st.session_state.tt_intake = intake
                 st.session_state.tt_params = {
                     "engagement_context": engagement_context,
@@ -104,6 +158,13 @@ elif st.session_state.tt_stage == "running":
 
     with st.expander("Intake Summary", expanded=False):
         st.write(f"**Client:** {intake.client_name} | **Context:** {ENGAGEMENT_CONTEXTS.get(params['engagement_context'], params['engagement_context'])} | **Date range:** {params['date_range']}")
+
+    # ── Document registration results (FS-1) ───────────────────────────────────
+    for r in st.session_state.get("tt_reg_results", []):
+        if r["ok"]:
+            st.caption(f"✓ {r['name']} — {r['size_mb']}MB — registered")
+        else:
+            st.error(f"Failed to register {r['name']}: {r.get('error', 'unknown error')}")
 
     from workflows.transaction_testing import run_transaction_testing_workflow
 

@@ -4,37 +4,44 @@
 OPEN
 
 ## NEXT_PERSONA
-qa (write AC for P8-10b), then junior-dev (build P8-10b), then qa-run + qa (approve), then junior-dev (P8-11a), then architect (advance to P8-14 smoke test gate)
+AK (manual smoke test — P8-14a..f requires live API key + streamlit run app.py)
 
 ## NEXT_TASK
-**P8-10b — Team page (pages/10_Team.py)**
+**P8-14 — End-to-end Streamlit smoke test (MANUAL — AK only)**
 
-Read/write `firm_profile/team.json`.
-One `st.expander` per team member — fields: name, title, credentials, bio.
-"Add Member" button appends a new blank entry.
-"Remove" button per member (inside expander).
-Save writes atomically (.tmp → os.replace).
-Bootstrap from `streamlit_app/shared/session.py`.
+All automated Phase 8 tasks are QA_APPROVED and committed on feature/P8-phase8-streamlit.
+Run the following in order. Each requires: `source venv/bin/activate && RESEARCH_MODE=live streamlit run app.py`
 
-BA sign-off: `tasks/ba-logic.md:76` — setup wizard collects team bios into `firm_profile/`.
-UX decision: UX-D-04 approved 2026-04-16 (Option B: separate Team page, not embedded in Settings).
-Deps: P8-03-SHARED.
+- P8-14a: Browser opens at localhost:8501; sidebar shows all pages (Scope, Investigation, Persona Review, Policy SOP, Training, FRM, Proposal, PPT Pack, Case Tracker, Settings, Team, DD, Sanctions, TT)
+- P8-14b: FRM page: intake → pipeline → review 3+ risk items (A/F/R selectboxes visible, not hidden) → finalize → verify `cases/{id}/final_report.en.md` written
+- P8-14c: Case Tracker: new FRM case appears with DELIVERABLE_WRITTEN status (green badge)
+- P8-14d: Investigation page: intake → pipeline → download output
+- P8-14e: Interim folder: `ls cases/{id}/` root has only `final_report.*`, `state.json`, `audit_log.jsonl`, `citations_index.json`; `ls cases/{id}/interim/` has `*.v*.json`
+- P8-14f: CLI regression: `python run.py` → Rich menu renders → Option 6 completes → no crash
 
-After P8-10b (in order):
-- P8-11a — Document ingestion UI (st.file_uploader inline on Investigation, FRM, DD, TT pages)
-- P8-14a..f — End-to-end smoke test (manual, AK + live API key + streamlit run app.py)
+After P8-14 passes:
+- Merge feature/P8-phase8-streamlit → main
+- /ba session for P8-12-EXCEL and P8-13-TIER (FRM Excel output + two-tier risk structure)
+- ARCH-INS-03 (circuit breaker) — deferred to pre-production
 
 ## CARRY_FORWARD_CONTEXT
-Session 020 built P8-09a (Case Tracker) + P8-10a (Settings):
-- pages/9_Case_Tracker.py — O(1) index read, 4-tier badges, one-expander-at-a-time, 28/28 AC PASS
-- pages/settings.py — atomic write, conditional T&M fields, 3s success banner, 24/24 AC PASS
-- Both QA_APPROVED, both committed on feature/P8-phase8-streamlit
-- ARCH-INS-01 + ARCH-INS-02 + P8-08-PAGES + P8-09a + P8-10a all QA_APPROVED
+Session 020 built and QA_APPROVED:
+- P8-09a: pages/9_Case_Tracker.py — O(1) index read, 4-tier badges (commit 8908fcb)
+- P8-10a: pages/settings.py — atomic write, conditional T&M fields (commit 62126e6)
+- P8-10b: pages/10_Team.py — stable _id CRUD, atomic write (commit f85153e)
+- P8-11a: document ingestion UI across 4 pages — registration on Run click, per-file isolation
+
+P8-11a adds to:
+- pages/2_Investigation.py — file_uploader + dm passed to run_investigation_workflow
+- pages/6_FRM.py — new "confirm" stage; dm passed to run_frm_pipeline
+- pages/11_Due_Diligence.py — file_uploader; registration only (no dm to workflow)
+- pages/13_Transaction_Testing.py — file_uploader; registration only (no dm to workflow)
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
 - P8-12-EXCEL: MISSING_BA_SIGNOFF
 - P8-13-TIER: MISSING_BA_SIGNOFF
 - SRL-B-BA: MISSING_BA_SIGNOFF
 - FRM-R-00: MISSING_BA_SIGNOFF
-- feature/P8-phase8-streamlit not pushed to remote
-- Manual verification (P8-00c, P8-02d, P8-05b, P8-06e, P8-14) requires live API key + streamlit run
+- feature/P8-phase8-streamlit not pushed to remote (merge to main after P8-14 passes)
+- P8-14 entirely manual — requires live API key (ANTHROPIC_API_KEY) + `streamlit run app.py`
+- P8-00c, P8-02d, P8-05b, P8-06e: also manual verification deferred to P8-14 run

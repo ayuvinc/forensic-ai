@@ -32,3 +32,8 @@
 | 2026-04-18T07:30:00Z | junior-dev | COMPLETE | junior-dev-020-P8-10b-20260418T0730Z | P8-10b implemented — pages/10_Team.py created, 21/21 AC checks PASS, marked READY_FOR_REVIEW |
 | 2026-04-18T07:35:00Z | qa-run | COMPLETE | qa-run-020-P8-10b-20260418T0735Z | P8-10b qa-run 21/21 PASS — 1 warning (Bio uses st.text_area vs st.text_input, acceptable UX improvement) |
 | 2026-04-18T07:40:00Z | qa | COMPLETE | qa-020-P8-10b-APPROVED-20260418T0740Z | P8-10b QA_APPROVED — 21/21 PASS, DI-2 st.text_area warning accepted (UX improvement, not defect) |
+| 2026-04-18T07:50:00Z | architect | COMPLETE | architect-020-P8-11a-plan-20260418T0750Z | P8-10b merged (f85153e). P8-11a architecture defined — 4 pages, DocumentManager pre-init pattern, no workflow changes needed. next-action.md updated for /qa AC. |
+| 2026-04-18T07:55:00Z | qa | COMPLETE | qa-020-P8-11a-AC-20260418T0755Z | P8-11a AC written — 22 criteria (WG/RT/FW/RG/FS/EC/WI/MOB/SEC), ARCH-P8-11a deviation from UX-006 documented in EC-2 |
+| 2026-04-18T08:20:00Z | junior-dev | COMPLETE | junior-dev-020-P8-11a-20260418T0820Z | P8-11a implemented — file_uploader + DocumentManager registration added to 4 pages, 25/26 checks PASS (1 false positive confirmed), READY_FOR_REVIEW |
+| 2026-04-18T08:25:00Z | qa-run | COMPLETE | qa-run-020-P8-11a-20260418T0825Z | P8-11a qa-run 28/28 PASS across 4 pages — WG/RT/FW/RG/FS/EC/WI/MOB/SEC all satisfied |
+| 2026-04-18T09:00:00Z | QA | QA_APPROVED | qa-020-P8-phase8-streamlit-20260418T090000Z | P8-11a QA_APPROVED — document ingestion UI (4 pages) — qa-run 28/28 PASS, Codex gate waived, all 22 AC satisfied |

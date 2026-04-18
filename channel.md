@@ -42,6 +42,34 @@ message: |
 
 <!-- Agents append messages here. Architect clears at session close. -->
 
+### qa — P8-11a — QA_APPROVED — 2026-04-18T09:00:00Z
+```yaml
+status: QA_APPROVED
+task: P8-11a (document ingestion UI — 4 pages)
+verdict: QA_APPROVED
+reason: |
+  qa-run 28/28 PASS. Codex gate permanently waived. All 22 AC satisfied.
+  WG: file_uploader with accept_multiple_files=True, type list, 10MB warning,
+    Zone A placement confirmed across all 4 pages.
+  RT: registration on Run click (not upload event) — intake.case_id available
+    after generic_intake_form returns; case_dir() called before DocumentManager.
+  FW: getbuffer() bytes write to case_dir()/f.name — no user-controlled path.
+  RG: DocumentManager(intake.case_id), register_document(folder="uploaded"),
+    _infer_doc_type helper, try/except per-file isolation — all 4 pages.
+  FS: reg_results captions in running stage; zero-files guard confirmed.
+  EC: >10 files warning on all 4 pages; EC-2 N/A by ARCH-P8-11a design.
+  WI: Investigation/FRM pass document_manager= to workflow; DD/TT confirm
+    no dm kwarg passed to run_in_status (registration only — files in case folder).
+  FRM "confirm" stage: clean intermediate stage added between "intake" and "running"
+    because frm_intake_form owns its Run button — correct architectural solution.
+  WG-4 FRM false positive (docstring mention) resolved: st.button("Run FRM Pipeline")
+    at line 77, file_uploader at line 67 — uploader correctly precedes button.
+  Mobile: no st.columns() on any of the 4 pages (AST confirmed).
+  Security: no shell/eval/exec; case_dir() constant path; no user-controlled dir.
+  Auth: N/A — localhost:8501, local tool.
+next_action: /architect to merge P8-11a and advance to P8-14 smoke test gate
+```
+
 ### qa — P8-09a — QA_APPROVED — 2026-04-18T06:25:00Z
 ```yaml
 status: QA_APPROVED
@@ -82,6 +110,51 @@ notes: |
   Mobile: 2/2 — no st.columns wrapper, Case ID truncated at 16 chars
   Security: 3/3 — no PHI, read_bytes only, case_id path-only
 mobile_issues: []
+```
+
+### qa-run — P8-11a — 2026-04-18T08:25:00Z
+```yaml
+status: PASS
+task: P8-11a (document ingestion UI — 4 pages)
+criteria_tested: 28
+pass: 28
+fail: 0
+warnings: 1
+notes: |
+  All 22 AC criteria PASS (28 checks including sub-criteria per page).
+  1 warning (junior-dev reported, confirmed false positive):
+    WG-4 FRM: earlier check script found "Run FRM Pipeline" in docstring (line 5)
+    before file_uploader (line 67). Precise check confirms st.button("Run FRM Pipeline")
+    is line 77 — uploader correctly precedes button. PASS.
+  WG: 4/4 pages have file_uploader, accept_multiple_files=True, type list, 10MB warning, Zone A placement
+  RT: case_dir() before DocumentManager init confirmed all 4 pages; getbuffer() in Run handler
+  FW: getbuffer() only, cdir/f.name path pattern all 4 pages
+  RG: DocumentManager(intake.case_id), register_document(folder="uploaded"), _infer_doc_type,
+      try/except per-file isolation — all 4 pages
+  FS: reg_results captions in running stage, zero-files guard all 4 pages
+  EC: >10 files warning all 4 pages; EC-2 N/A confirmed by design
+  WI: Investigation/FRM pass document_manager=; DD/TT run_in_status confirmed no dm kwarg (AST)
+  MOB: zero st.columns() calls (AST all 4 pages)
+  SEC: no shell/eval/exec; case_dir() constant path only
+mobile_issues: []
+```
+
+### qa — P8-11a — AC_WRITTEN — 2026-04-18T07:55:00Z
+```yaml
+status: AC_WRITTEN
+task: P8-11a (document ingestion UI — 4 pages)
+mode: pre-build (Mode A)
+criteria_count: 22
+key_finding: |
+  ARCH-P8-11a approved deviation from UX-006: registration on Run click (not on upload
+  event) because intake.case_id is only available after generic_intake_form returns.
+  UX-006 "removed from uploader — already registered" note is N/A under this model —
+  user cannot remove a file after Run is clicked (stage transitions atomically).
+  EC-2 documents this deviation explicitly in AC so qa-run doesn't flag it as a miss.
+  WI-1/WI-2: Investigation and FRM pass document_manager= to workflow (existing params).
+  WI-3/WI-4: DD and TT register only — no dm passed to workflow (not wired internally yet).
+  Per-file error isolation required: one failing register_document must not block others.
+next_action: /junior-dev to build P8-11a across 4 pages against this AC
 ```
 
 ### qa — P8-10b — QA_APPROVED — 2026-04-18T07:40:00Z

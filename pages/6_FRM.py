@@ -1,21 +1,32 @@
 """FRM Risk Register — Streamlit page (fixes FE-07).
 
-Three-stage workflow managed via st.session_state["frm_stage"]:
-  intake    → user fills company profile + selects modules
-  running   → pipeline runs in st.status with live log (FE-07 fix: no spinner collision)
+Stage flow managed via st.session_state["frm_stage"]:
+  intake   → user fills company profile + selects modules (frm_intake_form owns the Run button)
+  confirm  → document upload + "Run FRM Pipeline" button (Zone A, UX-006)
+  running  → pipeline runs in st.status with live log (FE-07 fix: no spinner collision)
   reviewing → each RiskItem shown as st.expander card with A/F/R selectbox
-  done      → finalized report + download button
+  done     → finalized report + download button
 
 This page calls run_frm_pipeline() and run_frm_finalize() directly, bypassing
 the CLI-only _frm_approve_flag_rewrite_loop. The review loop here covers ALL
 modules (not just Module 2 as in CLI) — this aligns with BA-002 Step 5.
 """
 
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+
 import streamlit as st
 import config
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import frm_intake_form
 from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
+
+
+def _infer_doc_type(filename: str) -> str:
+    """Map file extension to DocumentManager doc_type string (RG-3)."""
+    ext = Path(filename).suffix.lower()
+    return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
 
 # ── Session bootstrap ─────────────────────────────────────────────────────────
 session = bootstrap(st)
@@ -30,7 +41,7 @@ if "frm_stage" not in st.session_state:
 # Reset button — available on all stages except intake
 if st.session_state.frm_stage != "intake":
     if st.sidebar.button("Start new FRM case"):
-        for key in ["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed"]:
+        for key in ["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed", "frm_dm", "frm_reg_results"]:
             st.session_state.pop(key, None)
         st.rerun()
 
@@ -41,6 +52,64 @@ if st.session_state.frm_stage == "intake":
         intake, selected_modules = result
         st.session_state.frm_intake = intake
         st.session_state.frm_modules = selected_modules
+        # Transition to confirm (document upload) stage — not directly to running (UX-006)
+        st.session_state.frm_stage = "confirm"
+        st.rerun()
+
+# ── STAGE: confirm — document upload + final Run button ───────────────────────
+elif st.session_state.frm_stage == "confirm":
+    intake = st.session_state.frm_intake
+    st.info(
+        f"Ready to run FRM for **{intake.client_name}**. "
+        "Upload any supporting documents below, then click Run."
+    )
+
+    uploaded_files = st.file_uploader(
+        "Upload case documents (optional)",
+        accept_multiple_files=True,
+        type=["pdf", "docx", "txt", "xlsx"],
+        key="frm_docs",
+    )
+    st.warning("Maximum file size is 10MB per document.")
+    if uploaded_files and len(uploaded_files) > 10:
+        st.warning("Maximum 10 documents per case.")
+
+    if st.button("Run FRM Pipeline", type="primary"):
+        # RT-1: registration happens on Run click
+        from tools.file_tools import case_dir
+        from tools.document_manager import DocumentManager
+        from schemas.documents import DocumentProvenance
+
+        dm = None
+        reg_results = []
+        if uploaded_files:
+            cdir = case_dir(intake.case_id)  # RT-2
+            dm = DocumentManager(intake.case_id)  # RG-1
+            for f in uploaded_files:
+                try:
+                    file_bytes = bytes(f.getbuffer())  # FW-1
+                    dest = cdir / f.name               # FW-2
+                    dest.write_bytes(file_bytes)
+                    provenance = DocumentProvenance(
+                        collection_method="uploaded_by_consultant",
+                        collected_at=datetime.now(timezone.utc),
+                        collector_role="consultant",
+                        scope_authorized_by=f"case_{intake.case_id}",
+                        source_hash=hashlib.sha256(file_bytes).hexdigest(),
+                    )
+                    dm.register_document(  # RG-2
+                        str(dest),
+                        folder="uploaded",
+                        doc_type=_infer_doc_type(f.name),  # RG-3
+                        provenance=provenance,
+                    )
+                    size_mb = round(f.size / (1024 * 1024), 1)
+                    reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
+                except Exception as e:  # RG-4: per-file isolation
+                    reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
+
+        st.session_state.frm_dm = dm
+        st.session_state.frm_reg_results = reg_results
         st.session_state.frm_stage = "running"
         st.rerun()
 
@@ -53,6 +122,13 @@ elif st.session_state.frm_stage == "running":
         f"Running pipeline for **{intake.client_name}** — "
         f"{len(selected_modules)} module(s)"
     )
+
+    # ── Document registration results (FS-1) ───────────────────────────────────
+    for r in st.session_state.get("frm_reg_results", []):
+        if r["ok"]:
+            st.caption(f"✓ {r['name']} — {r['size_mb']}MB — registered")
+        else:
+            st.error(f"Failed to register {r['name']}: {r.get('error', 'unknown error')}")
 
     from workflows.frm_risk_register import run_frm_pipeline
 
@@ -74,6 +150,7 @@ elif st.session_state.frm_stage == "running":
             selected_modules,
             session.registry,
             session.hook_engine,
+            document_manager=st.session_state.get("frm_dm"),  # WI-2
         )
 
         # Zero items is a CRITICAL pipeline outcome — surface clearly before advancing

@@ -595,10 +595,69 @@ All 10 pages follow UX-003 shell (Zone A → B → C). AC is written as a shared
 ---
 
 #### P8-11-DOCIN — Document ingestion UI
-**Files:** pages that support docs (Investigation, FRM, DD, TT)
+**Files:** pages/2_Investigation.py, pages/6_FRM.py, pages/11_Due_Diligence.py, pages/13_Transaction_Testing.py
 **Deps:** P8-08-PAGES
+**BA:** ba-logic.md:72-73 — documents uploaded after intake, before pipeline
+**UX:** UX-006 APPROVED
 
-- [ ] P8-11a Add `st.file_uploader("Upload case documents (optional)", accept_multiple_files=True)` to Investigation, FRM, DD, TT pages. Feed into `DocumentManager.register_document()`. Registration happens before pipeline runs.
+- [x] P8-11a Add `st.file_uploader("Upload case documents (optional)", accept_multiple_files=True, type=["pdf","docx","txt","xlsx"])` to Investigation, FRM, DD, TT pages. Feed into `DocumentManager.register_document()`. Registration happens before pipeline runs. **QA_APPROVED Session 020**
+
+#### AC — P8-11a
+
+**Widget config (WG) — applies to all 4 pages**
+- [ ] WG-1: `st.file_uploader` present in intake stage on pages 2_Investigation, 6_FRM, 11_Due_Diligence, 13_Transaction_Testing
+- [ ] WG-2: `accept_multiple_files=True` and `type=["pdf","docx","txt","xlsx"]` set on the uploader
+- [ ] WG-3: Static `st.warning("Maximum file size is 10MB per document.")` shown below uploader (always visible, not conditional)
+- [ ] WG-4: Uploader appears below the intake fields and above the Run button (Zone A)
+
+**Registration timing (RT)**
+- [ ] RT-1: Document registration happens inside the Run button click handler — NOT on file selection/change event
+- [ ] RT-2: `case_dir(intake.case_id)` called before `DocumentManager` initialization to ensure case folder exists
+
+**File write (FW)**
+- [ ] FW-1: File bytes written using `UploadedFile.getbuffer()` — not `read()` or shell copy
+- [ ] FW-2: Write destination is `case_dir(intake.case_id) / file.name` — path constructed from constant + filename only, no user-controlled directory component
+
+**Registration calls (RG)**
+- [ ] RG-1: `DocumentManager(intake.case_id)` initialized after `case_dir()` call; stored in `st.session_state`
+- [ ] RG-2: `register_document()` called with `folder="uploaded"` and `doc_type` from `_infer_doc_type(file.name)`
+- [ ] RG-3: `_infer_doc_type` helper maps: `.pdf`→`"pdf"`, `.docx`→`"word"`, `.txt`→`"text"`, `.xlsx`→`"excel"`
+- [ ] RG-4: Each `register_document()` call wrapped in try/except — failure shows `st.error("Failed to register [name]: [err]")` and continues to next file (per-file isolation)
+
+**File status display (FS)**
+- [ ] FS-1: Successful registration shows `st.caption` with `✓ [name]` and file size in MB for each registered file
+- [ ] FS-2: Zero files uploaded → no registration attempt; no error shown; Run button remains enabled; pipeline runs without document context
+
+**Edge cases (EC)**
+- [ ] EC-1: >10 files uploaded → `st.warning("Maximum 10 documents per case.")` shown; registration still proceeds for all files (warning only, not a hard block per UX-006)
+- [ ] EC-2: Note — "removed from uploader" caption (UX-006) is N/A: registration-on-Run-click is an approved ARCH-P8-11a deviation; user cannot remove a file after Run is clicked (stage transitions immediately)
+
+**Workflow integration (WI)**
+- [ ] WI-1: Investigation page passes `document_manager=dm` to `run_investigation_workflow` when files were uploaded (or `document_manager=None` when none)
+- [ ] WI-2: FRM page passes `document_manager=dm` to `run_frm_pipeline` when files were uploaded (or `None` when none)
+- [ ] WI-3: DD page does NOT pass `document_manager` to `run_due_diligence_workflow` — registration only (files available in case folder)
+- [ ] WI-4: TT page does NOT pass `document_manager` to `run_transaction_testing_workflow` — registration only
+
+**Mobile (MOB)**
+- [ ] MOB-1: No `st.columns()` wrapper added around the file uploader on any of the 4 pages
+
+**Security (SEC)**
+- [ ] SEC-1: No `subprocess`, `os.system`, `shell=True`, or `exec`/`eval` in any of the 4 pages
+- [ ] SEC-2: Write path uses `case_dir(intake.case_id)` constant — no string concatenation from user-supplied directory input
+
+**Architecture constraints (ARCH-P8-11a — Architect sign-off):**
+- Placement: below intake fields, above Run button (Zone A per UX-006)
+- Registration timing: on Run click, not on upload event — `intake.case_id` is required to initialize DocumentManager, and it is available after `generic_intake_form` / `frm_intake_form` returns
+- File write: `UploadedFile.getbuffer()` → write to `case_dir(intake.case_id) / file.name` — never to user-controlled path
+- DocumentManager: initialize as `DocumentManager(intake.case_id)` AFTER calling `case_dir(intake.case_id)` (which creates the folder). Store in `st.session_state`.
+- `register_document(filepath, folder="uploaded", doc_type=_infer_doc_type(file.name), provenance=DocumentProvenance(...))` — wrap each call in try/except; show `st.error("Failed to register [name]: [err]")` per file; other files unaffected
+- Helper: `_infer_doc_type(name) -> str`: pdf→"pdf", docx→"word", txt→"text", xlsx→"excel"
+- For Investigation and FRM: pass pre-created `document_manager=dm` to `run_investigation_workflow` / `run_frm_pipeline` (existing params)
+- For DD and TT: register docs to case folder; do NOT pass dm to workflow (those workflows don't use it internally yet — files are available in case folder for future use)
+- UX-006 limits: show `st.warning("Maximum file size is 10MB per document.")` as static helper; if uploaded file count >10 show `st.warning("Maximum 10 documents per case.")`; if user removes file from uploader show `st.caption("Removed from uploader — already registered in case index.")`
+- Uploaded file list: show `st.caption("✓ [name] — [size]MB — registered")` after each successful registration
+- Mobile: file_uploader is full-width natively; no st.columns() needed
+- Security: UploadedFile.getbuffer() only; no shell execution; no arbitrary paths
 
 ---
 
