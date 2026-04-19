@@ -1,0 +1,42 @@
+{
+  "base_report": {
+    "base": "base_report_base.docx",
+    "custom": null,
+    "description": "General report — all workflows"
+  },
+  "frm_risk_register": {
+    "base": "frm_risk_register_base.docx",
+    "custom": null,
+    "description": "FRM Risk Register — RAG risk table"
+  },
+  "investigation_report": {
+    "base": "investigation_report_base.docx",
+    "custom": null,
+    "description": "Investigation Report — evidence chain structure"
+  },
+  "client_proposal": {
+    "base": "client_proposal_base.docx",
+    "custom": null,
+    "description": "Client Proposal — 7-section commercial format"
+  },
+  "due_diligence": {
+    "base": "due_diligence_base.docx",
+    "custom": null,
+    "description": "Due Diligence Report — subject profile + findings"
+  },
+  "sanctions_screening": {
+    "base": "sanctions_screening_base.docx",
+    "custom": null,
+    "description": "Sanctions Screening Memo — list results format"
+  },
+  "transaction_testing": {
+    "base": "transaction_testing_base.docx",
+    "custom": null,
+    "description": "Transaction Testing Report — test plan + results"
+  },
+  "workpaper": {
+    "base": "workpaper_base.docx",
+    "custom": null,
+    "description": "Interim Workpaper — NOT FOR CLIENT DISTRIBUTION"
+  }
+}

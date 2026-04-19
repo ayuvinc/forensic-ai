@@ -1474,6 +1474,13 @@ _AK confirmed all decisions directly in session conversation._
 
 **Out of scope:** Workpaper → final report auto-merge (promotion is manual, not automatic). Workpaper review by a separate agent (one-pass Sonnet, reviewed by Maher). Workpapers for Mode B workflows (Proposal, Policy, Training — one-pass, no workpaper needed).
 
+**Promotion audit chain (Codex finding — required before WORK-01 build):**
+- Source workpaper is IMMUTABLE after generation. No edits, no overwrites. Version N stays frozen.
+- Promotion creates a NEW artifact: new output ID, new filename (`final_report.en.md` not `workpaper_...`), new header/footer regime (removes PRELIMINARY banner, applies full report template).
+- Mandatory audit event on promotion: `WORKPAPER_PROMOTED` with fields: `source_workpaper_version`, `source_workpaper_path`, `promoted_at` (ISO-8601), `promoted_by: "Maher"`, `new_output_id`.
+- Final report produced by promotion is indistinguishable from a pipeline-generated final report in the output folder — but audit_log.jsonl always contains the WORKPAPER_PROMOTED lineage event.
+- If audit_log.jsonl is missing or corrupt at promotion time: BLOCK promotion. Do not allow a final report to exist without a traceable origin.
+
 **Open questions for AK:** None — all resolved 2026-04-19.
 
 ---
@@ -1482,9 +1489,11 @@ _AK confirmed all decisions directly in session conversation._
 - Status: CONFIRMED — 2026-04-19 (AK answered placement and scope questions)
 - Scope: NEW DESIGN — exploratory conversation mode over registered case documents; distinct from the pipeline and from general chat
 
-**AK decisions (2026-04-19):**
-- Placement: persistent collapsible chat panel available on ALL engagement pages (not standalone page, not tab). Single shared component injected via bootstrap(). Opens against current case_id context. Premium feel — always present, never intrusive.
-- Entry point: chat icon / "Ask AI" tab on right edge of every engagement page. Slides open as a panel over content without navigation.
+**AK decisions (2026-04-19) — UPDATED post-Codex review:**
+- Placement: persistent collapsible chat panel on ALL engagement pages.
+- Implementation: NOT via bootstrap(). bootstrap() is a one-time initializer (session.py:52 early return) — wrong place for rendering on every rerun.
+- Correct implementation: new `streamlit_app/shared/engagement_shell.py` — wraps all engagement workflow pages (NOT settings, NOT tracker). Calls bootstrap() for init, then renders the chat panel on every rerun. Each engagement page calls `engagement_shell.render(st)` at top instead of calling bootstrap() directly.
+- Settings, Case Tracker, Team, and 00_Setup pages continue to call bootstrap() only — no panel injected.
 
 **User outcome:** Maher can open a registered case document and have a back-and-forth conversation with the model about it — asking "What does this email chain say about the approval process?", "Does this transaction pattern suggest structuring?", "Flag anything suspicious in pages 12–18" — without triggering the full pipeline. The conversation is saved as a working paper, so leads and observations from the conversation are not lost.
 
@@ -1617,3 +1626,161 @@ _AK confirmed all decisions directly in session conversation._
   - Is there a case where Maher wants to save a one-time upload as the new global template immediately after using it? If so, a "Save to firm templates" checkbox on option (b) would cover this without a separate Settings round-trip.
 
 **Out of scope:** Real-time collaboration in CEM (multiple users). CEM conversations as discoverable legal documents (they are working papers, explicitly marked as such). Automated Lead extraction without Maher clicking "Save as Lead" (never auto-extract — Maher controls what enters the case record). CEM for Mode B workflows (Proposal, Policy, Training — these do not have evidence documents in the forensic sense).
+
+---
+
+## Session 024 — Setup, Activity Ledger, Knowledge Architecture
+
+---
+
+### BA-SETUP-01 — First-Run Setup Page (00_Setup.py)
+- Status: CONFIRMED — 2026-04-19
+- Scope: Streamlit-native first-run setup replacing CLI wizard as primary onboarding path
+
+**User outcome:** Maher completes full setup in browser on first run. App unlocks all workflows only after setup is verified complete. CLI wizard (core/setup_wizard.py) retained as recovery tool only.
+
+**Business rules:**
+  - Detection: on every bootstrap(), check readiness from actual artifacts — NOT from setup.json alone:
+    1. `.env` readable and `ANTHROPIC_API_KEY` non-empty
+    2. `firm_profile/firm.json` readable and `firm_name` non-empty
+    3. `firm_profile/team.json` readable and contains at least one member
+    4. `firm_profile/pricing_model.json` readable
+    5. `assets/templates/` contains at least `base_report_base.docx`
+  - setup.json is a CACHE of the last readiness check result — not the authority. If missing or corrupt: rebuild from facts above. Never lockout a working install due to missing setup.json.
+  - If readiness check fails: `st.switch_page("pages/00_Setup.py")` — all other pages redirect here until complete.
+  - Setup sequence (exact order):
+    1. Write `.env` with ANTHROPIC_API_KEY (required), TAVILY_API_KEY (optional), RESEARCH_MODE
+    2. Write `firm_profile/firm.json` — firm name (required), logo path, tagline
+    3. Write `firm_profile/team.json` — at least one team member (required)
+    4. Write `firm_profile/pricing_model.json` — pricing model (required)
+    5. Verify all 5 readiness checks pass
+    6. Write `firm_profile/setup.json` with `setup_complete: true, setup_version: 1, completed_at: ISO-8601`
+    7. Call `load_dotenv(override=True)` to pick up new .env without restart
+    8. Redirect to landing page
+  - TAVILY_API_KEY is optional — app degrades to knowledge_only mode without it. No block.
+  - Custom templates are optional — app uses assets/templates/ bases. No block.
+  - If Maher skips a required step and tries to proceed: BLOCK with exact missing items listed. No silent degradation for required items.
+  - core/setup_wizard.py retained as CLI recovery tool only — not the primary path.
+
+**Edge cases:**
+  - .env written but ANTHROPIC_API_KEY is invalid: setup shows "Test connection" button. Failed test blocks completion. Partial .env stays on disk — next attempt overwrites it.
+  - setup.json deleted mid-use on a working install: readiness check passes (all artifacts present), setup.json rebuilt silently, app continues normally. No lockout.
+  - Maher reinstalls app on new machine: firm_profile/ is gitignored so it is empty. Setup runs from scratch. cases/ are also gone — expected. Document this in README.
+  - load_dotenv(override=True) called after .env write: config-dependent clients (Anthropic, Tavily) must be rebuilt after this call. Add a `config.reload()` function that re-reads env and rebuilds clients.
+
+**Out of scope:** Multi-user onboarding. Cloud deployment setup. Automated backup of firm_profile/.
+
+**Open questions for AK:** None.
+
+---
+
+### BA-ACT-01 — Activity Ledger
+- Status: CONFIRMED — 2026-04-19
+- Scope: App-wide structured activity log capturing all user and system actions
+
+**User outcome:** Maher can open the Activity Log page, search by date/time and category, and see a complete record of everything the app has done — every page visit, pipeline run, file write, settings change, and error.
+
+**Business rules:**
+  - ALL actions are logged — no filtering at write time. Categories:
+    - SESSION: app opened, app closed, page navigated to, session duration
+    - SETUP: first run completed, API key added/updated/tested, firm profile updated, team member added/edited, pricing updated, T&C updated
+    - ENGAGEMENT: new engagement created, engagement opened, engagement status changed
+    - PIPELINE: workflow started, agent started, agent completed, revision requested, pipeline completed, pipeline failed, pipeline resumed
+    - DOCUMENT: document uploaded, document registered, document indexed, document removed
+    - DELIVERABLE: draft generated, review decision (approve/flag/skip), final report written, workpaper generated, workpaper promoted to final (with WORKPAPER_PROMOTED fields), report downloaded
+    - KNOWLEDGE: historical report ingested, knowledge file updated, library indexed
+    - TEMPLATE: template uploaded, template validated, template set as active, template reset to base
+    - SETTINGS: any settings change with old_value → new_value
+    - ERROR: pipeline error, API error, file write failure, embedding failure
+  - Event schema (every event):
+    ```json
+    {
+      "event_id": "uuid4",
+      "timestamp_utc": "ISO-8601",
+      "category": "PIPELINE",
+      "action": "agent_completed",
+      "actor": "system",
+      "engagement_id": "slug-or-null",
+      "case_id": "id-or-null",
+      "detail": {},
+      "status": "SUCCESS|FAILURE|WARNING"
+    }
+    ```
+  - Storage: `logs/activity.jsonl` — append-only JSONL. Created on first app run. Never truncated by the app.
+  - Log rotation: when `logs/activity.jsonl` exceeds 50MB, rename to `logs/activity_{YYYYMMDD}.jsonl` and start a new file. Old files retained indefinitely.
+  - `logs/` directory is committed to repo as an empty directory (add `logs/.gitkeep`). Log files themselves are gitignored (`logs/*.jsonl`).
+  - UI: dedicated `Activity Log` page in sidebar. Date range picker + category filter + free-text search on action/detail fields. Paginated (50 events per page). Export as CSV button.
+  - Access: open — no PIN, no restriction (Path A, single user).
+
+**Edge cases:**
+  - Log write fails (disk full, permissions): log failure silently, never crash the app due to logging. Emit WARNING to Streamlit sidebar once per session if log writes are failing.
+  - Log file corrupt: Activity Log page shows error "Log file unreadable" with path. App continues normally — logging resumes to a new file.
+  - Very large log (years of use): pagination + date filter handles this. No performance impact on app startup.
+
+**Out of scope:** Remote log shipping. Log encryption. Role-based log access (Path A).
+
+**Open questions for AK:** None.
+
+---
+
+### BA-KL-01 — Three-Layer Learning Knowledge Architecture
+- Status: CONFIRMED — 2026-04-19 (Codex Part 4 design accepted)
+- Scope: Knowledge base that learns from base regulatory knowledge + user historical data + approved engagement artifacts
+
+**User outcome:** Every draft the tool produces gets smarter over time — drawing on Maher's past work and approved case patterns as well as static regulatory frameworks, all with explicit source labels so Maher knows where every suggestion came from.
+
+**Three-layer architecture:**
+
+**Layer 1 — BASE (highest authority)**
+  - Source: `knowledge/` committed files (frm_framework.md, investigation_framework.md, etc.)
+  - Index: `knowledge/manifest.json` — doc_id, domain, version, effective_date, supersedes, authority_level
+  - ChromaDB collection: `kb_base`
+  - Authority: wins for law, regulation, methodology statements
+  - Update process: add new versioned file, mark old as superseded in manifest. Never silent overwrite.
+  - Label on retrieval: `BASE`
+
+**Layer 2 — USER (firm precedent)**
+  - Source: `firm_profile/historical_registers/` and `firm_profile/historical_reports/`
+  - Ingestion: `KnowledgeLibrary.ingest()` + mandatory `sanitise()` — hard-fail gate, not best-effort
+  - Sanitised index: `firm_profile/knowledge/user/index.jsonl` + chunks in `firm_profile/knowledge/user/chunks/{hash}.json`
+  - ChromaDB collection: `kb_user_sanitised`
+  - Authority: firm-preferred framing, deliverable patterns, anonymised precedent. Never case evidence.
+  - Label on retrieval: `FROM_SIMILAR_ENGAGEMENT`
+
+**Layer 3 — ENGAGEMENT (case patterns)**
+  - Source: `cases/{id}/` — harvested only after OWNER_APPROVED or DELIVERABLE_WRITTEN status
+  - Export: `cases/{id}/knowledge_export/approved_patterns.json`
+  - Promoted index: `firm_profile/knowledge/engagement/index.jsonl` + chunks
+  - ChromaDB collection: `kb_engagement`
+  - Extracted fields: workflow, industry, jurisdiction, approved finding themes, risk patterns, recommendation types, citation domains, partner sign-off outcomes, revision count
+  - NEVER ingest: raw case evidence, client identifiers, document text
+  - Label on retrieval: `FROM_PRIOR_ENGAGEMENT`
+  - `allowed_use: ["pattern","drafting_hint"]`, `forbidden_use: ["evidence","citation"]`
+
+**Inference-time precedence:** BASE > USER > ENGAGEMENT. Conflicts: prefer higher authority, expose conflict in metadata.
+
+**Retrieval contract — structured bundle not raw chunks:**
+```json
+{
+  "query": "...",
+  "base_hits": [{"doc_id":"...","chunk_id":"...","label":"BASE","authority":"high"}],
+  "user_hits": [{"entry_id":"...","label":"FROM_SIMILAR_ENGAGEMENT","similarity":0.82}],
+  "engagement_hits": [{"entry_id":"...","label":"FROM_PRIOR_ENGAGEMENT","similarity":0.76}],
+  "rules": {
+    "evidence_usable_layers": ["BASE"],
+    "drafting_hint_layers": ["USER","ENGAGEMENT"]
+  }
+}
+```
+
+**Cold start:** Day one — only BASE exists. USER and ENGAGEMENT return empty. Never an error. System degrades gracefully as layers fill.
+
+**Risks:**
+  - R-KL-01: PII leakage from Layer 2 if sanitise() is best-effort — must be HARD FAIL gate
+  - R-KL-02: Evidence contamination from Layer 3 if prior engagement patterns allowed as citations
+  - R-KL-03: Regulatory staleness in Layer 1 without versioned review cadence
+  - R-KL-04: Model over-anchoring on prior patterns — misleading early in an engagement
+
+**Out of scope:** Cross-firm knowledge sharing. Automated regulation update crawling (v1). Fine-tuning on engagement data.
+
+**Open questions for AK:** None.

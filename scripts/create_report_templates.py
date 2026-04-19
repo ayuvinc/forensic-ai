@@ -1100,7 +1100,8 @@ def create_transaction_testing_template(output_path: Path) -> None:
 # Master entry point
 # ---------------------------------------------------------------------------
 
-TEMPLATES_DIR = Path("/Users/akaushal011/forensic-ai/firm_profile/templates")
+# Base templates go to assets/templates/ (committed). Custom overrides go to firm_profile/templates/ (gitignored).
+TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "assets" / "templates"
 
 TEMPLATES_METADATA = {
     "base_report": {

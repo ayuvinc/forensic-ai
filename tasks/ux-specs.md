@@ -672,3 +672,67 @@ After any selection is made (including the default), show a single confirmation 
 **Mobile (375px):** Expander collapses by default — no layout impact. When expanded, radio buttons and file uploader stack full-width. Confirmation line wraps as needed.
 
 **Priority:** High
+
+
+---
+
+## UX-020 — Activity Log Page
+
+**BA:** BA-ACT-01
+**Sprint:** Sprint-ACT — ACT-03
+**Priority:** Medium (required before client handoff)
+
+**Page title:** Activity Log
+**Sidebar label:** Activity Log
+**Page number:** 07 (pages/07_Activity_Log.py)
+
+---
+
+### Layout
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Activity Log                                               │
+│  Full audit trail of all app actions                        │
+├─────────────────────────────────────────────────────────────┤
+│  [Date from] [Date to]   [Category ▾]   [Search...]   [Go] │
+├─────────────────────────────────────────────────────────────┤
+│  ┌──────────────────────────────────────────────────────┐   │
+│  │ TIMESTAMP       CATEGORY    ACTION        STATUS     │   │
+│  │ 2026-04-19 09:12  PIPELINE  agent_completed SUCCESS  │   │
+│  │ 2026-04-19 09:11  PIPELINE  agent_started  SUCCESS   │   │
+│  │ ...                                                  │   │
+│  └──────────────────────────────────────────────────────┘   │
+│  Page 1 of N     [← Prev]  [Next →]     [Export CSV]        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Filter bar (top):**
+- Date from / Date to: `st.date_input` side by side. Default: last 7 days.
+- Category: `st.multiselect` with all 10 categories pre-populated. Default: all selected.
+- Search: `st.text_input` — free-text match against `action` and `detail` fields (case-insensitive substring). No regex.
+- Filters apply on form submit (Go button) — not on every keystroke. Prevents re-read on every character.
+
+**Event table:**
+- `st.dataframe` with columns: Timestamp (local time, formatted), Category (badge color), Action, Engagement, Status.
+- Category badge colors: SESSION=grey, SETUP=blue, ENGAGEMENT=teal, PIPELINE=GoodWork red (#D50032), DOCUMENT=orange, DELIVERABLE=green, KNOWLEDGE=purple, TEMPLATE=indigo, SETTINGS=yellow, ERROR=dark red.
+- Row click: `st.expander` below table showing full event JSON (detail field expanded).
+- 50 events per page. Pagination controls below table.
+
+**Export CSV:**
+- Button exports all events matching current filter (not just current page).
+- Filename: `goodwork_activity_{date_from}_{date_to}.csv`.
+- Columns: event_id, timestamp_utc, category, action, actor, engagement_id, case_id, status, detail (JSON string).
+
+**Sidebar warning:**
+- If `st.session_state.get("act_log_warn")` is True: show `st.sidebar.warning("Activity log write errors detected this session. Check disk space.")` once.
+
+**Empty state:**
+- If no events match filter: `st.info("No activity recorded for the selected filters.")`.
+- If log file does not exist yet: `st.info("No activity recorded yet. Start an engagement to begin logging.")`.
+- If log file is corrupt/unreadable: `st.error("Activity log unreadable: {path}. App continues normally — new events will be logged to a fresh file.")`.
+
+**Responsive (narrow sidebar):**
+- Filter bar wraps to two rows on narrow screens. Date inputs stack above category + search.
+
+**Access:** Open — no auth gate (Path A, single user).

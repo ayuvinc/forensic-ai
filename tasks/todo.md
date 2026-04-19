@@ -56,6 +56,11 @@ Sprint-WORK-01 (WorkpaperGenerator) ─ WORK-02, WORK-03
 Sprint-CONV-01 (EvidenceChat) ─────── CONV-02
 Sprint-CONV-02 ← EMB-02 + CONV-01
 Sprint-UX-FIXES ─ parallel (no schema deps)
+Sprint-ACT-00 (logs/ dir) ─────────── ACT-01
+Sprint-ACT-01 (ActivityLogger) ─────── ACT-02, ACT-03
+Sprint-ACT-02 ← ACT-01 + SETUP-03 + schemas stable (Phase C)
+Sprint-KL-00 (manifest) ─────────────── KL-01
+Sprint-KL-01 ← EMB-01 + KL-00 ────────── KL-02
 ```
 
 Completed tasks archived in: releases/completed-tasks.md
@@ -986,4 +991,70 @@ CONV-02 ← CONV-01 + EMB-02-REF
 - [ ] **[P9-UI-01]** Create `pages/01_Engagements.py` — two-panel engagement home per UX-012. Left panel (1/3 width): list of named engagement cards from `ProjectManager.list_projects()` — each card shows Engagement Name, Client, Status (health roll-up: green all-done, amber any-error, blue in-progress), Last Activity. "New Engagement" button at top of left panel. Right panel (2/3 width): selected engagement detail — shows all cases under engagement as mini-tracker (workflow type, status, last updated), plus "Run New Workflow" button that routes to relevant workflow page with `active_project` pre-set in session_state. Empty state (no engagements): `st.info("No engagements yet. Start your first engagement.")` with prominent "New Engagement" button spanning both panels. "New Engagement" wizard: multi-field form (Project Name, Client Name, Service Type selectbox, Language Standard selectbox — 4 options per BA-P9-05, Naming Convention); slug preview shown as `st.caption("Folder name: cases/{slug}/")` updating on keystroke; collision detection before `create_project()` call; on success: `st.success("Engagement created: cases/{slug}/")` + list of 6 created subfolders. ← deps: P9-01-SLUG, P9-01-STATE, P9-02 (all from Phase 9 section above) | AC: page loads without error; "New Engagement" form creates `cases/{slug}/` with 6 subfolders; collision warning shown if slug exists; engagement cards visible after creation; "Run New Workflow" sets `st.session_state.active_project`.
 
 - [ ] **[P9-UI-02]** Wire `engagement_id` / `active_project` into all workflow intake pages — add "Continue Engagement" option at top of intake form on all workflow pages: if `st.session_state.active_project` is set, show `st.info("Continuing engagement: {project_name} — client: {client_name}")` banner and pre-fill `client_name`, `language_standard` from project context; lock those fields (render as `st.text()` not `st.text_input()`). If no `active_project`: existing behavior unchanged (standalone case with UUID, backward compat). Add `engagement_id` to `state.json` at case creation if `active_project` is set. ← deps: P9-UI-01, P9-01-STATE | AC: workflow page with `active_project` set shows pre-filled client name and "Continuing engagement" banner; field is read-only (not editable); without `active_project`, page behaves identically to Phase 8 behavior; `state.json` contains `engagement_id` matching project slug when created via engagement context.
+
+---
+
+### Sprint-SETUP — First-Run Setup Page (Session 024 — SHIP BLOCKER — runs BEFORE Phase A)
+
+**BA:** BA-SETUP-01 — CONFIRMED 2026-04-19
+**Security:** .env written at runtime — must use load_dotenv(override=True) + config.reload() pattern. setup.json is a cache not authority. No lockout on corrupt/missing setup.json.
+**Gate:** UNBLOCKED. Must complete before any other sprint — this is the ship blocker.
+
+- [ ] **[SETUP-00]** Consolidate firm profile config: rename `firm_profile/firm_profile.json` references in `core/setup_wizard.py` and `run.py` to read `firm_profile/firm.json` — same file Streamlit uses. Add `config.reload()` function to `config.py` that calls `load_dotenv(override=True)` and rebuilds API clients. ← deps: none | AC: `python run.py` and `streamlit run app.py` both read from `firm_profile/firm.json`; no references to `firm_profile.json` remain outside setup_wizard.py CLI path.
+
+- [ ] **[SETUP-01]** Create `streamlit_app/shared/readiness.py` — `check_readiness() -> ReadinessResult` dataclass: checks all 5 conditions (`.env` + ANTHROPIC_API_KEY, `firm.json` + firm_name, `team.json` + one member, `pricing_model.json`, `assets/templates/base_report_base.docx`). Returns `{ready: bool, missing: list[str], setup_json_rebuilt: bool}`. If setup.json missing/corrupt: rebuild silently. ← deps: SETUP-00 | AC: function returns `ready=True` on a correctly set up install; returns `ready=False, missing=["ANTHROPIC_API_KEY"]` when .env is empty; missing setup.json → rebuilt not lockout.
+
+- [ ] **[SETUP-02]** Create `pages/00_Setup.py` — 5-step guided setup wizard in Streamlit. Step 1: API keys (ANTHROPIC required, TAVILY optional, test connection button). Step 2: Firm Profile (name required, logo optional). Step 3: Team (at least one member required). Step 4: Pricing model (required). Step 5: Review all + complete button that calls `config.reload()` then `st.switch_page("app.py")`. Progress indicator showing steps completed. ← deps: SETUP-01 | AC: clean install with empty firm_profile/ → setup page renders; completing all steps writes correct files; incomplete required step → blocked with exact error; TAVILY skip → allowed; app redirects to landing after completion.
+
+- [ ] **[SETUP-03]** Update `streamlit_app/shared/session.py` bootstrap() — add readiness check at top: call `check_readiness()`, if `not ready` and current page is not `00_Setup.py` → `st.switch_page("pages/00_Setup.py")`. ← deps: SETUP-01, SETUP-02 | AC: fresh install redirects to setup page on any page load; completed install never redirects; deleted setup.json on working install → no redirect (readiness rebuilt from artifacts).
+
+---
+
+### Sprint-TEST — Minimum Test Surface (Session 024 — required before Maher live use)
+
+**Security:** Tests must not use real API keys — mock all external calls. Test fixtures must not contain real client data.
+**Gate:** UNBLOCKED. Run after Phase B completes (schemas and core stable).
+
+- [ ] **[TEST-01]** Create `tests/` directory + `tests/conftest.py` with shared fixtures (temp case dir, mock config, mock API clients). ← deps: none | AC: `pytest tests/` runs without import errors.
+
+- [ ] **[TEST-02]** `tests/test_state_machine.py` — test all valid transitions, all invalid transitions (expect TransitionError), is_terminal() for all states, MAX_REVISION_ROUNDS enforcement. ← deps: TEST-01 | AC: 100% branch coverage of core/state_machine.py.
+
+- [ ] **[TEST-03]** `tests/test_file_tools.py` — test case_dir() path traversal (expect ValueError on `../../etc`), write_artifact() atomic write (tmp→replace), write_state() + read_state() roundtrip, build_case_index() with 0/1/N cases, append_audit_event() append-only (verify file grows, never shrinks). ← deps: TEST-01 | AC: path traversal test explicitly tries `../` and confirms ValueError; atomic write verified by checking no .tmp file remains after success.
+
+- [ ] **[TEST-04]** `tests/test_post_hooks.py` — test validate_schema() blocks on missing required fields, persist_artifact() writes to correct path, append_audit_event_hook() appends correct JSON structure, extract_citations() populates citations_index.json. ← deps: TEST-01 | AC: each hook tested in isolation with mock payload; blocking hooks raise HookVetoError on bad input.
+
+- [ ] **[TEST-05]** `tests/test_project_schema.py` (P9-01-AC) — ProjectIntake slug validation (7-step algorithm), path traversal attempts, empty slug rejection, InputSession lifecycle states, ProjectState health enum. ← deps: TEST-01 | AC: `../../etc/passwd` as project_name raises ValueError; empty string raises ValueError; valid name produces correct slug.
+
+- [ ] **[TEST-06]** `tests/test_output_generator.py` — generate_docx() produces a valid .docx file, template_path=None uses base template, named styles present in output. ← deps: TEST-01 | AC: generated file opens with python-docx without error; file size > 0; no .tmp file remains.
+
+- [ ] **[TEST-07]** Workflow smoke tests — `tests/test_workflow_smoke.py`: run_engagement_scoping_workflow(), run_due_diligence_workflow(), run_frm_pipeline() each called with mock agents returning stub artifacts. Verify: state transitions fire, audit events written, final file written to correct path. ← deps: TEST-01 | AC: each workflow completes without exception; audit_log.jsonl contains expected events; final_report.en.md exists in temp case dir.
+
+---
+
+### Sprint-KL — Three-Layer Knowledge Architecture (Session 024)
+
+**BA:** BA-KL-01 — CONFIRMED 2026-04-19
+**Gate:** UNBLOCKED after Sprint-EMB (needs ChromaDB). Design only in Phase A; build Phase D onwards.
+
+- [ ] **[KL-00]** Create `knowledge/manifest.json` — index of all knowledge files with doc_id, domain, version, effective_date, supersedes, authority_level. ← deps: none | AC: manifest.json validates against a KnowledgeManifestEntry schema; all existing knowledge/*.md files have entries.
+
+- [ ] **[KL-01]** Create `tools/knowledge_retriever.py` — `KnowledgeRetriever` class: `retrieve(query, case_context) -> KnowledgeBundle`. Queries all three ChromaDB collections (kb_base, kb_user_sanitised, kb_engagement). Returns structured bundle with base_hits, user_hits, engagement_hits, and rules dict per BA-KL-01 retrieval contract. Falls back gracefully if any collection is empty or unavailable. ← deps: EMB-01, KL-00 | AC: returns valid KnowledgeBundle with all three arrays (empty arrays acceptable); BASE layer always returns results if kb_base is indexed; empty USER/ENGAGEMENT layers return empty arrays not errors.
+
+- [ ] **[KL-02]** Engagement harvest pipeline — `tools/knowledge_harvester.py`: `harvest_case(case_id)` runs after OWNER_APPROVED. Extracts approved patterns to `cases/{id}/knowledge_export/approved_patterns.json`. Promotes to `firm_profile/knowledge/engagement/index.jsonl`. Never extracts client identifiers or raw evidence text. ← deps: KL-01 | AC: harvest_case() on approved case produces approved_patterns.json; file contains no client name, no case_id reference in content fields; audit event written.
+
+---
+
+### Sprint-ACT — Activity Ledger (Session 024)
+
+**BA:** BA-ACT-01 — CONFIRMED 2026-04-19
+**Security:** logs/ is gitignored for *.jsonl. Log writes are fire-and-forget — never crash the app. No PII in detail fields. Access: open (Path A).
+**Gate:** UNBLOCKED. Build in Phase D (after Phase C schemas stable).
+
+- [ ] **[ACT-00]** Create `logs/` directory with `logs/.gitkeep`. Add `logs/*.jsonl` to `.gitignore`. ← deps: none | AC: `logs/` present in repo; `.gitkeep` tracked; activity.jsonl gitignored.
+
+- [ ] **[ACT-01]** Create `tools/activity_logger.py` — `ActivityLogger` class with `log(category, action, actor, engagement_id, case_id, detail, status)` method. Writes to `logs/activity.jsonl` append-only. Log rotation: when file exceeds 50MB rename to `logs/activity_{YYYYMMDD}.jsonl` and start new file. On write failure: emit `st.session_state["act_log_warn"] = True` and continue silently. Categories: SESSION, SETUP, ENGAGEMENT, PIPELINE, DOCUMENT, DELIVERABLE, KNOWLEDGE, TEMPLATE, SETTINGS, ERROR. ← deps: ACT-00 | AC: log() writes valid JSONL event (all fields present, ISO-8601 timestamp, uuid4 event_id); rotation triggers at 50MB; write failure does not raise; `logs/activity.jsonl` gitignored but logs/.gitkeep committed.
+
+- [ ] **[ACT-02]** Wire ActivityLogger into bootstrap() and all pipeline on_progress callbacks — SESSION/PIPELINE events. Wire into 00_Setup.py — SETUP events. Wire into file_tools.py write_artifact() — DOCUMENT/DELIVERABLE events. Wire into settings pages — SETTINGS events. ← deps: ACT-01, SETUP-03 | AC: running a pipeline end-to-end produces ≥5 activity events in logs/activity.jsonl covering SESSION, PIPELINE, DELIVERABLE categories; settings change produces SETTINGS event with old_value + new_value fields.
+
+- [ ] **[ACT-03]** Create `pages/07_Activity_Log.py` — per UX-020. Date range picker + category multiselect + free-text search. Paginated 50 events per page. Export as CSV button. Sidebar warning if `st.session_state.get("act_log_warn")` is True. ← deps: ACT-01 | AC: page renders with empty log (shows "No activity recorded yet"); date filter correctly narrows events; category filter works independently and in combination with date; CSV export produces valid file with all visible events; corrupt log file shows error message, does not crash.
 

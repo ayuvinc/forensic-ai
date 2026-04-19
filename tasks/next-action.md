@@ -11,46 +11,58 @@ junior-dev
 
 Phase 9 schemas designed. Sprint-TPL, Sprint-WORK, Sprint-CONV, Sprint-UX-FIXES, Sprint-P9-UI all decomposed and written to todo.md. 25 tasks total.
 
-**Phase A — Start immediately, no deps (run in parallel):**
+**REVISED BUILD SEQUENCE (post-Codex review 2026-04-19):**
 
-1. **EMB-00** — add `sentence-transformers>=2.7.0` and `chromadb>=0.4.0` to `requirements.txt`
-2. **P9-01-SLUG + P9-01-SESSION + P9-01-STATE + P9-01-AC** — `schemas/project.py` all three schemas + smoke tests
-3. **UX-F-06** — create `.streamlit/config.toml` + fix CSS h2/h3 selector + wire severity classes
+Sprint-SETUP (FIRST — ship blocker, no deps):
+  SETUP-00: config consolidation (firm.json canonical path)
+  SETUP-01: streamlit_app/shared/readiness.py
+  SETUP-02: pages/00_Setup.py
+  SETUP-03: bootstrap() readiness check
 
-**Phase B — After Phase A completes, run in parallel:**
+Phase A (after SETUP-03, parallel):
+  EMB-00: requirements.txt
+  P9-01-SLUG/SESSION/STATE/AC: schemas/project.py
+  UX-F-06: .streamlit/config.toml + CSS fixes
+  TPL-MOVE: move base templates to assets/templates/
 
-4. **EMB-01-REF** — `tools/embedding_engine.py` (refined per BA-EMB-01)
-5. **TPL-01** — `tools/template_manager.py`
-6. **UX-F-01** — page renumber + sidebar section dividers
+Phase B (after Phase A, parallel):
+  EMB-01: tools/embedding_engine.py
+  TPL-01: tools/template_manager.py
+  UX-F-01: page renumber + sidebar dividers
+  UX-F-02: intake form fixes (clarity — ship blocker for Maher)
+  TEST-01/02/03: tests/ scaffold + state machine + file_tools
 
-**Phase C — After Phase B:**
+Phase C (after Phase B, parallel):
+  EMB-02: wire EmbeddingEngine into DocumentManager
+  TPL-02: output_generator.py ← TemplateManager
+  UX-F-03/04/05/07: pipeline progress + output + tracker + settings
+  TEST-04/05/06/07: remaining test suite
 
-7. **EMB-02-REF** — wire EmbeddingEngine into DocumentManager
-8. **TPL-02** — update output_generator.py
-9. **UX-F-02 / UX-F-03 / UX-F-04 / UX-F-05 / UX-F-07** — remaining UX fixes (can run in parallel with each other)
+Phase D (after Phase C, parallel):
+  EMB-03: embedding status badge
+  TPL-03/04: Settings 4-tab + intake template selector
+  WORK-01: workflows/workpaper.py
+  P9-UI-01: pages/01_Engagements.py
+  KL-00/01: knowledge manifest + retriever
 
-**Phase D — After Phase C:**
+Phase E (after Phase D):
+  TPL-05: AC smoke test
+  WORK-02/03: workpaper triggers
+  CONV-01: workflows/evidence_chat.py
+  P9-UI-02: engagement wire-up
+  ACT-01: logs/activity.jsonl writer + Activity Log page
+  KL-02: engagement harvest pipeline
 
-10. **EMB-03-REF** — embedding status badge in Streamlit
-11. **TPL-03** — Settings 4-tab redesign
-12. **TPL-04** — intake template selector on all workflow pages
-13. **WORK-01** — `workflows/workpaper.py` (after AK sign-off on BA-WORK-01)
-14. **P9-UI-01** — `pages/01_Engagements.py` (after AK decision on UX-D-06)
+Phase F (after Phase E):
+  CONV-02: streamlit_app/shared/engagement_shell.py (panel)
 
-**Phase E — After Phase D:**
-
-15. **TPL-05** — AC smoke test
-16. **WORK-02 / WORK-03** — workpaper triggers in tracker + done stages
-17. **CONV-01** — `workflows/evidence_chat.py` (after AK sign-off on BA-CONV-01)
-18. **P9-UI-02** — wire engagement_id into all workflow pages
-
-**Phase F — After Phase E:**
-
-19. **CONV-02** — `pages/14_Evidence_Chat.py` (needs EMB-02-REF + CONV-01)
+NOTE: Sprint-CONV moved to Phase E/F — depends on EMB-02,
+engagement_shell.py design, and conversation persistence.
+Not critical path for first client use.
 
 **All gates cleared as of 2026-04-19:**
 - BA-WORK-01 CONFIRMED — mid-pipeline trigger, Maher-driven structure, workpaper promotion to final
-- BA-CONV-01 CONFIRMED — persistent collapsible panel on all pages (shared component via bootstrap)
+- BA-CONV-01 CONFIRMED (UPDATED) — persistent panel via engagement_shell.py (NOT bootstrap)
 - UX-D-06 RESOLVED — new 01_Engagements.py, Scope becomes step inside New Engagement flow
 - UX-D-07 RESOLVED — persistent panel, not standalone page
 
@@ -97,11 +109,6 @@ Session 024 (Architect session) decomposed:
 - output_generator.py confirmed: already has template_path param; TPL-02 adds TemplateManager integration
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- UX-D-05: Remove st.form from generic intake — open but non-blocking for all current sprints
-- P8-12-EXCEL: MISSING_BA_SIGNOFF
-- P8-13-TIER: MISSING_BA_SIGNOFF
-- SRL-B-BA: MISSING_BA_SIGNOFF
-- FRM-R-00: MISSING_BA_SIGNOFF
-- Sprint-FE: FE-GATE-BA (BA-FE-01 missing)
-- Sprint-WF/FR: GATED on RD-01
-- Sprint-FE FE-06: GATED on P9-05 design decision
+- Sprint-SETUP: SHIP BLOCKER — must complete before Maher can use app
+- UX-D-05: st.form removal — open, non-blocking
+- All other gates cleared 2026-04-19
