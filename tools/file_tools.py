@@ -12,8 +12,18 @@ _INDEX_PATH = CASES_DIR / "index.json"
 
 
 def case_dir(case_id: str) -> Path:
-    """Return (and create) the directory for a given case."""
+    """Return (and create) the directory for a given case.
+
+    Raises ValueError if case_id contains path traversal sequences (R-019).
+    """
     d = CASES_DIR / case_id
+    # Block traversal: resolved path must stay inside CASES_DIR
+    try:
+        d.resolve().relative_to(CASES_DIR.resolve())
+    except ValueError:
+        raise ValueError(
+            f"Invalid case_id — path traversal attempt blocked: {case_id!r}"
+        )
     d.mkdir(parents=True, exist_ok=True)
     return d
 
