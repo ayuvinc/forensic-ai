@@ -177,7 +177,8 @@ def run_firm_profile_setup(console: Console) -> None:
         "website": website or None,
     }
 
-    _atomic_write(firm_dir / "firm_profile.json", json.dumps(firm_profile, indent=2))
+    # Write to firm.json — canonical path used by both CLI and Streamlit
+    _atomic_write(firm_dir / "firm.json", json.dumps(firm_profile, indent=2))
     console.print("  [green]Firm profile saved.[/green]")
 
     # Team members
@@ -253,6 +254,6 @@ def _atomic_write(path: Path, content: str) -> None:
 
 
 def is_firm_profile_complete() -> bool:
-    """Return True if firm profile has been set up."""
+    """Return True if firm profile has been set up (reads canonical firm.json)."""
     firm_dir = BASE_DIR / "firm_profile"
-    return (firm_dir / "firm_profile.json").exists()
+    return (firm_dir / "firm.json").exists()

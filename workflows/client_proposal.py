@@ -235,7 +235,7 @@ def _select_team(team: list[dict], workflow: str, scope: str) -> list[dict]:
 
 
 def _load_firm_profile() -> dict:
-    path = FIRM_PROFILE_DIR / "firm_profile.json"
+    path = FIRM_PROFILE_DIR / "firm.json"  # canonical path — shared by CLI + Streamlit
     if path.exists():
         return json.loads(path.read_text(encoding="utf-8"))
     return {"firm_name": "GoodWork Forensic Consulting"}

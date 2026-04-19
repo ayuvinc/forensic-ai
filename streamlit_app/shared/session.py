@@ -48,7 +48,14 @@ def bootstrap(st) -> dict:
     """Initialise registry, hook_engine, firm_name, and design system in st.session_state.
 
     Returns the session state dict for convenience.
+
+    On every call (even after bootstrapped=True), checks app readiness and
+    redirects to 00_Setup.py if any required artifact is missing.  The redirect
+    is skipped when the current page IS 00_Setup.py (avoids an infinite loop).
     """
+    # Readiness gate — runs on every page load, not just first boot
+    _maybe_redirect_to_setup(st)
+
     if "bootstrapped" in st.session_state:
         return st.session_state
 
@@ -101,3 +108,29 @@ def _load_firm_name() -> str:
         except (KeyError, json.JSONDecodeError):
             pass
     return "GoodWork Forensic Consulting"
+
+
+def _maybe_redirect_to_setup(st) -> None:
+    """Redirect to 00_Setup.py if the app is not fully configured.
+
+    Skipped on the setup page itself (avoids infinite redirect loop).
+    Uses get_script_run_ctx to detect the current page path without importing
+    Streamlit internals that may change across versions — falls back gracefully
+    if the context is unavailable.
+    """
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        ctx = get_script_run_ctx()
+        if ctx is not None:
+            page_path = getattr(ctx, "page_script_hash", "") or ""
+            # Also check the actual script path if available
+            script_path = getattr(ctx, "script_path", "") or ""
+            if "00_Setup" in script_path or "00_Setup" in page_path:
+                return  # Already on setup page — do not redirect
+    except Exception:
+        pass  # If context unavailable, allow redirect check to proceed
+
+    from streamlit_app.shared.readiness import check_readiness
+    result = check_readiness()
+    if not result.ready:
+        st.switch_page("pages/00_Setup.py")
