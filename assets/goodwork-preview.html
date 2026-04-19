@@ -1,0 +1,1062 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GoodWork Forensic AI — Preview</title>
+<style>
+/* ── Reset + base ────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Source Sans Pro", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px;
+  color: #282827;
+  background: #ffffff;
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+.sidebar {
+  width: 288px;
+  min-width: 288px;
+  background: #F5F2F0;
+  border-right: 1px solid #e6e3e0;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0;
+  height: 100vh;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.sidebar-header {
+  padding: 1.25rem 1.25rem 0.75rem;
+}
+
+.sidebar-logo {
+  width: 180px;
+  height: auto;
+  margin-bottom: 0.75rem;
+}
+
+.sidebar-divider {
+  border: none;
+  border-top: 1px solid #e0dbd6;
+  margin: 0.5rem 0;
+}
+
+/* Research mode banners */
+.mode-warn {
+  margin: 0 0.75rem 0.5rem;
+  background: #fff3cd;
+  border: 1px solid #f0c040;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.78rem;
+  color: #7a4f00;
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+.mode-ok {
+  margin: 0 0.75rem 0.5rem;
+  background: #d4edda;
+  border: 1px solid #b8dfc2;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.78rem;
+  color: #1a5c30;
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+}
+
+.sidebar-caption {
+  padding: 0 1.25rem 0.75rem;
+  font-size: 0.78rem;
+  color: #7a7672;
+}
+
+/* Nav items */
+.nav-section {
+  padding: 0.6rem 1.25rem 0.2rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #a09890;
+}
+
+.nav-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  padding: 0.38rem 1.25rem;
+  font-size: 0.9rem;
+  color: #282827;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+  font-family: inherit;
+}
+.nav-item:hover { background: #ede8e3; }
+.nav-item.active {
+  background: #fce8eb;
+  border-left-color: #D50032;
+  color: #D50032;
+  font-weight: 600;
+}
+
+/* ── Main content ────────────────────────────────────────────────────────── */
+.main {
+  margin-left: 288px;
+  flex: 1;
+  padding: 2rem 3rem;
+  background: #ffffff;
+}
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Typography ──────────────────────────────────────────────────────────── */
+h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #282827;
+  margin-bottom: 0.15rem;
+}
+.page-caption {
+  font-size: 0.9rem;
+  color: #7a7672;
+  margin-bottom: 1.75rem;
+}
+.subheader {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #282827;
+  margin-bottom: 1rem;
+  margin-top: 0.5rem;
+}
+label, .field-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #282827;
+  margin-bottom: 0.3rem;
+}
+.helper-text {
+  font-size: 0.8rem;
+  color: #7a7672;
+  margin-top: 0.2rem;
+  margin-bottom: 0.75rem;
+}
+
+/* ── Form controls — matches Streamlit's actual input style ───────────────── */
+.st-form {
+  background: #ffffff;
+  border: 1px solid #ced0d4;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+input[type="text"],
+input[type="email"],
+textarea,
+select {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #ced0d4;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+  color: #282827;
+  background: #ffffff;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  margin-bottom: 0.1rem;
+}
+input[type="text"]:focus,
+textarea:focus,
+select:focus {
+  border-color: #D50032;
+  box-shadow: 0 0 0 1px #D50032;
+}
+textarea { resize: vertical; min-height: 90px; line-height: 1.5; }
+select { -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23282827' d='M6 8L1 3h10z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 0.75rem center; padding-right: 2rem; }
+
+/* Row layouts */
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.field-group { margin-bottom: 0.9rem; }
+
+/* Multiselect */
+.multiselect-box {
+  border: 1px solid #ced0d4;
+  border-radius: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: #ffffff;
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+  cursor: pointer;
+}
+.ms-tag {
+  background: #fce8eb;
+  color: #D50032;
+  border: 1px solid #f5b8c2;
+  border-radius: 0.2rem;
+  padding: 0.15rem 0.5rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.ms-tag-x { color: #D50032; font-size: 0.9rem; cursor: pointer; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #D50032;
+  color: #ffffff;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.25rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn-primary:hover { background: #b0002a; }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: #ffffff;
+  color: #282827;
+  border: 1px solid #ced0d4;
+  padding: 0.45rem 1rem;
+  border-radius: 0.25rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.12s;
+}
+.btn-secondary:hover { background: #F5F2F0; }
+
+/* ── Alert banners — match Streamlit exactly ─────────────────────────────── */
+.st-info {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: #d9e8fb;
+  border-left: 4px solid #1c83e1;
+  border-radius: 0 0.25rem 0.25rem 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  color: #0b4070;
+  margin-bottom: 1rem;
+}
+.st-success {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: #d4edda;
+  border-left: 4px solid #21a553;
+  border-radius: 0 0.25rem 0.25rem 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  color: #0f4c26;
+  margin-bottom: 1rem;
+}
+.st-warning {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: #fff3cd;
+  border-left: 4px solid #f0a500;
+  border-radius: 0 0.25rem 0.25rem 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  color: #7a4f00;
+  margin-bottom: 1rem;
+}
+.st-error {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+  background: #fde8e8;
+  border-left: 4px solid #D50032;
+  border-radius: 0 0.25rem 0.25rem 0;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.875rem;
+  color: #6e0019;
+  margin-bottom: 1rem;
+}
+.banner-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+
+/* ── st.status block ─────────────────────────────────────────────────────── */
+.st-status {
+  border: 1px solid #ced0d4;
+  border-radius: 0.35rem;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+.st-status-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem;
+  background: #F5F2F0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-bottom: 1px solid #ced0d4;
+}
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid #D50032;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+.check-icon { color: #21a553; font-size: 1rem; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.st-status-body { padding: 0.6rem 0.9rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.status-line {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  font-size: 0.84rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 0.2rem;
+}
+.status-info  { background: #d9e8fb; color: #0b4070; }
+.status-warn  { background: #fff3cd; color: #7a4f00; }
+.status-err   { background: #fde8e8; color: #6e0019; }
+.status-dot   { font-size: 0.7rem; margin-top: 0.15rem; flex-shrink: 0; }
+
+/* ── Upload zone ─────────────────────────────────────────────────────────── */
+.upload-zone {
+  border: 1px solid #ced0d4;
+  border-radius: 0.25rem;
+  padding: 1.75rem 1rem;
+  text-align: center;
+  color: #7a7672;
+  font-size: 0.85rem;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.upload-zone:hover { border-color: #D50032; }
+.upload-zone .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; display: block; }
+.upload-zone .limit-text { font-size: 0.75rem; color: #a09890; margin-top: 0.35rem; }
+.btn-browse {
+  display: inline-block;
+  margin-top: 0.5rem;
+  background: #F5F2F0;
+  border: 1px solid #ced0d4;
+  border-radius: 0.2rem;
+  padding: 0.3rem 0.75rem;
+  font-size: 0.8rem;
+  color: #282827;
+  cursor: pointer;
+}
+
+/* ── Horizontal divider ──────────────────────────────────────────────────── */
+.st-divider {
+  border: none;
+  border-top: 1px solid #e6e3e0;
+  margin: 1.25rem 0;
+}
+
+/* ── Risk cards (FRM review stage) ──────────────────────────────────────── */
+.risk-card {
+  border: 1px solid #e6e3e0;
+  border-radius: 0.35rem;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+.risk-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.65rem 0.9rem;
+  background: #F5F2F0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  gap: 0.75rem;
+}
+.risk-badge {
+  font-size: 0.72rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 0.2rem;
+  font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.badge-h { background: #fde8e8; color: #6e0019; border: 1px solid #f5b8c2; }
+.badge-m { background: #fff3cd; color: #7a4f00; border: 1px solid #f0c040; }
+.badge-l { background: #d4edda; color: #0f4c26; border: 1px solid #b8dfc2; }
+.risk-body {
+  padding: 0.9rem;
+  font-size: 0.875rem;
+  border-top: 1px solid #e6e3e0;
+}
+.risk-meta { color: #7a7672; margin-bottom: 0.5rem; font-size: 0.82rem; }
+.risk-action { display: flex; align-items: center; gap: 0.75rem; margin-top: 0.75rem; }
+.risk-action label { margin: 0; font-size: 0.82rem; white-space: nowrap; }
+.risk-action select { width: auto; font-size: 0.82rem; margin-bottom: 0; }
+
+/* ── Case tracker cards ──────────────────────────────────────────────────── */
+.case-card {
+  border: 1px solid #e6e3e0;
+  border-radius: 0.35rem;
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+  background: #fff;
+}
+.case-card h4 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.status-pill {
+  font-size: 0.7rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+.pill-green { background: #d4edda; color: #0f4c26; }
+.pill-amber { background: #fff3cd; color: #7a4f00; }
+.pill-red   { background: #fde8e8; color: #6e0019; }
+.kv { display: flex; gap: 0.5rem; font-size: 0.82rem; margin-bottom: 0.2rem; }
+.kv-k { color: #7a7672; min-width: 120px; }
+code { background: #F5F2F0; padding: 0.1rem 0.35rem; border-radius: 0.2rem; font-size: 0.8rem; font-family: "SFMono-Regular", Consolas, monospace; }
+
+/* ── Home page 3-column layout ───────────────────────────────────────────── */
+.home-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-top: 1.25rem; }
+.home-col h4 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.5rem; color: #282827; }
+.home-col ul { list-style: none; padding: 0; }
+.home-col li {
+  font-size: 0.875rem;
+  padding: 0.25rem 0;
+  color: #282827;
+  cursor: pointer;
+  border-radius: 0.2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.home-col li:hover { text-decoration: underline; color: #D50032; }
+.home-col li::before { content: "—"; color: #a09890; font-size: 0.75rem; }
+.home-logo { width: 280px; height: auto; margin-bottom: 0.5rem; }
+.home-desc { font-size: 1rem; color: #282827; margin-bottom: 1rem; }
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; padding: 1.25rem; }
+  .row-2, .row-3, .home-cols { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════ SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <img class="sidebar-logo"
+         src="data:image/png;base64,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"
+         alt="GoodWork" onerror="this.style.display='none';document.getElementById('fw').style.display='block'">
+    <div id="fw" style="display:none;font-size:1rem;font-weight:700;color:#282827;">GoodWork Forensic AI</div>
+  </div>
+
+  <div class="mode-warn">
+    <span>⚠</span>
+    <span>RESEARCH MODE: Knowledge Only — no live regulatory/sanctions data</span>
+  </div>
+
+  <hr class="sidebar-divider">
+  <div class="sidebar-caption">Navigate using the pages above.</div>
+
+  <button class="nav-item active" onclick="showPage('home',this)">Home</button>
+
+  <div class="nav-section">Investigation</div>
+  <button class="nav-item" onclick="showPage('scope',this)">Engagement Scoping</button>
+  <button class="nav-item" onclick="showPage('investigation',this)">Investigation Report</button>
+  <button class="nav-item" onclick="showPage('persona',this)">Persona Review</button>
+
+  <div class="nav-section">Compliance</div>
+  <button class="nav-item" onclick="showPage('policy',this)">Policy / SOP Generator</button>
+  <button class="nav-item" onclick="showPage('training',this)">Training Material</button>
+  <button class="nav-item" onclick="showPage('frm',this)">FRM Risk Register</button>
+
+  <div class="nav-section">Due Diligence</div>
+  <button class="nav-item" onclick="showPage('dd',this)">Due Diligence</button>
+  <button class="nav-item" onclick="showPage('sanctions',this)">Sanctions Check</button>
+  <button class="nav-item" onclick="showPage('tt',this)">Transaction Testing</button>
+
+  <div class="nav-section">Business</div>
+  <button class="nav-item" onclick="showPage('proposal',this)">Client Proposal</button>
+  <button class="nav-item" onclick="showPage('ppt',this)">PPT Prompt Pack</button>
+  <button class="nav-item" onclick="showPage('tracker',this)">Case Tracker</button>
+</nav>
+
+<!-- ══════════════════════════════════════════════════════════ PAGES -->
+<main class="main">
+
+<!-- ── HOME ─────────────────────────────────────────────────────────────────── -->
+<div id="page-home" class="page active">
+  <img class="home-logo"
+       src="data:image/png;base64,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"
+       alt="GoodWork" style="margin-bottom:0.5rem;" onerror="this.style.display='none'">
+  <h5 style="font-size:1.05rem;font-weight:600;color:#282827;margin-bottom:0.5rem;">Forensic AI — Internal Consulting Platform</h5>
+  <p class="home-desc">Select a workflow from the sidebar to begin. All outputs are saved to the local <code>cases/</code> folder with a full audit trail.</p>
+
+  <hr class="st-divider">
+
+  <div class="home-cols">
+    <div class="home-col">
+      <h4>Investigation</h4>
+      <ul>
+        <li onclick="showPage('scope', getNI('scope'))">New Case Intake</li>
+        <li onclick="showPage('investigation', getNI('investigation'))">Investigation Report</li>
+        <li onclick="showPage('persona', getNI('persona'))">Persona Review</li>
+      </ul>
+    </div>
+    <div class="home-col">
+      <h4>Compliance</h4>
+      <ul>
+        <li onclick="showPage('policy', getNI('policy'))">Policy / SOP</li>
+        <li onclick="showPage('training', getNI('training'))">Training Material</li>
+        <li onclick="showPage('frm', getNI('frm'))">FRM Risk Register</li>
+      </ul>
+    </div>
+    <div class="home-col">
+      <h4>Business</h4>
+      <ul>
+        <li onclick="showPage('proposal', getNI('proposal'))">Client Proposal</li>
+        <li onclick="showPage('ppt', getNI('ppt'))">PPT Prompt Pack</li>
+        <li onclick="showPage('tracker', getNI('tracker'))">Case Tracker</li>
+        <li onclick="showPage('dd', getNI('dd'))">Browse SOPs</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── ENGAGEMENT SCOPING ─────────────────────────────────────────────────────── -->
+<div id="page-scope" class="page">
+  <h1>Engagement Scoping</h1>
+  <p class="page-caption">5-step scoping conversation — identify the right engagement type from the client's situation</p>
+
+  <div id="scope-form">
+    <div class="subheader">Engagement Scoping — Intake</div>
+    <div class="st-form">
+      <div class="field-group">
+        <label>Client name</label>
+        <input type="text" placeholder="e.g. Al Faris Construction LLC">
+      </div>
+      <div class="field-group">
+        <label>Industry / sector</label>
+        <input type="text" placeholder="e.g. Construction &amp; Real Estate">
+      </div>
+      <div class="field-group">
+        <label>Primary jurisdiction</label>
+        <input type="text" value="UAE">
+      </div>
+      <div class="field-group">
+        <label>Engagement description / scope</label>
+        <textarea placeholder="Brief description of the matter..."></textarea>
+      </div>
+      <div class="field-group">
+        <label>Report language</label>
+        <select><option value="en">en</option><option value="ar">ar</option></select>
+      </div>
+      <button class="btn-primary" style="margin-top:0.25rem" onclick="document.getElementById('scope-form').style.display='none';document.getElementById('scope-q').style.display='block'">Start</button>
+    </div>
+  </div>
+
+  <div id="scope-q" style="display:none">
+    <div class="st-info"><span class="banner-icon">ℹ</span><span>Client situation loaded. Answer the scoping questions below.</span></div>
+    <div class="st-form">
+      <div class="field-group">
+        <label>What is the client facing? Describe the problem.</label>
+        <textarea style="min-height:100px">Allegations of procurement fraud at three construction sites across Dubai and Sharjah. Internal audit flagged unusual payment patterns to three vendors.</textarea>
+      </div>
+      <div class="field-group">
+        <label>What triggered this engagement?</label>
+        <input type="text" value="Internal audit finding — unusual vendor payment patterns">
+      </div>
+      <div class="field-group">
+        <label>What does the client want to walk away with?</label>
+        <input type="text" value="Investigation report suitable for board presentation">
+      </div>
+      <div class="row-2">
+        <div class="field-group">
+          <label>Any constraints? (timeline, budget, data access)</label>
+          <input type="text" placeholder="Optional" value="6-week turnaround">
+        </div>
+        <div class="field-group">
+          <label>Any specific red flags already identified?</label>
+          <input type="text" placeholder="Optional" value="Round-number payments, dormant vendors">
+        </div>
+      </div>
+      <button class="btn-primary" onclick="showStage('scope-running')">Run Scoping</button>
+    </div>
+  </div>
+
+  <div id="scope-running" style="display:none">
+    <div class="st-status">
+      <div class="st-status-header"><span class="check-icon">✔</span> Running engagement scoping... — complete</div>
+      <div class="st-status-body">
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[pipeline] Analysing client situation and trigger...</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[pipeline] Matching against 7 engagement types...</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[pipeline] Scoping document generated.</div>
+      </div>
+    </div>
+    <div class="st-success"><span class="banner-icon">✔</span> Scope document complete — Case ID: <code>20260419-A3F9C1</code></div>
+    <p style="font-size:0.875rem;margin-bottom:0.75rem"><strong>Recommended engagement:</strong> Investigation Report — Procurement Fraud</p>
+    <p style="font-size:0.875rem;margin-bottom:1rem"><strong>Scope components:</strong> Document review | Transaction analysis | Vendor profiling | Interview programme</p>
+    <button class="btn-secondary">Download scope document (.json)</button>
+    <p style="font-size:0.82rem;color:#7a7672;margin-top:0.5rem"><strong>Case ID:</strong> <code>20260419-A3F9C1</code> &nbsp;|&nbsp; <strong>Location:</strong> <code>cases/20260419-A3F9C1/</code></p>
+  </div>
+</div>
+
+<!-- ── INVESTIGATION REPORT ──────────────────────────────────────────────────── -->
+<div id="page-investigation" class="page">
+  <h1>Investigation Report</h1>
+  <p class="page-caption">Full three-agent pipeline — Asset Misappropriation, Corruption, Cyber Fraud, and more</p>
+
+  <div id="inv-form">
+    <div class="subheader">Investigation Report — Intake</div>
+    <div class="st-form">
+      <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. Gulf Logistics Holdings"></div>
+      <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Logistics"></div>
+      <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+      <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Brief description of the matter..."></textarea></div>
+      <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+      <button class="btn-primary" onclick="showStage('inv-q')" style="margin-top:0.25rem">Start</button>
+    </div>
+  </div>
+
+  <div id="inv-q" style="display:none">
+    <div class="st-form">
+      <div class="row-2">
+        <div class="field-group">
+          <label>Investigation type</label>
+          <select>
+            <option>Asset Misappropriation</option>
+            <option>Financial Statement Fraud</option>
+            <option>Corruption &amp; Bribery</option>
+            <option selected>Procurement Fraud</option>
+            <option>Cyber Fraud / Digital Investigation</option>
+            <option>Revenue Leakage</option>
+            <option>Compliance Investigation</option>
+          </select>
+        </div>
+        <div class="field-group">
+          <label>Report audience</label>
+          <select>
+            <option selected>Management</option>
+            <option>Board</option>
+            <option>Legal Proceedings (Expert Witness)</option>
+            <option>Regulatory Submission</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-group">
+        <label>Upload case documents (optional)</label>
+        <div class="upload-zone">
+          <span class="upload-icon">📂</span>
+          Drag and drop files here<br>
+          <span style="font-size:0.85rem;color:#7a7672">Limit 200MB per file • PDF, DOCX, TXT, XLSX</span><br>
+          <span class="btn-browse">Browse files</span>
+        </div>
+        <div class="st-warning" style="margin-top:0.5rem"><span class="banner-icon">⚠</span>Maximum file size is 10MB per document.</div>
+      </div>
+      <button class="btn-primary" onclick="showStage('inv-running')">Run Investigation</button>
+    </div>
+  </div>
+
+  <div id="inv-running" style="display:none">
+    <div class="st-status">
+      <div class="st-status-header"><span class="spinner"></span> Running Investigation pipeline...</div>
+      <div class="st-status-body">
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Document review complete — 3 files, 47 extractions</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Regulatory lookup: DFSA, UAE Central Bank</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Draft complete — 12 findings, 6 authoritative citations</div>
+        <div class="status-line status-warn"><span class="status-dot">⚠</span>[project_manager] Revision requested — 2 must-fix items</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Revision round 1 — addressing PM feedback...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FRM RISK REGISTER ─────────────────────────────────────────────────────── -->
+<div id="page-frm" class="page">
+  <h1>FRM Risk Register</h1>
+  <p class="page-caption">Fraud Risk Management — multi-module assessment pipeline</p>
+
+  <div id="frm-intake">
+    <div class="subheader">FRM Risk Register — Intake</div>
+    <div class="st-form">
+      <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. Emirates Steel Group"></div>
+      <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Construction &amp; Real Estate"></div>
+      <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+      <div class="field-group"><label>Approximate employee count</label><input type="text" placeholder="e.g. 800"></div>
+      <div class="field-group"><label>Engagement scope / known concerns</label><textarea placeholder="Any specific fraud concerns, regulatory findings, or focus areas..."></textarea></div>
+      <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+
+      <div class="field-group" style="margin-top:0.75rem">
+        <label>Modules to assess <span style="font-weight:400;color:#7a7672">(Module 2 is required by 3, 4, and 7)</span></label>
+        <div class="helper-text">Select modules</div>
+        <div class="multiselect-box">
+          <span class="ms-tag">Module 1: Fraud Risk Governance <span class="ms-tag-x">×</span></span>
+          <span class="ms-tag">Module 2: Fraud Risk Assessment <span class="ms-tag-x">×</span></span>
+          <span style="font-size:0.82rem;color:#a09890">Click to add modules...</span>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="showStage('frm-confirm')" style="margin-top:0.5rem">Run Pipeline</button>
+    </div>
+  </div>
+
+  <div id="frm-confirm" style="display:none">
+    <div class="st-info"><span class="banner-icon">ℹ</span><span>Ready to run FRM for <strong>Emirates Steel Group</strong>. Upload any supporting documents below, then click Run.</span></div>
+    <div class="field-group">
+      <label>Upload case documents (optional)</label>
+      <div class="upload-zone">
+        <span class="upload-icon">📂</span>
+        Drag and drop files here<br>
+        <span style="font-size:0.85rem;color:#7a7672">Limit 200MB per file • PDF, DOCX, TXT, XLSX</span><br>
+        <span class="btn-browse">Browse files</span>
+      </div>
+      <div class="st-warning" style="margin-top:0.5rem"><span class="banner-icon">⚠</span>Maximum file size is 10MB per document.</div>
+    </div>
+    <button class="btn-primary" onclick="showStage('frm-running')">Run FRM Pipeline</button>
+  </div>
+
+  <div id="frm-running" style="display:none">
+    <div class="st-info"><span class="banner-icon">ℹ</span><span>Running pipeline for <strong>Emirates Steel Group</strong> — 2 module(s)</span></div>
+    <div class="st-warning"><span class="banner-icon">⚠</span><span>[frm_page] Running in Knowledge Only mode — no live regulatory data. Citations will be limited.</span></div>
+    <div class="st-status">
+      <div class="st-status-header"><span class="check-icon">✔</span> Running FRM pipeline... — complete</div>
+      <div class="st-status-body">
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Module 1 — Fraud Risk Governance: 3 risks generated</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[consultant] Module 2 — Fraud Risk Assessment: 6 risks generated</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[project_manager] Review complete — approved with minor comments</div>
+        <div class="status-line status-info"><span class="status-dot">ℹ</span>[partner] Sign-off complete — 9 risks, 4 authoritative citations</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="showStage('frm-review')" style="margin-top:0.75rem">Go to Review →</button>
+  </div>
+
+  <div id="frm-review" style="display:none">
+    <div class="st-success"><span class="banner-icon">✔</span> Pipeline complete — 9 risk items generated across 2 modules</div>
+    <div class="subheader" style="margin-top:0.5rem">Review 9 Risk Item(s)</div>
+    <p style="font-size:0.875rem;color:#7a7672;margin-bottom:1rem">Review applies to all modules (aligns with BA-002 Step 5). Approve, Flag with note, or Rewrite via Haiku.</p>
+
+    <div class="risk-card">
+      <div class="risk-card-header">
+        <span>FRM-M2-001 — Procurement Collusion with Suppliers</span>
+        <span class="risk-badge badge-h">HIGH: 20/25</span>
+      </div>
+      <div class="risk-body">
+        <div class="risk-meta">Category: Procurement Fraud &nbsp;|&nbsp; Likelihood: 4 &nbsp;|&nbsp; Impact: 5 &nbsp;|&nbsp; Rating: 20/25</div>
+        Risk of employees colluding with suppliers for kickbacks, inflated invoicing, or contract splitting below approval thresholds.
+        <div style="margin-top:0.5rem;font-size:0.82rem"><strong>Recommendations:</strong> Vendor due diligence programme; three-way match on invoices; approval threshold review.</div>
+        <div class="risk-action">
+          <label>Action</label>
+          <select><option selected>approve</option><option>flag</option><option>rewrite</option></select>
+        </div>
+      </div>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-card-header">
+        <span>FRM-M2-002 — Payroll Ghost Employees</span>
+        <span class="risk-badge badge-h">HIGH: 16/25</span>
+      </div>
+      <div class="risk-body">
+        <div class="risk-meta">Category: Asset Misappropriation &nbsp;|&nbsp; Likelihood: 4 &nbsp;|&nbsp; Impact: 4 &nbsp;|&nbsp; Rating: 16/25</div>
+        Risk of fictitious employees on payroll, particularly for large project-based workforce with high turnover across multiple construction sites.
+        <div class="risk-action">
+          <label>Action</label>
+          <select><option>approve</option><option selected>flag</option><option>rewrite</option></select>
+        </div>
+        <div style="margin-top:0.5rem">
+          <input type="text" placeholder="Flag note (shown in report)" value="Verify against WPS data for UAE sites — cross-check with site attendance logs">
+        </div>
+      </div>
+    </div>
+
+    <div class="risk-card">
+      <div class="risk-card-header">
+        <span>FRM-M3-001 — Segregation of Duties — Accounts Payable</span>
+        <span class="risk-badge badge-m">MEDIUM: 12/25</span>
+      </div>
+      <div class="risk-body">
+        <div class="risk-meta">Category: Financial Controls &nbsp;|&nbsp; Likelihood: 3 &nbsp;|&nbsp; Impact: 4 &nbsp;|&nbsp; Rating: 12/25</div>
+        Insufficient segregation between invoice approval and payment processing roles.
+        <div class="risk-action">
+          <label>Action</label>
+          <select><option>approve</option><option>flag</option><option selected>rewrite</option></select>
+        </div>
+        <div style="margin-top:0.5rem">
+          <input type="text" placeholder="Rewrite instructions" value="Expand to include IT access controls over the ERP payment module">
+        </div>
+      </div>
+    </div>
+
+    <p style="font-size:0.82rem;color:#7a7672;margin:0.5rem 0 1rem">+ 6 more risk items (LOW – MEDIUM) not shown in this preview</p>
+    <hr class="st-divider">
+    <button class="btn-primary" onclick="showStage('frm-done')">Finalize Risk Register</button>
+  </div>
+
+  <div id="frm-done" style="display:none">
+    <div class="st-success"><span class="banner-icon">✔</span> FRM Risk Register complete — 9 risks across 2 module(s)</div>
+    <button class="btn-secondary" style="margin-bottom:1rem">Download final_report.en.md</button>
+    <p style="font-size:0.82rem;color:#7a7672"><strong>Case ID:</strong> <code>20260419-B7D2E4</code> &nbsp;|&nbsp; <strong>Location:</strong> <code>cases/20260419-B7D2E4/</code></p>
+    <div style="margin-top:1rem;border:1px solid #e6e3e0;border-radius:0.35rem;overflow:hidden">
+      <div style="padding:0.6rem 0.9rem;background:#F5F2F0;font-size:0.875rem;font-weight:600;border-bottom:1px solid #e6e3e0">Executive Summary</div>
+      <div style="padding:0.9rem;font-size:0.875rem;line-height:1.6">
+        Emirates Steel Group (approx. 800 employees, Dubai UAE) presents a <strong>HIGH</strong> overall fraud risk profile consistent with the construction sector. Two critical risks were identified across Module 1 and Module 2: procurement collusion (HIGH 20/25) and payroll ghost employees (HIGH 16/25). Controls gaps exist in accounts payable segregation of duties and vendor onboarding. Immediate remediation priorities: vendor due diligence programme, WPS cross-check reconciliation, and AP role segregation review.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DUE DILIGENCE ─────────────────────────────────────────────────────────── -->
+<div id="page-dd" class="page">
+  <h1>Due Diligence</h1>
+  <p class="page-caption">Individual and Entity DD — Standard Phase 1 and Enhanced Phase 2 branches</p>
+
+  <div id="dd-form">
+    <div class="subheader">Due Diligence — Intake</div>
+    <div class="st-form">
+      <div class="field-group"><label>Client name</label><input type="text" placeholder="Client / firm instructing this DD"></div>
+      <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Financial Services"></div>
+      <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+      <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Brief description of the matter..."></textarea></div>
+      <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+      <button class="btn-primary" style="margin-top:0.25rem" onclick="showStage('dd-q')">Start</button>
+    </div>
+  </div>
+
+  <div id="dd-q" style="display:none">
+    <div class="st-form">
+      <div class="row-2">
+        <div class="field-group"><label>Subject type</label><select><option selected>individual</option><option>entity</option></select></div>
+        <div class="field-group"><label>Full legal name of subject</label><input type="text" placeholder="Full name as on passport"></div>
+      </div>
+      <div class="field-group"><label>Operating jurisdictions (comma-separated)</label><input type="text" value="UAE"></div>
+      <div class="row-2">
+        <div class="field-group">
+          <label>Purpose of DD</label>
+          <select><option>onboarding</option><option selected>investment</option><option>partnership</option><option>employment</option><option>acquisition</option></select>
+        </div>
+        <div class="field-group">
+          <label>Screening level</label>
+          <select><option selected>Standard Phase 1</option><option>Enhanced Phase 2</option></select>
+        </div>
+      </div>
+      <div class="field-group"><label>Specific concerns or red flags (optional)</label><textarea placeholder="Any known issues, PEP status, sanctions concerns, adverse media..." style="min-height:70px"></textarea></div>
+      <div class="field-group">
+        <label>Upload case documents (optional)</label>
+        <div class="upload-zone">
+          <span class="upload-icon">📂</span>
+          Drag and drop files here<br>
+          <span style="font-size:0.85rem;color:#7a7672">Limit 200MB per file • PDF, DOCX, TXT, XLSX</span><br>
+          <span class="btn-browse">Browse files</span>
+        </div>
+        <div class="st-warning" style="margin-top:0.5rem"><span class="banner-icon">⚠</span>Maximum file size is 10MB per document.</div>
+      </div>
+      <button class="btn-primary" onclick="showStage('dd-done')">Run Due Diligence</button>
+    </div>
+  </div>
+
+  <div id="dd-done" style="display:none">
+    <div class="st-success"><span class="banner-icon">✔</span> Due Diligence report complete — Case ID: <code>20260419-DD9F3A</code></div>
+    <button class="btn-secondary" style="margin-bottom:0.75rem">Download DD report (.md)</button>
+    <p style="font-size:0.82rem;color:#7a7672"><strong>Case ID:</strong> <code>20260419-DD9F3A</code> &nbsp;|&nbsp; <strong>Location:</strong> <code>cases/20260419-DD9F3A/</code></p>
+  </div>
+</div>
+
+<!-- ── PERSONA REVIEW ─────────────────────────────────────────────────────────── -->
+<div id="page-persona" class="page">
+  <h1>Persona Review</h1>
+  <p class="page-caption">Stress-test your deliverable against a client persona before submission</p>
+  <div class="subheader">Persona Review — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. ADIB Capital"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Financial Services"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Paste or describe the deliverable to be reviewed..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── POLICY / SOP ─────────────────────────────────────────────────────────── -->
+<div id="page-policy" class="page">
+  <h1>Policy / SOP Generator</h1>
+  <p class="page-caption">Generate a firm-ready policy or SOP aligned to the client's regulatory context</p>
+  <div class="subheader">Policy / SOP Generator — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. First Abu Dhabi Bank"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Financial Services"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Describe the policy or SOP needed, any regulatory context, and known gaps..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── TRAINING MATERIAL ──────────────────────────────────────────────────────── -->
+<div id="page-training" class="page">
+  <h1>Training Material</h1>
+  <p class="page-caption">Generate structured fraud awareness or compliance training for client employees</p>
+  <div class="subheader">Training Material — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. Gulf Holding Company"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Diversified Holding"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Describe the training topic, target audience, and format needed..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── SANCTIONS CHECK ───────────────────────────────────────────────────────── -->
+<div id="page-sanctions" class="page">
+  <h1>Sanctions Check</h1>
+  <p class="page-caption">Authoritative check against OFAC SDN, UN Security Council, and EU Consolidated List</p>
+  <div class="subheader">Sanctions Check — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="Client instructing this check"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Financial Services"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Names to screen (one per line), context, and purpose of check..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── TRANSACTION TESTING ───────────────────────────────────────────────────── -->
+<div id="page-tt" class="page">
+  <h1>Transaction Testing</h1>
+  <p class="page-caption">Structured analysis of transaction data for fraud indicators and anomalies</p>
+  <div class="subheader">Transaction Testing — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. Al Masaood Group"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Automotive & Diversified"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Describe the testing scope, data sources, and any known red flags..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── CLIENT PROPOSAL ──────────────────────────────────────────────────────── -->
+<div id="page-proposal" class="page">
+  <h1>Client Proposal</h1>
+  <p class="page-caption">Generate a structured engagement proposal — scope, methodology, team, and fees</p>
+  <div class="subheader">Client Proposal — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. Majid Al Futtaim Holding"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Retail &amp; Real Estate"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Describe the prospect's situation, what they need, and the engagement scope..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── PPT PACK ─────────────────────────────────────────────────────────────── -->
+<div id="page-ppt" class="page">
+  <h1>PPT Prompt Pack</h1>
+  <p class="page-caption">Generates a deck storyboard + per-slide prompts for Claude or PowerPoint AI</p>
+  <div class="subheader">PPT Prompt Pack — Intake</div>
+  <div class="st-form">
+    <div class="field-group"><label>Client name</label><input type="text" placeholder="e.g. ENOC"></div>
+    <div class="field-group"><label>Industry / sector</label><input type="text" placeholder="e.g. Energy"></div>
+    <div class="field-group"><label>Primary jurisdiction</label><input type="text" value="UAE"></div>
+    <div class="field-group"><label>Engagement description / scope</label><textarea placeholder="Paste the engagement brief, proposal, or scope of work..."></textarea></div>
+    <div class="field-group"><label>Report language</label><select><option>en</option><option>ar</option></select></div>
+    <button class="btn-primary" style="margin-top:0.25rem">Start</button>
+  </div>
+</div>
+
+<!-- ── CASE TRACKER ─────────────────────────────────────────────────────────── -->
+<div id="page-tracker" class="page">
+  <h1>Case Tracker</h1>
+  <p class="page-caption">All active and closed cases — status, last agent action, and case folder</p>
+  <div class="st-info" style="margin-bottom:1.25rem"><span class="banner-icon">ℹ</span>Showing 3 cases from <code>cases/</code></div>
+
+  <div class="case-card">
+    <h4>20260419-A3F9C1 <span class="status-pill pill-green">OWNER_APPROVED</span></h4>
+    <div class="kv"><span class="kv-k">Client</span><span>Al Faris Construction LLC</span></div>
+    <div class="kv"><span class="kv-k">Workflow</span><span>Engagement Scoping</span></div>
+    <div class="kv"><span class="kv-k">Last action</span><span>Partner signed off — 2026-04-18 14:32</span></div>
+    <div class="kv"><span class="kv-k">Case folder</span><code>cases/20260419-A3F9C1/</code></div>
+  </div>
+
+  <div class="case-card">
+    <h4>20260419-B7D2E4 <span class="status-pill pill-amber">PM_REVIEW_COMPLETE</span></h4>
+    <div class="kv"><span class="kv-k">Client</span><span>Emirates Steel Group</span></div>
+    <div class="kv"><span class="kv-k">Workflow</span><span>FRM Risk Register</span></div>
+    <div class="kv"><span class="kv-k">Last action</span><span>PM review complete — awaiting Partner — 2026-04-19 09:14</span></div>
+    <div class="kv"><span class="kv-k">Case folder</span><code>cases/20260419-B7D2E4/</code></div>
+  </div>
+
+  <div class="case-card">
+    <h4>20260417-DD9F3A <span class="status-pill pill-red">PM_REVISION_REQUESTED</span></h4>
+    <div class="kv"><span class="kv-k">Client</span><span>Gulf Logistics Holdings</span></div>
+    <div class="kv"><span class="kv-k">Workflow</span><span>Due Diligence — Standard Phase 1</span></div>
+    <div class="kv"><span class="kv-k">Last action</span><span>PM requested revision — 3 must-fix items — 2026-04-17 16:45</span></div>
+    <div class="kv"><span class="kv-k">Case folder</span><code>cases/20260417-DD9F3A/</code></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  var page = document.getElementById('page-' + id);
+  if (page) page.classList.add('active');
+  if (btn && btn.classList) btn.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showStage(id) {
+  var el = document.getElementById(id);
+  if (el) {
+    el.style.display = 'block';
+    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+}
+
+function getNI(name) {
+  return document.querySelector('[onclick*="' + name + '"]');
+}
+</script>
+</body>
+</html>

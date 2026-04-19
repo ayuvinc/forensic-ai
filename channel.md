@@ -11,11 +11,11 @@ The Architect and skill agents own the write gate.
 ## Current Status
 
 ```
-session:        014
-sprint:         sprint-10L
-active_persona: junior-dev
-last_skill_run: session-open
-last_updated:   2026-04-07 18:00:00 UTC
+session:        025
+sprint:         repo-reorg
+active_persona: architect
+last_skill_run: architect (repo reorganisation)
+last_updated:   2026-04-19 UTC
 ```
 
 ---
@@ -34,6 +34,29 @@ message: |
   Next: P7-GATE — AK must run python run.py with live API keys (FRM smoke test).
   Gate passes → Sprint-10D (FRM redesign) unblocked.
   Read tasks/next-action.md for options.
+```
+
+---
+
+## Repo Reorganisation — 2026-04-19
+
+```yaml
+action: root folder cleanup
+by:     architect
+date:   2026-04-19
+
+moved:
+  - ANTI-SYCOPHANCY.md        → framework/ANTI-SYCOPHANCY.md
+  - CODEX_REVIEW.md           → docs/CODEX_REVIEW.md
+  - GoodWork_AI_Framework_Brief.md → docs/GoodWork_AI_Framework_Brief.md
+  - goodwork-preview.html     → assets/goodwork-preview.html
+
+not_changed:
+  - firm_profile/templates/   # intentional gitignored dir for user docx overrides
+  - all Python source files   # zero import changes
+  - all runtime paths         # run.py and app.py unaffected
+
+runtime_impact: none
 ```
 
 ---
