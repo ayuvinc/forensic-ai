@@ -86,6 +86,23 @@ def bootstrap(st) -> dict:
     st.session_state.firm_name = firm_name
     st.session_state.research_mode = getattr(config, "RESEARCH_MODE", "knowledge_only")
 
+    # Sidebar section guide — shown below auto-nav links
+    _SIDEBAR_GUIDE = """
+<div style="margin-top:1.5rem;padding-top:0.75rem;border-top:1px solid #E0DEDD;">
+  <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">INVESTIGATION</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Scope · Investigation · Persona Review</p>
+  <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">COMPLIANCE</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Policy SOP · Training · FRM</p>
+  <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">BUSINESS</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Proposal · PPT Pack</p>
+  <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">INTELLIGENCE</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Due Diligence · Sanctions · TT</p>
+  <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">UTILITIES</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Case Tracker · Team · Settings</p>
+</div>
+"""
+    st.sidebar.markdown(_SIDEBAR_GUIDE, unsafe_allow_html=True)
+
     # Sidebar footer — firm identity + today's date
     import datetime
     today = datetime.date.today().strftime("%d %b %Y")

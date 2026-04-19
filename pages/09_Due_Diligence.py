@@ -10,7 +10,7 @@ from pathlib import Path
 
 import streamlit as st
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import generic_intake_form
+from streamlit_app.shared.intake import dd_intake_form
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir
 
@@ -36,28 +36,13 @@ if st.session_state.dd_stage != "intake":
 
 # ── STAGE: intake ─────────────────────────────────────────────────────────────
 if st.session_state.dd_stage == "intake":
-    intake = generic_intake_form(st, "due_diligence", "Due Diligence — Intake")
+    # Merged single-form intake (UX-F-02: eliminates two-phase render)
+    result = dd_intake_form(st)
 
-    if intake is not None:
-        subject_type = st.selectbox("Subject type", ["individual", "entity"], format_func=str.title)
-        subject_name = st.text_input(
-            "Full legal name of subject",
-            placeholder="Individual: full name as on passport  |  Entity: registered legal name",
-        )
-        jurisdictions_raw = st.text_input(
-            "Operating jurisdictions (comma-separated)",
-            value=intake.primary_jurisdiction,
-        )
-        dd_purpose_options = ["onboarding", "investment", "partnership", "employment", "acquisition", "other"] if subject_type == "individual" else ["acquisition", "investment", "vendor_onboarding", "joint_venture", "partnership", "other"]
-        dd_purpose = st.selectbox("Purpose of DD", dd_purpose_options, format_func=lambda v: v.replace("_", " ").title())
-        screening_level = st.selectbox(
-            "Screening level",
-            ["standard_phase1", "enhanced_phase2"],
-            format_func=lambda v: "Standard Phase 1" if v == "standard_phase1" else "Enhanced Phase 2",
-        )
-        specific_concerns = st.text_area("Specific concerns or red flags (optional)", height=80)
+    if result is not None:
+        intake, dd_params = result
 
-        # ── Document upload — Zone A (UX-006, below intake, above Run) ──────────
+        # ── Document upload — Zone A (below intake form, above pipeline start) ─
         uploaded_files = st.file_uploader(
             "Upload case documents (optional)",
             accept_multiple_files=True,
@@ -68,57 +53,43 @@ if st.session_state.dd_stage == "intake":
         if uploaded_files and len(uploaded_files) > 10:
             st.warning("Maximum 10 documents per case.")
 
-        if st.button("Run Due Diligence", type="primary"):
-            if not subject_name.strip():
-                st.error("Required: Subject name")
-            else:
-                # RT-1: registration on Run click
-                from tools.document_manager import DocumentManager
-                from schemas.documents import DocumentProvenance
+        # RT-1: registration on pipeline start
+        from tools.document_manager import DocumentManager
+        from schemas.documents import DocumentProvenance
 
-                reg_results = []
-                if uploaded_files:
-                    cdir = case_dir(intake.case_id)  # RT-2
-                    dm = DocumentManager(intake.case_id)  # RG-1
-                    for f in uploaded_files:
-                        try:
-                            file_bytes = bytes(f.getbuffer())  # FW-1
-                            dest = cdir / f.name               # FW-2
-                            dest.write_bytes(file_bytes)
-                            provenance = DocumentProvenance(
-                                collection_method="uploaded_by_consultant",
-                                collected_at=datetime.now(timezone.utc),
-                                collector_role="consultant",
-                                scope_authorized_by=f"case_{intake.case_id}",
-                                source_hash=hashlib.sha256(file_bytes).hexdigest(),
-                            )
-                            dm.register_document(  # RG-2
-                                str(dest),
-                                folder="uploaded",
-                                doc_type=_infer_doc_type(f.name),  # RG-3
-                                provenance=provenance,
-                            )
-                            size_mb = round(f.size / (1024 * 1024), 1)
-                            reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
-                        except Exception as e:  # RG-4: per-file isolation
-                            reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
-                    # WI-3: dm NOT passed to workflow — registration only
+        reg_results = []
+        if uploaded_files:
+            cdir = case_dir(intake.case_id)  # RT-2
+            dm = DocumentManager(intake.case_id)  # RG-1
+            for f in uploaded_files:
+                try:
+                    file_bytes = bytes(f.getbuffer())  # FW-1
+                    dest = cdir / f.name               # FW-2
+                    dest.write_bytes(file_bytes)
+                    provenance = DocumentProvenance(
+                        collection_method="uploaded_by_consultant",
+                        collected_at=datetime.now(timezone.utc),
+                        collector_role="consultant",
+                        scope_authorized_by=f"case_{intake.case_id}",
+                        source_hash=hashlib.sha256(file_bytes).hexdigest(),
+                    )
+                    dm.register_document(  # RG-2
+                        str(dest),
+                        folder="uploaded",
+                        doc_type=_infer_doc_type(f.name),  # RG-3
+                        provenance=provenance,
+                    )
+                    size_mb = round(f.size / (1024 * 1024), 1)
+                    reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
+                except Exception as e:  # RG-4: per-file isolation
+                    reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
+            # WI-3: dm NOT passed to workflow — registration only
 
-                jurisdictions = [j.strip() for j in jurisdictions_raw.split(",") if j.strip()]
-                st.session_state.dd_reg_results = reg_results
-                st.session_state.dd_intake = intake
-                st.session_state.dd_params = {
-                    "subject_type": subject_type,
-                    "subject_name": subject_name.strip(),
-                    "jurisdictions": jurisdictions,
-                    "dd_purpose": dd_purpose,
-                    "screening_level": screening_level,
-                    "specific_concerns": specific_concerns.strip(),
-                    "screening_lists": ["all"],
-                    "deliverable_format": "full_report",
-                }
-                st.session_state.dd_stage = "running"
-                st.rerun()
+        st.session_state.dd_reg_results = reg_results
+        st.session_state.dd_intake = intake
+        st.session_state.dd_params = dd_params
+        st.session_state.dd_stage = "running"
+        st.rerun()
 
 # ── STAGE: running ────────────────────────────────────────────────────────────
 elif st.session_state.dd_stage == "running":

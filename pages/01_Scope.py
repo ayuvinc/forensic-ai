@@ -14,6 +14,8 @@ session = bootstrap(st)
 st.title("Engagement Scoping")
 st.caption("5-step scoping conversation — identify the right engagement type from the client's situation")
 
+st.info("Start here for any new engagement. Scoping takes 2–3 minutes and determines which pipeline is right for your case.", icon="ℹ️")
+
 if "scope_stage" not in st.session_state:
     st.session_state.scope_stage = "intake"
 

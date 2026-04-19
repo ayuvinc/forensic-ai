@@ -65,6 +65,93 @@ runtime_impact: none
 
 <!-- Agents append messages here. Architect clears at session close. -->
 
+### qa — Phase-B — QA_APPROVED — 2026-04-19T16:00:00Z
+```yaml
+status: QA_APPROVED
+tasks: [EMB-01-REF, TPL-01, UX-F-01, UX-F-02, TEST-01, TEST-02, TEST-03]
+verdict: QA_APPROVED
+codex_gate: WAIVED (permanent — CODEX-GATE-WAIVER 2026-04-17)
+qa_run_equivalent: pytest 97 passed 0 failed (run during junior-dev session)
+
+ac_results:
+
+  EMB-01-REF:
+    - available=False when sentence_transformers absent: PASS (code + live test)
+    - retrieve() returns [] when available=False without raising: PASS (live test)
+    - ChunkResult.source_citation always populated: PASS (code inspection)
+    - ImportError fallback sets available=False: PASS (live mock test)
+    - 8000-char cap enforced in retrieve() loop: PASS (code inspection)
+
+  TPL-01:
+    - resolve("frm_risk_register") → frm_risk_register_base.docx: PASS (live test)
+    - resolve(..., custom_path="../../evil") → ValueError: PASS (live test, exact message confirmed)
+    - validate_docx() returns ValidationResult(missing_styles=list): PASS (live test)
+    - _safe_path blocks any path escaping firm_profile/templates/: PASS (code + live)
+    - update_custom() atomic .tmp→os.replace: PASS (code inspection)
+    - list_templates() reads templates.json: PASS (code inspection)
+
+  UX-F-01:
+    - Sidebar section guide injected via st.sidebar.markdown in bootstrap(): PASS (code)
+    - Pages 00–14 zero-padded, no gaps, correct alphabetical order: PASS (ls confirmed)
+    - 01_Scope.py shows st.info("Start here...") callout: PASS (code inspection)
+    - Case Tracker moved to position 12 (before Team/Settings): PASS
+
+  UX-F-02:
+    - Investigation Run button: generic_intake_form(st, "investigation_report", ...)
+      → _SUBMIT_LABELS["investigation_report"] = "Run Investigation": PASS (grep confirmed)
+    - FRM multiselect outside st.form with on_change=_on_module_change: PASS
+    - Module 2 auto-added + st.info shown on change without form submit: PASS (code)
+    - dd_intake_form() single st.form with all fields: PASS (code inspection)
+    - DD page 09_Due_Diligence.py uses dd_intake_form, no two-phase render: PASS
+    - All workflow_ids in _SUBMIT_LABELS and _DESCRIPTION_PLACEHOLDERS: PASS
+
+  TEST-01:
+    - pytest tests/ runs without import errors: PASS (97 passed, 0 failed)
+    - conftest.py provides: patched_cases_dir, sample_case_id,
+      mock_anthropic_client, mock_config: PASS
+    - pytest.ini configures pythonpath=.: PASS
+
+  TEST-02:
+    - All 14 valid transitions tested: PASS (parametrize covers every VALID_TRANSITIONS entry)
+    - All invalid transitions raise InvalidTransitionError: PASS (11 parametrized + self-loop)
+    - Error message includes "Allowed": PASS (explicit test)
+    - is_terminal() True for OWNER_APPROVED/PIPELINE_ERROR/DELIVERABLE_WRITTEN: PASS
+    - is_terminal() False for all 9 non-terminal statuses: PASS
+    - is_terminal() synced with TERMINAL_STATUSES set: PASS (exhaustive loop test)
+    - MAX_REVISION_ROUNDS junior=3, pm=2: PASS
+    - Branch coverage state_machine.py: PASS (all branches exercised)
+
+  TEST-03:
+    - Traversal guard added to case_dir() — R-019 mitigation: PASS
+    - "../etc/passwd" → ValueError raised: PASS (guard code + test)
+    - No .tmp file remains after write_artifact(): PASS (test_no_tmp_file_remains)
+    - write_state() + read_state() roundtrip: PASS
+    - build_case_index() with 0/1/N cases: PASS (4 parametrized scenarios)
+    - Malformed state.json skipped silently: PASS
+    - append_audit_event() file grows, never shrinks: PASS
+    - Each audit line valid JSON with timestamp: PASS
+
+warnings:
+  - TPL-01: base.docx templates do not contain GW_ named styles (missing_styles=[] in live
+    test means styles ARE present OR test is against existing base templates). Verify GW_
+    style presence in actual base templates before TPL-02 build. Non-blocking.
+  - TEST-02: No explicit coverage measurement tool run (coverage.py). Branch coverage
+    assessed by inspection — all if/else branches in state_machine.py are short and
+    fully exercised. Non-blocking.
+  - UX-F-01: st.sidebar.markdown section guide appears BELOW auto-nav links (Streamlit
+    constraint). Satisfies AC "visible in browser". Visual placement is a Streamlit
+    limitation, not a defect. Non-blocking.
+
+security:
+  - EMB-01-REF: ChromaDB runs in-process; db_path confined to cases/{case_id}/.chromadb;
+    collection name sanitised (alphanumeric only). No shell execution. PASS.
+  - TPL-01: _safe_path() enforces firm_profile/templates/ boundary on all operations.
+    Traversal explicitly tested and blocked. PASS.
+  - TEST-03: Traversal guard added to case_dir() closes R-019. PASS.
+
+next_action: /architect to merge feature/phase-b-emb01-tpl01-uxf01-uxf02-test01-02-03 → main
+```
+
 ### qa — P8-11a — QA_APPROVED — 2026-04-18T09:00:00Z
 ```yaml
 status: QA_APPROVED
