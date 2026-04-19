@@ -1,10 +1,14 @@
 import json
 import os
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
 from config import CASES_DIR
+
+# Write-through index for Case Tracker — O(1) read instead of O(n) dir scan
+_INDEX_PATH = CASES_DIR / "index.json"
 
 
 def case_dir(case_id: str) -> Path:
@@ -58,12 +62,97 @@ def write_artifact(case_id: str, agent: str, artifact_type: str, data: Any, vers
     return target
 
 
+def _update_case_index(case_id: str, workflow: str, status: str, last_updated: str) -> None:
+    """Upsert one entry in cases/index.json by case_id.
+
+    Index exists so Case Tracker reads O(1) from a single file rather than
+    scanning O(n) case directories. Written atomically via .tmp → os.replace().
+    Contains no PHI — only case_id, workflow, status, last_updated.
+
+    Raises ValueError if index.json exists but is corrupt JSON.
+    """
+    if _INDEX_PATH.exists():
+        try:
+            entries: list[dict] = json.loads(_INDEX_PATH.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            raise ValueError(f"cases/index.json is corrupt — fix or delete it: {exc}") from exc
+    else:
+        entries = []
+
+    entry = {
+        "case_id": case_id,
+        "workflow": workflow,
+        "status": status,
+        "last_updated": last_updated,
+    }
+
+    # Upsert: replace in-place to preserve ordering of existing entries
+    updated = False
+    for i, e in enumerate(entries):
+        if e.get("case_id") == case_id:
+            entries[i] = entry
+            updated = True
+            break
+    if not updated:
+        entries.append(entry)
+
+    tmp = _INDEX_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    os.replace(tmp, _INDEX_PATH)
+
+
+def build_case_index() -> Path:
+    """Backfill cases/index.json by scanning all cases/*/state.json files.
+
+    Called when index.json is missing. Idempotent — safe to call multiple times.
+    Skips case dirs where state.json is absent or malformed (does not crash).
+    Returns the path to cases/index.json.
+    """
+    CASES_DIR.mkdir(parents=True, exist_ok=True)
+    entries: list[dict] = []
+
+    for state_path in sorted(CASES_DIR.glob("*/state.json")):
+        try:
+            state = json.loads(state_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue  # skip corrupt or unreadable state files
+
+        case_id = state.get("case_id") or state_path.parent.name
+        if not case_id:
+            continue
+
+        entries.append({
+            "case_id": case_id,
+            "workflow": state.get("workflow", ""),
+            "status": state.get("status", ""),
+            "last_updated": state.get("last_updated", ""),
+        })
+
+    tmp = _INDEX_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(entries, indent=2), encoding="utf-8")
+    os.replace(tmp, _INDEX_PATH)
+    return _INDEX_PATH
+
+
 def write_state(case_id: str, state: dict) -> Path:
-    """Atomically write case state.json."""
+    """Atomically write case state.json, then update cases/index.json."""
     target = case_dir(case_id) / "state.json"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(json.dumps(state, indent=2, default=str), encoding="utf-8")
     os.replace(tmp, target)
+
+    # Update write-through index after state.json is safely persisted.
+    # Index failure is non-fatal (Case Tracker can backfill) — log and continue.
+    try:
+        _update_case_index(
+            case_id=case_id,
+            workflow=state.get("workflow", ""),
+            status=state.get("status", ""),
+            last_updated=state.get("last_updated", datetime.now(timezone.utc).isoformat()),
+        )
+    except Exception as exc:
+        print(f"[WARN] case index update failed for {case_id}: {exc}", file=sys.stderr)
+
     return target
 
 
@@ -137,19 +226,71 @@ def load_envelope(case_id: str, role: str, artifact_type: str) -> Optional[dict]
     return data
 
 
+def mark_deliverable_written(case_id: str, workflow: str) -> None:
+    """Advance case state to DELIVERABLE_WRITTEN (terminal).
+
+    Called by both run.py (CLI) and Streamlit pages after a workflow completes.
+    Extracted from run.py so Streamlit pages can import it without importing the
+    CLI entry point.
+    """
+    from core.state_machine import CaseStatus
+    from datetime import datetime, timezone
+
+    state = read_state(case_id) or {}
+    state["status"] = CaseStatus.DELIVERABLE_WRITTEN.value
+    state["last_updated"] = datetime.now(timezone.utc).isoformat()
+    write_state(case_id, state)
+    append_audit_event(case_id, {"event": "deliverable_written", "workflow": workflow})
+
+
 def write_final_report(case_id: str, content: str, language: str = "en") -> Path:
-    """Write final_report.{language}.md and final_report.{language}.docx atomically."""
+    """Write final_report.{language}.md and final_report.{language}.docx atomically.
+
+    After writing, moves all *.v*.json pipeline artifacts to cases/{id}/interim/
+    so the case root contains only the deliverable and permanent files.
+    Permanent files kept in root: final_report.*, state.json, audit_log.jsonl,
+    citations_index.json, intake.json, document_index.json.
+    """
+    import shutil
+
     target = case_dir(case_id) / f"final_report.{language}.md"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)
 
-    # Also generate Word document — graceful skip if python-docx unavailable
+    # Word document — apply firm branding template if available (FE-09)
     try:
         from tools.output_generator import OutputGenerator
+        from pathlib import Path as _Path
         docx_path = case_dir(case_id) / f"final_report.{language}.docx"
-        OutputGenerator().generate_docx(content, docx_path)
+        template = _Path("firm_profile/template.docx")
+        OutputGenerator().generate_docx(
+            content,
+            docx_path,
+            template_path=template if template.exists() else None,
+        )
     except Exception:
         pass
+
+    # FE-08: move pipeline artifacts to interim/ subfolder (best-effort, non-atomic)
+    # Keeps case root clean — only deliverables and permanent files remain at root level
+    _KEEP_IN_ROOT = {
+        "state.json", "audit_log.jsonl", "citations_index.json",
+        "intake.json", "document_index.json",
+    }
+    cdir = case_dir(case_id)
+    interim = cdir / "interim"
+
+    versioned = [
+        p for p in cdir.glob("*.v*.json")
+        if p.name not in _KEEP_IN_ROOT
+    ]
+    if versioned:
+        interim.mkdir(exist_ok=True)
+        for artifact in versioned:
+            try:
+                shutil.move(str(artifact), str(interim / artifact.name))
+            except Exception:
+                pass  # best-effort — artifact remains in root, no data loss
 
     return target

@@ -60,6 +60,7 @@ def run_investigation_workflow(
     document_manager: Optional[DocumentManager] = None,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Run full investigation report pipeline."""
     if console is None:
@@ -68,18 +69,22 @@ def run_investigation_workflow(
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
     # Collect investigation-specific parameters
-    console.print("\n  [bold]Investigation type:[/bold]")
-    for k, v in INVESTIGATION_TYPES.items():
-        label = TYPE_LABELS.get(v, v)
-        console.print(f"    {k}. {label}")
-    inv_choice = Prompt.ask("  Select type", choices=list(INVESTIGATION_TYPES.keys()), default="1")
-    inv_type = INVESTIGATION_TYPES[inv_choice]
+    if headless_params:
+        inv_type = headless_params.get("investigation_type", "asset_misappropriation")
+        audience = headless_params.get("audience", "management")
+    else:
+        console.print("\n  [bold]Investigation type:[/bold]")
+        for k, v in INVESTIGATION_TYPES.items():
+            label = TYPE_LABELS.get(v, v)
+            console.print(f"    {k}. {label}")
+        inv_choice = Prompt.ask("  Select type", choices=list(INVESTIGATION_TYPES.keys()), default="1")
+        inv_type = INVESTIGATION_TYPES[inv_choice]
 
-    console.print("\n  [bold]Report audience:[/bold]")
-    for k, v in AUDIENCES.items():
-        console.print(f"    {k}. {v.replace('_', ' ').title()}")
-    aud_choice = Prompt.ask("  Select audience", choices=list(AUDIENCES.keys()), default="1")
-    audience = AUDIENCES[aud_choice]
+        console.print("\n  [bold]Report audience:[/bold]")
+        for k, v in AUDIENCES.items():
+            console.print(f"    {k}. {v.replace('_', ' ').title()}")
+        aud_choice = Prompt.ask("  Select audience", choices=list(AUDIENCES.keys()), default="1")
+        audience = AUDIENCES[aud_choice]
 
     expert_witness = audience == "legal_proceedings"
     if expert_witness:

@@ -211,3 +211,26 @@ Quality standard: docs/lld/knowledge-quality-standard.md
 
 - [x] SCOPE-WF-01 workflows/engagement_scoping.py — 5-step problem-first flow per BA-010; reads knowledge/engagement_taxonomy/framework.md at runtime; produces ConfirmedScope; routes to existing workflows via _WORKFLOW_ROUTE map.
 - [x] SCOPE-WF-02 run.py + ui/menu.py — Option 0 "Scope New Engagement" added (SCOPING category); exit moved from "0" to "q"; choices list updated to ["q","0".."13"].
+
+## Phase 8 Completed Tasks — Archived Session 022 (2026-04-19)
+
+All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
+
+- [x] Sprint-10I — RESEARCH_MODE flag + knowledge_only mode for all 4 research tools (BUG-09a..e) — DONE
+- [x] P8-01 — streamlit added to requirements.txt — DONE
+- [x] P8-03-SHARED — streamlit_app/shared/session.py, intake.py, pipeline.py — DONE
+- [x] P8-04-APP — app.py entry point — DONE
+- [x] P8-07-FE09 — DOCX template_path fix (via P8-05a) — DONE
+- [x] ARCH-INS-01 — PipelineEvent severity (CRITICAL/WARNING/INFO) in run_in_status() — QA_APPROVED
+- [x] P8-08-PAGES — 10 workflow pages (Investigation, Persona Review, Policy SOP, Training, Proposal, PPT Pack, Scope, DD, Sanctions, TT) — QA_APPROVED
+- [x] ARCH-INS-02 — Materialized case index (cases/index.json, _update_case_index, build_case_index) — QA_APPROVED
+- [x] P8-09a — pages/9_Case_Tracker.py — QA_APPROVED (commit 8908fcb)
+- [x] P8-10a — pages/settings.py — QA_APPROVED (commit 62126e6)
+- [x] P8-10b — pages/10_Team.py — QA_APPROVED (commit f85153e)
+- [x] P8-11a — Document ingestion UI (4 pages) — QA_APPROVED (commit f3c0ad9)
+- [x] Sprint-10L Phase A — SRL-01..04 — PM/Partner mode-aware review chain — P7-GATE PASSED
+- [x] Sprint-10K (PPH-01..04) — RESEARCH_MODE smart default, sanctions warning, display banner, guardrails docs — DONE
+- [x] BUG-10 — Citation guard mode-aware fix (NoCitationsError blocked knowledge_only) — DONE
+- [x] Sprint-10J (TAX-01..06) — Taxonomy JSON files (industries, frm_modules, jurisdictions, routing_table), prompt_with_options UI helper, wire into intake flows — DONE
+
+---

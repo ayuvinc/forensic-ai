@@ -48,6 +48,7 @@ def run_sanctions_screening_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Run a Sanctions Screening engagement."""
     if console is None:
@@ -55,54 +56,67 @@ def run_sanctions_screening_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    # PPH-02a: Prominent warning when live sanctions data is unavailable
-    if RESEARCH_MODE != "live":
-        from rich.panel import Panel
-        console.print(Panel(
-            "[bold red]SANCTIONS SCREENING — LIVE DATA DISABLED[/bold red]\n\n"
-            "This output is based on model knowledge only.\n"
-            "No live OFAC / UN / EU / UK OFSI / UAE sanctions screening was conducted.\n\n"
-            "[bold]This result CANNOT be used as a sanctions clearance.[/bold]\n\n"
-            "To run a live screen: set [bold]RESEARCH_MODE=live[/bold] in .env "
-            "with a valid TAVILY_API_KEY, then re-run.",
-            border_style="red",
-            title="[bold red]WARNING[/bold red]",
-            padding=(1, 2),
-        ))
-        from rich.prompt import Confirm
-        if not Confirm.ask("  Proceed with knowledge-only output (not for compliance use)?", default=False):
-            raise KeyboardInterrupt
+    if headless_params:
+        # Headless path: caller has acknowledged knowledge_only warning in the UI
+        subject_name = headless_params.get("subject_name", intake.client_name)
+        subject_type = headless_params.get("subject_type", "individual")
+        nationalities = headless_params.get("nationalities", [intake.primary_jurisdiction])
+        aliases = headless_params.get("aliases", [])
+        dob_or_reg = headless_params.get("dob_or_reg", "")
+        selected_lists = headless_params.get("selected_lists", "all")
+        screen_associates = headless_params.get("screen_associates", False)
+        purpose = headless_params.get("purpose", "onboarding")
+        output_format = headless_params.get("output_format", "full_report")
+        specific_concerns = headless_params.get("specific_concerns", "")
+    else:
+        # PPH-02a: Prominent warning when live sanctions data is unavailable
+        if RESEARCH_MODE != "live":
+            from rich.panel import Panel
+            console.print(Panel(
+                "[bold red]SANCTIONS SCREENING — LIVE DATA DISABLED[/bold red]\n\n"
+                "This output is based on model knowledge only.\n"
+                "No live OFAC / UN / EU / UK OFSI / UAE sanctions screening was conducted.\n\n"
+                "[bold]This result CANNOT be used as a sanctions clearance.[/bold]\n\n"
+                "To run a live screen: set [bold]RESEARCH_MODE=live[/bold] in .env "
+                "with a valid TAVILY_API_KEY, then re-run.",
+                border_style="red",
+                title="[bold red]WARNING[/bold red]",
+                padding=(1, 2),
+            ))
+            from rich.prompt import Confirm
+            if not Confirm.ask("  Proceed with knowledge-only output (not for compliance use)?", default=False):
+                raise KeyboardInterrupt
 
-    # Intake
-    console.print("\n  [bold]Sanctions Screening — Intake[/bold]")
-    subject_name = Prompt.ask("  Name of individual or entity to screen")
-    subject_type = Prompt.ask("  Subject type", choices=["individual", "entity"], default="individual")
-    nationalities_raw = Prompt.ask("  Nationality / jurisdiction of incorporation (comma-separated)", default="UAE")
-    nationalities = [n.strip() for n in nationalities_raw.split(",") if n.strip()]
-    aliases_raw = Prompt.ask("  Known aliases or alternate name spellings (or Enter to skip)", default="")
-    aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()] if aliases_raw else []
-    dob_or_reg = Prompt.ask("  Date of birth or company reg number (improves match accuracy, optional)", default="")
+        # Intake
+        console.print("\n  [bold]Sanctions Screening — Intake[/bold]")
+        subject_name = Prompt.ask("  Name of individual or entity to screen")
+        subject_type = Prompt.ask("  Subject type", choices=["individual", "entity"], default="individual")
+        nationalities_raw = Prompt.ask("  Nationality / jurisdiction of incorporation (comma-separated)", default="UAE")
+        nationalities = [n.strip() for n in nationalities_raw.split(",") if n.strip()]
+        aliases_raw = Prompt.ask("  Known aliases or alternate name spellings (or Enter to skip)", default="")
+        aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()] if aliases_raw else []
+        dob_or_reg = Prompt.ask("  Date of birth or company reg number (improves match accuracy, optional)", default="")
 
-    console.print("\n  Screening lists:")
-    for k, v in _SCREENING_LISTS.items():
-        console.print(f"    {k}. {v}")
-    list_choice = Prompt.ask("  Select lists", choices=list(_SCREENING_LISTS.keys()), default="6")
-    selected_lists = _SCREENING_LISTS[list_choice]
+        console.print("\n  Screening lists:")
+        for k, v in _SCREENING_LISTS.items():
+            console.print(f"    {k}. {v}")
+        list_choice = Prompt.ask("  Select lists", choices=list(_SCREENING_LISTS.keys()), default="6")
+        selected_lists = _SCREENING_LISTS[list_choice]
 
-    screen_associates = Prompt.ask(
-        "  Screen known associates / beneficial owners?", choices=["yes", "no"], default="no"
-    ) == "yes"
-    purpose = Prompt.ask(
-        "  Purpose of screening",
-        choices=["onboarding", "transaction", "periodic_review", "acquisition", "regulatory", "other"],
-        default="onboarding",
-    )
-    output_format = Prompt.ask(
-        "  Output format",
-        choices=["clearance_memo", "full_report"],
-        default="full_report",
-    )
-    specific_concerns = Prompt.ask("  Any specific concerns or prior adverse information? (or Enter to skip)", default="")
+        screen_associates = Prompt.ask(
+            "  Screen known associates / beneficial owners?", choices=["yes", "no"], default="no"
+        ) == "yes"
+        purpose = Prompt.ask(
+            "  Purpose of screening",
+            choices=["onboarding", "transaction", "periodic_review", "acquisition", "regulatory", "other"],
+            default="onboarding",
+        )
+        output_format = Prompt.ask(
+            "  Output format",
+            choices=["clearance_memo", "full_report"],
+            default="full_report",
+        )
+        specific_concerns = Prompt.ask("  Any specific concerns or prior adverse information? (or Enter to skip)", default="")
 
     # Run sanctions check on primary name
     on_progress(f"Screening {subject_name} against official sanctions lists...")

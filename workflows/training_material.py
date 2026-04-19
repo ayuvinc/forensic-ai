@@ -38,6 +38,7 @@ def run_training_material_workflow(
     intake: CaseIntake,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> FinalDeliverable:
     """Generate role-specific training materials."""
     if console is None:
@@ -45,28 +46,35 @@ def run_training_material_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    console.print("\n  [bold]Training topic:[/bold]")
-    for k, v in TRAINING_TOPICS.items():
-        console.print(f"    {k}. {v.replace('_', ' ').title()}")
-    topic_choice = Prompt.ask("  Topic", choices=list(TRAINING_TOPICS.keys()), default="2")
-    topic = TRAINING_TOPICS[topic_choice]
-    if topic == "custom":
-        topic = Prompt.ask("  Custom topic name")
+    if headless_params:
+        topic = headless_params.get("topic", "fraud_awareness")
+        target_audience = headless_params.get("target_audience", "all_staff")
+        duration = str(headless_params.get("duration", 60))
+        include_quiz = headless_params.get("include_quiz", True)
+        include_case_study = headless_params.get("include_case_study", True)
+    else:
+        console.print("\n  [bold]Training topic:[/bold]")
+        for k, v in TRAINING_TOPICS.items():
+            console.print(f"    {k}. {v.replace('_', ' ').title()}")
+        topic_choice = Prompt.ask("  Topic", choices=list(TRAINING_TOPICS.keys()), default="2")
+        topic = TRAINING_TOPICS[topic_choice]
+        if topic == "custom":
+            topic = Prompt.ask("  Custom topic name")
 
-    console.print("\n  [bold]Target audience:[/bold]")
-    for k, v in TARGET_AUDIENCES.items():
-        console.print(f"    {k}. {v.replace('_', ' ').title()}")
-    aud_choice = Prompt.ask("  Audience", choices=list(TARGET_AUDIENCES.keys()), default="1")
-    target_audience = TARGET_AUDIENCES[aud_choice]
+        console.print("\n  [bold]Target audience:[/bold]")
+        for k, v in TARGET_AUDIENCES.items():
+            console.print(f"    {k}. {v.replace('_', ' ').title()}")
+        aud_choice = Prompt.ask("  Audience", choices=list(TARGET_AUDIENCES.keys()), default="1")
+        target_audience = TARGET_AUDIENCES[aud_choice]
 
-    duration = Prompt.ask("  Duration (minutes)", default="60")
-    include_quiz = Prompt.ask("  Include knowledge check questions?", choices=["y", "n"], default="y")
-    include_case_study = Prompt.ask("  Include case study?", choices=["y", "n"], default="y")
+        duration = Prompt.ask("  Duration (minutes)", default="60")
+        include_quiz = Prompt.ask("  Include knowledge check questions?", choices=["y", "n"], default="y") == "y"
+        include_case_study = Prompt.ask("  Include case study?", choices=["y", "n"], default="y") == "y"
 
     on_progress(f"Generating {topic.replace('_', ' ')} training for {target_audience.replace('_', ' ')}...")
     content = _generate_training_material(
         intake, topic, target_audience, int(duration),
-        include_quiz == "y", include_case_study == "y"
+        include_quiz, include_case_study
     )
 
     report_path = write_final_report(intake.case_id, content, "en")

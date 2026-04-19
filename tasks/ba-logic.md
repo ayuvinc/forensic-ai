@@ -808,3 +808,392 @@ New firm = new instance config. New industry = new taxonomy entry. New service l
 framework concerns, not domain knowledge.
 
 **BA-015 status: CONFIRMED — architect to design modularity sprint after P7-GATE**
+
+---
+
+## Phase 9 BA Decisions — Session 021 (2026-04-18)
+
+_AK confirmed all decisions directly in session conversation._
+
+---
+
+### BA-P9-01 — Project-Centric Engagement Model
+- Status: CONFIRMED (AK session 021)
+- Scope: Replace UUID-based case IDs with named projects; support multi-session input before final pipeline run
+
+**User outcome:** Maher names each engagement (e.g. "Project A_FRM", "Project Alpha_DD"), can accumulate documents and notes across multiple sessions, and explicitly triggers the AI pipeline only when ready.
+
+**Business rules:**
+- Every engagement is a named Project, not a one-shot case. Project name is provided by Maher at intake.
+- Naming convention is set per project at creation (e.g. "Client_ServiceType"). System suggests format; Maher confirms.
+- Project slug derived from project name: lowercase, spaces → hyphens, special chars stripped. Used as folder name. Example: "Project Alpha FRM" → `project-alpha-frm`.
+- Slug sanitization is mandatory before filesystem write — strip `..`, `/`, `\`, and any non-alphanumeric/hyphen character.
+- Same project name + same service type = same project folder. Maher opens existing project to continue.
+- At session start, Maher chooses: "Start New Project" or "Continue Existing Project".
+- Two session modes:
+  - **Input session**: upload documents, add working notes, record key facts / red flags. No pipeline run. Context accumulates.
+  - **Final run**: explicitly triggered by Maher. Pipeline runs with full accumulated context.
+- System asks at intake: "Is this an input session or a final run?" — never ambiguous.
+- Old UUID-format cases (Phase 8) remain readable in Case Tracker. New projects use named slugs. Backward compatibility required.
+
+**Edge cases:**
+- Two projects resolve to the same slug: system detects collision, asks Maher to choose a different name.
+- Maher attempts final run with zero documents and no working notes: system warns "No input materials found for this project. Proceed with zero-information baseline only?" Maher confirms.
+- Maher attempts final run for a service type not yet set up in the project: system routes to intake for that service type first.
+
+**Out of scope:** Cross-project linking; shared document libraries across projects.
+
+---
+
+### BA-P9-02 — A-F Physical Folder Structure (Industry Standard)
+- Status: CONFIRMED (AK session 021)
+- Scope: Forensic engagement folder structure following industry standard A–F sections
+
+**User outcome:** Case folders are organized to match the physical file structure Maher would use on a real engagement — reviewable by regulators, auditors, or partners without re-explaining the layout.
+
+**Business rules:**
+- Every new project creates the following folder structure under `cases/{project_slug}/`:
+  ```
+  A_Engagement_Management/    ← scope letters, engagement contracts, authorizations
+  B_Planning/                 ← testing plans, module selections, scope confirmations
+  C_Evidence/                 ← client documents, source materials (date-timestamped sub-folders)
+  D_Working_Papers/           ← session notes, interim analysis, key facts, red flags
+  E_Drafts/                   ← agent outputs (junior_output.v*.json, pm_review.v*.json)
+  F_Final/                    ← final_report.*, citations_index.json, audit_log.jsonl
+  ```
+- Document uploads during an input session: written to `C_Evidence/{YYYYMMDD-HHMMSS}/` (date-timestamped sub-folder per upload session).
+- Existing artifacts from Phase 8 pipeline (interim/ folder) map to E_Drafts/ in the new structure.
+- Maher can create custom sub-folders within any section. System does not block this.
+- File Manager UI presents this structure to Maher for navigation — not just a list of all files.
+- `state.json` and `audit_log.jsonl` remain at the project root (backward compat with existing tools).
+
+**Edge cases:**
+- Old UUID-format cases do not have A-F structure: Case Tracker shows them without the folder explorer panel; no migration required.
+- Maher manually moves files outside the A-F structure: system accepts, no error. Folder integrity check is advisory, not enforced.
+
+**Out of scope:** Automated document classification into A-F sections. File locking or access control.
+
+---
+
+### BA-P9-03 — Multi-Session Input Model
+- Status: CONFIRMED (AK session 021)
+- Scope: Accumulate input across multiple sessions before triggering the AI pipeline
+
+**User outcome:** Maher can work on a case across multiple days, uploading documents and recording observations each session. The AI pipeline runs once when Maher is ready — with the full accumulated context.
+
+**Business rules:**
+- Input session capabilities (all additive, non-destructive):
+  1. Upload documents → written to `C_Evidence/{timestamp}/`
+  2. Add session notes (free text) → written to `D_Working_Papers/session_notes_{YYYYMMDD}.md`
+  3. Record key facts (structured: fact, source, date) → appended to `D_Working_Papers/key_facts.json`
+  4. Flag red flags (structured: description, severity, action) → appended to `D_Working_Papers/red_flags.json`
+  5. View existing materials already registered in the project
+- Final run session capabilities:
+  1. Review accumulated materials summary before triggering pipeline
+  2. Select which service type to run (if not pre-set)
+  3. Confirm language standard, AI Review Mode setting
+  4. Trigger pipeline — system passes full context (documents + notes + facts + red flags) to agents
+- Session log: each session (input or final run) is timestamped and appended to `A_Engagement_Management/session_log.jsonl`.
+
+**Edge cases:**
+- Document uploaded in earlier session and now re-uploaded: system detects duplicate filename in the same project; warns and asks whether to overwrite or add as a new version.
+- Final run triggered mid-input (session notes unsaved): system auto-saves pending notes before triggering pipeline.
+
+**Out of scope:** Real-time collaborative sessions. Cloud sync between sessions on different machines.
+
+---
+
+### BA-P9-04 — Context Accumulation and 75% Threshold
+- Status: CONFIRMED (AK session 021)
+- Scope: DocumentManager context grows with uploads; near-capacity → write condensed summary
+
+**User outcome:** Large document sets do not cause context overflow or silent truncation. Maher can work on large cases without worrying about the AI losing earlier documents.
+
+**Business rules:**
+- `DocumentManager` tracks cumulative token count across all registered documents in the project.
+- Token counting uses a conservative estimate: character count / 4 (approximate Anthropic token ratio).
+- Maximum context budget is derived from the active model's context window minus a 20% reserve for prompt + pipeline overhead. Configurable in `config.py` as `CONTEXT_BUDGET_CHARS`.
+- At 75% of `CONTEXT_BUDGET_CHARS`: system writes `cases/{project_slug}/D_Working_Papers/interim_context.md`.
+- `interim_context.md` contains: executive summary of all documents registered so far, key facts extracted per document, red flags noted, open questions. Written by the AI (Haiku for speed/cost).
+- Subsequent sessions: if `interim_context.md` exists, `DocumentManager` loads it INSTEAD of re-reading all source documents. Source documents are still available for on-demand re-read if needed.
+- `interim_context.md` is regenerated (overwritten) each time the threshold is crossed again (e.g. more documents added).
+- Threshold trigger shown to Maher as an informational banner: "Context summary written to Working Papers — [N] documents condensed."
+
+**Edge cases:**
+- Single document exceeds 75% threshold alone: `interim_context.md` is written immediately after registration. Maher warned that the document is very large.
+- `interim_context.md` itself is very long (edge case on top of edge case): it is not included in the 75% calculation — only source documents count.
+- Pipeline run when `interim_context.md` exists: agents receive `interim_context.md` content plus any documents added after its creation (delta documents).
+
+**Out of scope:** Per-agent context budgeting. Fine-grained token counting (exact Tiktoken integration).
+
+---
+
+### BA-P9-05 — Language Standards
+- Status: CONFIRMED (AK session 021)
+- Scope: Four forensic language standards applied at pipeline prompt level
+
+**User outcome:** Maher selects the appropriate language standard at project intake. All agent-generated output automatically conforms to that standard — no manual post-editing of language style.
+
+**Business rules:**
+- Four standards, selectable at project intake and overridable per final run:
+  1. **ACFE Internal Review**: narrative style, qualified findings ("it appears", "evidence suggests"), clear source attribution, structured methodology sections. Audience: internal Maher review or client internal committee.
+  2. **Expert Witness**: past tense only, third person only, no pronouns, factual (no opinions, no inferences), evidence chain explicit for every finding. Court-ready. Audience: legal proceedings.
+  3. **Regulatory Submission**: formal, regulatory references cited in full (Act name + section), prescribed structure matching the relevant regulator's format. Audience: regulator, statutory body.
+  4. **Board Pack**: executive summary first, strategic framing, minimal technical jargon, findings expressed as business risk / business impact. Audience: board / C-suite.
+- Universal rules applied to all four standards:
+  - Past tense throughout (findings are stated as facts, not ongoing)
+  - Third person only (no "we", "I", "our")
+  - No pronouns referring to subjects (use full name/entity on first reference, abbreviated thereafter)
+  - Qualified language for findings not directly evidenced (ACFE / Expert Witness standard)
+- Standard selection stored in `state.json` at `language_standard` key.
+- Standard is injected into all agent system prompts as a dedicated language instruction block.
+
+**Edge cases:**
+- Maher does not select a standard: system defaults to ACFE Internal Review.
+- Maher changes standard mid-project (after some drafts exist): new standard applies to next final run only; previous drafts in E_Drafts/ are not retroactively rewritten.
+
+**Out of scope:** Real-time language checking of Maher's own notes. Automated compliance checking against court-specific style guides.
+
+---
+
+### BA-P9-06 — AI Review Mode
+- Status: CONFIRMED (AK session 021)
+- Scope: Post-generation review layer that classifies evidence support, rewrites language, and detects logic gaps
+
+**User outcome:** Before Maher reviews the draft, the AI has already flagged findings that lack direct evidence support and corrected language to match the selected standard — reducing the review burden significantly.
+
+**Business rules:**
+- AI Review Mode runs automatically after pipeline generates a draft, before Maher's review screen.
+- Three review functions (all run in sequence):
+  1. **Evidence support classification**: each finding is classified as:
+     - `SUPPORTED` — direct, documentary evidence cited
+     - `PARTIALLY SUPPORTED` — circumstantial or indirect evidence; inference required
+     - `UNSUPPORTED` — analytical inference, industry knowledge, or no evidence chain
+     Findings classified PARTIALLY SUPPORTED or UNSUPPORTED are flagged in Maher's review UI with the classification label. Maher can override any classification.
+  2. **Language rewrite**: draft language rewritten to match the selected language standard (BA-P9-05). Rewrite is applied to the draft that Maher reviews — not a separate document.
+  3. **Logic gap detection**: model identifies findings where the stated conclusion does not follow from the stated evidence. Each gap is noted inline (e.g. "Conclusion states X but no evidence of Y cited — gap flagged").
+- AI Review Mode classifications are INTERNAL ONLY — never surface to client. They are stored in `D_Working_Papers/ai_review_notes_{YYYYMMDD}.md` for Maher's reference.
+- Maher can disable AI Review Mode per-project in settings.
+
+**Edge cases:**
+- Finding has no citations at all: classified as UNSUPPORTED automatically — no model analysis needed.
+- All findings classified SUPPORTED: review completes with a clean summary. No special action.
+- Language rewrite changes a finding's meaning (edge case): Maher sees original and rewritten side by side (diff view) and can revert individual findings.
+
+**Out of scope:** Automated citation lookup during review. Integration with external evidence databases.
+
+---
+
+## Session 022 Decisions — 2026-04-19
+
+---
+
+### BA-R-01 — Report Design Standard
+- Status: CONFIRMED (AK session 022)
+- Scope: All workflow final reports (DOCX + MD)
+
+**User outcome:** Every client-facing report has a professional cover page, firm branding, standard section structure, and table of contents — regardless of which workflow produced it.
+
+**Business rules:**
+- DOCX is the primary client deliverable. MD is internal backup. No PDF for now.
+- Section structure: Fixed base + workflow-specific overrides.
+  - Base (all workflows): Cover Page → Table of Contents → Executive Summary → Scope & Methodology → Findings → Recommendations → Appendix
+  - FRM override: replaces Findings with Risk Register Table + adds Heat Map section
+  - Investigation override: 13-section forensic structure (see BA-R-05)
+  - DD override: per-subject or consolidated subject profiles (see BA-R-06)
+  - TT override: Population → Sample → Procedures → Exceptions Table → Extrapolation → Conclusions (see BA-R-07)
+  - Sanctions override: Executive Summary → Screening Scope → Hits Detail → False Positives → Appendix (see BA-R-08)
+- Cover page: firm logo, client name, report title, report date, confidentiality notice ("Prepared for [Client] — Confidential & Privileged")
+- Header on every page: firm name + report title
+- Footer on every page: page number (centred) + confidentiality label (right-aligned)
+- Table of contents: auto-generated from DOCX heading styles — Heading 1 = section, Heading 2 = sub-section
+- Fonts: Calibri body / Calibri Light headings (standard DOCX defaults if no template loaded)
+- AI Review classifications: INTERNAL ONLY — never appear in client DOCX or MD
+
+**Edge cases:**
+- No logo path set: cover page renders without logo; no error.
+- Template uploaded by consultant uses incompatible styles: BaseReportBuilder falls back to default styles; logs warning.
+
+---
+
+### BA-R-02 — Report Versioning
+- Status: CONFIRMED (AK session 022)
+- Scope: All final reports across all workflows
+
+**Business rules:**
+- Before writing a new final report, existing report moved to `{project_root}/Previous_Versions/`
+- Filenames versioned: `final_report.v1.en.md`, `final_report.v2.en.md`, `final_report.v1.en.docx` etc.
+- `F_Final/` (P9 projects) or `cases/{uuid}/` (legacy) always contains the LATEST version only
+- `Previous_Versions/` subfolder holds all prior versions
+- Version counter = count of files already in `Previous_Versions/` + 1
+
+---
+
+### BA-R-03 — Report Template Selection
+- Status: CONFIRMED (AK session 022)
+- Scope: First report generation per project (per workflow type)
+
+**Business rules:**
+- At report generation, if no template exists for this workflow type, offer two paths:
+  1. "Use my own template" — `st.file_uploader` for .docx → saved to `firm_profile/templates/{workflow_type}.docx` → update firm.json
+  2. "Build a template" — guided mini-wizard: firm name (pre-filled), logo path (pre-filled if set), primary colour (hex), secondary colour (hex), font choice (Calibri / Arial / Times New Roman) → generates and saves template.docx
+- If template already exists for this workflow type: skip prompt, load silently
+- Template path stored in `firm_profile/firm.json["templates"][workflow_type]`
+
+---
+
+### BA-R-04 — FRM Risk Register Enhanced Output
+- Status: CONFIRMED (AK session 022)
+- Scope: FRM workflow only
+
+**Business rules:**
+- Primary deliverable: DOCX with risk register as a formatted table
+  - Columns: Risk ID | Risk Description | Likelihood (1–5) | Impact (1–5) | Rating (L×I) | Risk Level | Owner | Mitigation
+  - Rows sorted by Rating descending
+  - Heat Map section: 5×5 grid, risks plotted by Likelihood/Impact coordinates
+  - Recommendations section: depth determined at intake
+- Secondary deliverable: Excel (.xlsx) — same risk table + separate Heat Map sheet
+  - Heat map sheet: 5×5 colour-coded grid (red ≥15, amber 8–14, green ≤7)
+  - Requires `openpyxl` in requirements.txt
+- Recommendation depth — asked at FRM intake:
+  - "One-line actions": one sentence per risk (for internal/scoping engagements)
+  - "Structured per risk" (DEFAULT): Immediate Action + Medium-Term Control + Responsible Party + Timeline
+  - "Consolidated section": all mitigations in a summary section, not inline
+  Default: structured. Override if scope indicates internal use only.
+
+---
+
+### BA-R-05 — Investigation Report Structure (Full Forensic Standard)
+- Status: CONFIRMED (AK session 022)
+- Scope: Investigation workflow only
+
+**Report section order (forensic standard — fixed):**
+1. Cover Page
+2. Table of Contents
+3. Background
+4. Scope of Work
+5. Note to Reader (limitations, qualifications, disclaimers)
+6. Procedures Performed
+7. Limitations to Procedures
+8. Disclaimers
+9. Evidence List (all exhibits, numbered, before Executive Summary)
+10. Executive Summary
+11. Detailed Findings (narrative; headers + subheaders; footnotes cite Exhibit N)
+12. Appendix / Exhibits (uploaded evidence, labelled Exhibit 1, 2…)
+13. Annexures (explanatory notes, schedules, third-party data)
+
+**Detailed Findings section:**
+- Evidence-led narrative: Procedure Performed → Evidence Observed → Finding → Implication → Conclusion
+- Footnotes cite exhibits: "(refer Exhibit 3 — Bank Statement dated 15 Jan 2026)"
+- No bare conclusions — every finding references at least one exhibit or stated procedure
+
+**Evidence types (three source streams):**
+1. Digital communications (emails, WhatsApp) — model extracts key statements with sender/recipient/date
+2. Documentary / financial records — model extracts transactions, patterns, anomalies
+3. Verbal statements / interviews:
+   - If primary source: findings based on interviews alone; flagged as verbal evidence
+   - If corroborating: interviews confirm documentary findings; quoted selectively inline
+
+**Exhibit numbering:**
+- Each uploaded document assigned sequential Exhibit number (Exhibit 1, Exhibit 2…)
+- Stored in `D_Working_Papers/exhibit_register.json`
+- Evidence List section auto-generated from exhibit_register.json
+
+**Investigation Leads Register:**
+- Structured register in `D_Working_Papers/leads_register.json`
+- Fields: Lead ID, Description, Source, Status (Open/In Progress/Confirmed/Closed/Escalated), Evidence Found, Linked Finding ID
+- When lead marked Confirmed: Haiku generates a draft finding narrative; appended to Working Papers
+- Open leads at Final Run: listed in report as "Matters Requiring Further Investigation"
+
+---
+
+### BA-R-06 — Due Diligence Report Structure
+- Status: CONFIRMED (AK session 022)
+- Scope: DD workflow only
+
+**Business rules:**
+- At intake: "How many subjects?" + "Are they related?"
+  - Single subject OR unrelated multiple: per-subject format
+  - Multiple related subjects: consolidated format with Linkages Table
+- Per-subject sections: Identity → Professional Background → Business Interests → Adverse Findings → Connections
+- Consolidated format: same 5 elements + cross-reference Linkages Table
+- Template option at intake: consultant can upload their own DD template; model calibrates to it
+
+---
+
+### BA-R-07 — Transaction Testing Report
+- Status: CONFIRMED (AK session 022)
+- Scope: TT workflow — standalone and as sub-report
+
+**Business rules:**
+- TT always produces a standalone file: `final_report_tt.en.docx` + `final_report_tt.en.md`
+- When chained: standalone TT report generated + 1-page summary auto-embedded in parent report
+- Sections: Executive Summary → Population Overview → Sample Selection Rationale → Testing Procedures → Exceptions Table → Extrapolation → Conclusions
+- Exceptions Table exported to Excel as well (one sheet, same columns)
+
+---
+
+### BA-R-08 — Sanctions Screening Report
+- Status: CONFIRMED (AK session 022)
+- Scope: Sanctions workflow only
+
+**Business rules:**
+- Sections: Executive Summary → Screening Scope → Hits Detail (per entity) → False Positives → Appendix
+- Hits Detail per entity: entity name, matching list entry, confidence level, matching criteria, disposition
+- Disposition two-level:
+  - Firm policy (firm_profile/sanctions_disposition_policy.json): default per confidence level
+  - Per-hit consultant override in review screen: True Match / False Positive / Requires Further Investigation / Escalate
+- Final disposition recorded in report and audit_log.jsonl
+
+---
+
+### BA-R-09 — FRM Stakeholder Input Capture
+- Status: CONFIRMED (AK session 022)
+- Scope: FRM workflow within Phase 9 engagement model
+
+**Business rules:**
+- Two capture modes (both in Input Session workspace):
+  1. Structured form: Name, Role, Key Concern, Risk View → `D_Working_Papers/stakeholder_inputs.json`
+  2. Document upload: interview notes, meeting minutes → `C_Evidence/{timestamp}/`
+- Both passed to FRM pipeline context; stakeholders listed in DOCX Appendix
+
+---
+
+### BA-R-10 — Smart Intake Completion (AI Residual Question Pass)
+- Status: CONFIRMED (AK session 022)
+- Scope: All workflows — post-intake and pre-final-run
+
+**Business rules:**
+- Post-intake pass (Haiku): after intake form submit, identifies up to 3 missing/ambiguous items; asks one at a time conversationally; answers stored to `D_Working_Papers/intake_qa.json`; fully skippable
+- Pre-final-run pass (Sonnet): before pipeline triggers, reviews all accumulated materials; presents 3–5 flags as warning cards; each card: "Resolve" or "Proceed anyway"; all decisions stored to `D_Working_Papers/prefinalrun_review.json`; pipeline unlocks when all cards acknowledged
+- Both passes are non-blocking — consultant can skip
+- Pass results injected into agent pipeline context
+
+---
+
+### BA-R-11 — Semantic Embeddings for Evidence Ingestion and Retrieval
+- Status: CONFIRMED (AK session 022)
+- Scope: All workflows — document ingestion, user review, pipeline context preparation
+
+**Model routing rules (token efficiency):**
+| Task | Model |
+|------|-------|
+| Document chunking + embedding | Local sentence-transformers (free, offline) |
+| Per-document intake extraction | Haiku |
+| User review semantic search | Local → Haiku synthesis |
+| Pre-pipeline context preparation | Sonnet |
+| Final report agents | Existing routing (unchanged) |
+
+**Ingestion pipeline (on every document upload):**
+1. CHUNK: ~500-token semantic chunks
+2. EMBED: sentence-transformers (local, no API call)
+3. INDEX: ChromaDB at `D_Working_Papers/vector_index/`
+4. EXTRACT (Haiku): entities, key facts, red flags → appended to `D_Working_Papers/case_intake.md`
+
+**Retrieval uses:**
+- User review: semantic search by topic → ranked chunks with source citation
+- Pipeline: Sonnet assembles targeted context per finding area from vector index
+
+**Fallback:** If sentence-transformers not available (offline env), skip embedding; fall back to full-document context (existing behavior).
+
+**New dependencies:** `sentence-transformers>=2.7.0`, `chromadb>=0.4.0`

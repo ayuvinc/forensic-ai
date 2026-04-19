@@ -32,6 +32,7 @@ def run_persona_review_workflow(
     hook_engine: HookEngine,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> list[PersonaReviewOutput]:
     """Review a deliverable from selected persona perspectives."""
     if console is None:
@@ -39,40 +40,49 @@ def run_persona_review_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    # Get deliverable to review
-    console.print("\n  [bold]Select deliverable to review[/bold]")
     cdir = case_dir(intake.case_id)
-    reports = list(cdir.glob("final_report.*.md")) + list(cdir.glob("*.md"))
 
-    if not reports:
-        deliverable_text = Prompt.ask(
-            "  No reports found in case folder. Paste report content (or path to file)"
-        )
-        if Path(deliverable_text).exists():
-            deliverable_text = Path(deliverable_text).read_text(encoding="utf-8")
+    if headless_params:
+        deliverable_text = headless_params.get("deliverable_text", "")
+        if not deliverable_text:
+            # Try loading from case folder
+            reports = list(cdir.glob("final_report.*.md"))
+            deliverable_text = reports[-1].read_text(encoding="utf-8") if reports else ""
+        selected_ids = headless_params.get("persona_ids", ["cfo", "lawyer", "regulator", "insurance_adjuster"])
     else:
-        console.print("  Available reports:")
-        for i, r in enumerate(reports, 1):
-            console.print(f"    {i}. {r.name}")
-        choice = Prompt.ask("  Select report", default="1")
-        try:
-            deliverable_text = reports[int(choice) - 1].read_text(encoding="utf-8")
-        except (IndexError, ValueError):
-            console.print("[red]Invalid selection.[/red]")
-            return []
+        # Get deliverable to review
+        console.print("\n  [bold]Select deliverable to review[/bold]")
+        reports = list(cdir.glob("final_report.*.md")) + list(cdir.glob("*.md"))
 
-    # Select personas
-    console.print("\n  [bold]Select personas:[/bold]")
-    for k, (label, _) in AVAILABLE_PERSONAS.items():
-        console.print(f"    {k}. {label}")
-    persona_choice = Prompt.ask("  Select persona(s)", default="5")
+        if not reports:
+            deliverable_text = Prompt.ask(
+                "  No reports found in case folder. Paste report content (or path to file)"
+            )
+            if Path(deliverable_text).exists():
+                deliverable_text = Path(deliverable_text).read_text(encoding="utf-8")
+        else:
+            console.print("  Available reports:")
+            for i, r in enumerate(reports, 1):
+                console.print(f"    {i}. {r.name}")
+            choice = Prompt.ask("  Select report", default="1")
+            try:
+                deliverable_text = reports[int(choice) - 1].read_text(encoding="utf-8")
+            except (IndexError, ValueError):
+                console.print("[red]Invalid selection.[/red]")
+                return []
 
-    selected_ids = []
-    if persona_choice == "5":
-        selected_ids = ["cfo", "lawyer", "regulator", "insurance_adjuster"]
-    else:
-        _, pid = AVAILABLE_PERSONAS.get(persona_choice, ("", "cfo"))
-        selected_ids = [pid]
+        # Select personas
+        console.print("\n  [bold]Select personas:[/bold]")
+        for k, (label, _) in AVAILABLE_PERSONAS.items():
+            console.print(f"    {k}. {label}")
+        persona_choice = Prompt.ask("  Select persona(s)", default="5")
+
+        selected_ids = []
+        if persona_choice == "5":
+            selected_ids = ["cfo", "lawyer", "regulator", "insurance_adjuster"]
+        else:
+            _, pid = AVAILABLE_PERSONAS.get(persona_choice, ("", "cfo"))
+            selected_ids = [pid]
 
     # Run reviews
     results = []

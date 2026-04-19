@@ -421,15 +421,13 @@ def _persist_intake(intake) -> None:
 
 
 def _mark_deliverable_written(case_id: str, workflow: str) -> None:
-    """Transition a Mode B (Assisted) case to DELIVERABLE_WRITTEN terminal status."""
-    from core.state_machine import CaseStatus
-    from tools.file_tools import append_audit_event, read_state, write_state
+    """CLI shim — delegates to tools.file_tools.mark_deliverable_written.
 
-    state = read_state(case_id) or {}
-    state["status"] = CaseStatus.DELIVERABLE_WRITTEN.value
-    state["last_updated"] = datetime.now(timezone.utc).isoformat()
-    write_state(case_id, state)
-    append_audit_event(case_id, {"event": "deliverable_written", "workflow": workflow})
+    Kept here so existing call sites in run.py don't need to change.
+    Streamlit pages import mark_deliverable_written from tools.file_tools directly.
+    """
+    from tools.file_tools import mark_deliverable_written
+    mark_deliverable_written(case_id, workflow)
 
 
 def _run_document_ingestion(document_manager, console: Console) -> None:

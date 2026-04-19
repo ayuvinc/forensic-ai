@@ -33,6 +33,7 @@ def run_proposal_deck_workflow(
     hook_engine=None,
     console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
+    headless_params: Optional[dict] = None,
 ) -> DeckStoryboard:
     """Generate DeckStoryboard, master prompt, and per-slide prompts."""
     if console is None:
@@ -40,22 +41,34 @@ def run_proposal_deck_workflow(
     if on_progress is None:
         on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
 
-    console.print("\n  [bold]Proposal deck configuration[/bold]")
-    aud_keys = list(AUDIENCES.keys())
-    for k, v in AUDIENCES.items():
-        console.print(f"    {k}. {v}")
-    aud_choice = Prompt.ask("  Primary audience", choices=aud_keys, default="1")
-    audience = AUDIENCES[aud_choice]
+    if headless_params:
+        audience = headless_params.get("audience", "CFO")
+        deck_objective = headless_params.get(
+            "deck_objective",
+            f"Engage {intake.client_name} for {intake.workflow.replace('_', ' ')} services",
+        )
+        decision_required = headless_params.get(
+            "decision_required",
+            "Approve engagement and sign service agreement",
+        )
+        slide_count = int(headless_params.get("slide_count", 12))
+    else:
+        console.print("\n  [bold]Proposal deck configuration[/bold]")
+        aud_keys = list(AUDIENCES.keys())
+        for k, v in AUDIENCES.items():
+            console.print(f"    {k}. {v}")
+        aud_choice = Prompt.ask("  Primary audience", choices=aud_keys, default="1")
+        audience = AUDIENCES[aud_choice]
 
-    deck_objective = Prompt.ask(
-        "  Deck objective (what decision should this drive?)",
-        default=f"Engage {intake.client_name} for {intake.workflow.replace('_', ' ')} services",
-    )
-    decision_required = Prompt.ask(
-        "  Decision required from audience",
-        default="Approve engagement and sign service agreement",
-    )
-    slide_count = int(Prompt.ask("  Approximate slide count", default="12"))
+        deck_objective = Prompt.ask(
+            "  Deck objective (what decision should this drive?)",
+            default=f"Engage {intake.client_name} for {intake.workflow.replace('_', ' ')} services",
+        )
+        decision_required = Prompt.ask(
+            "  Decision required from audience",
+            default="Approve engagement and sign service agreement",
+        )
+        slide_count = int(Prompt.ask("  Approximate slide count", default="12"))
 
     on_progress("Generating storyboard...")
     storyboard = _generate_storyboard(

@@ -52,26 +52,27 @@ MODULE_DEPENDENCIES: dict[int, list[int]] = {
 }
 
 
-def run_frm_workflow(
+def run_frm_pipeline(
     intake: CaseIntake,
     selected_modules: list[int],
     registry: ToolRegistry,
     hook_engine: HookEngine,
     document_manager: Optional[DocumentManager] = None,
-    console: Optional[Console] = None,
     on_progress: Optional[Callable[[str], None]] = None,
-) -> FRMDeliverable:
-    """Run the FRM risk register pipeline for selected modules.
+) -> tuple[list[RiskItem], list, list[int], str]:
+    """Run Junior→PM→Partner for each selected module.
 
-    Returns FRMDeliverable with complete risk register.
+    Returns (risk_items, citations, completed_modules, exec_summary).
+
+    Does NOT call _frm_approve_flag_rewrite_loop — the caller decides when and
+    how to present items for review (CLI: inline after Module 2; Streamlit: card
+    UI for all items after pipeline completes).
+
+    Does NOT write the final report — call run_frm_finalize() with the reviewed
+    items to produce the deliverable.
     """
-    if console is None:
-        console = Console()
     if on_progress is None:
-        on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
-
-    # Validate module dependencies
-    _validate_module_order(selected_modules)
+        on_progress = lambda msg: None  # no-op default; caller provides real callback
 
     from agents.junior_analyst.agent import JuniorAnalyst
     from agents.project_manager.agent import ProjectManager
@@ -86,6 +87,10 @@ def run_frm_workflow(
     completed_modules: list[int] = []
     prior_research: dict = {}  # shared across modules — no re-research
 
+    # Use a fallback console for error printing only (not progress — that goes via on_progress)
+    from rich.console import Console as _Console
+    _err_console = _Console()
+
     for module_num in selected_modules:
         module_name = FRM_MODULES.get(module_num, f"Module {module_num}")
         on_progress(f"[Module {module_num}/{len(selected_modules)}] {module_name}...")
@@ -98,13 +103,12 @@ def run_frm_workflow(
             "prior_research": prior_research,
             "artifact_type": f"frm_m{module_num}_junior_output",
             "role": "junior",
-            "schema_cls": None,  # FRM uses loose validation
+            "schema_cls": None,
             "intake": intake.model_dump(),
             "generate_arabic": intake.language == "ar",
             "client_name": intake.client_name,
         }
 
-        # Build module-specific intake description
         module_intake = intake.model_copy(update={
             "description": (
                 f"FRM Module {module_num}: {module_name}. "
@@ -115,21 +119,13 @@ def run_frm_workflow(
             "workflow": "frm_risk_register",
         })
 
-        # Run pipeline for this module
         try:
-            on_progress(f"  Consultant drafting Module {module_num}...")  # "Consultant" = internal agent role
-            junior_output = junior(module_intake.model_dump(), {
-                **context,
-                "role": "junior",
-            })
+            on_progress(f"  Consultant drafting Module {module_num}...")
+            junior_output = junior(module_intake.model_dump(), {**context, "role": "junior"})
 
             on_progress(f"  PM reviewing Module {module_num}...")
-            pm_output = pm(junior_output["output"], {
-                **context,
-                "role": "pm",
-            })
+            pm_output = pm(junior_output["output"], {**context, "role": "pm"})
 
-            # Handle PM revision request
             if pm_output["revision_requested"]:
                 on_progress(f"  Revision requested — redrafting Module {module_num}...")
                 revised_context = {
@@ -141,25 +137,17 @@ def run_frm_workflow(
                 pm_output = pm(junior_output["output"], {**context, "role": "pm"})
 
             on_progress(f"  Partner reviewing Module {module_num}...")
-            partner_output = partner(pm_output["output"], {
+            partner(pm_output["output"], {
                 **context,
                 "role": "partner",
                 "junior_output": junior_output["output"],
             })
 
-            # Extract risk items for module 2 — run approve/flag/rewrite loop
             module_risks = _extract_risk_items(junior_output["output"], module_num, module_name)
-
-            if module_num == 2 and console:
-                module_risks = _frm_approve_flag_rewrite_loop(
-                    console, module_risks, junior, module_intake, context
-                )
-
             all_risk_items.extend(module_risks)
             all_citations.extend(junior_output["output"].get("citations", []))
             completed_modules.append(module_num)
 
-            # Update prior_research for next module
             prior_research[module_name] = {
                 "summary": junior_output["output"].get("summary", ""),
                 "key_findings": [
@@ -168,32 +156,91 @@ def run_frm_workflow(
             }
 
         except (PipelineError, RevisionLimitError) as e:
-            console.print(f"  [red]Module {module_num} failed: {e}[/red]")
+            _err_console.print(f"  [red]Module {module_num} failed: {e}[/red]")
             on_progress(f"  Skipping Module {module_num} due to error.")
             continue
 
-    # Generate executive summary
     on_progress("Generating executive summary...")
     exec_summary = _generate_executive_summary(intake, all_risk_items, completed_modules, registry)
 
-    # Build deliverable
-    content_en = _render_risk_register(intake, all_risk_items, exec_summary, completed_modules)
+    return all_risk_items, all_citations, completed_modules, exec_summary
+
+
+def run_frm_finalize(
+    intake: CaseIntake,
+    risk_items: list[RiskItem],
+    citations: list,
+    completed_modules: list[int],
+    exec_summary: str,
+) -> FRMDeliverable:
+    """Assemble deliverable from reviewed items and write the final report.
+
+    Called after the review loop (CLI: inline; Streamlit: card UI).
+    Writes final_report.en.md, advances state to DELIVERABLE_WRITTEN.
+    """
+    from tools.file_tools import mark_deliverable_written
+
+    content_en = _render_risk_register(intake, risk_items, exec_summary, completed_modules)
 
     deliverable = FRMDeliverable(
         case_id=intake.case_id,
         modules_completed=completed_modules,
-        risk_register=all_risk_items,
+        risk_register=risk_items,
         executive_summary=exec_summary,
         content_en=content_en,
-        citations=all_citations,
+        citations=citations,
         delivery_date=datetime.now(timezone.utc),
     )
 
-    # Write final report
-    report_path = write_final_report(intake.case_id, content_en, "en")
-    on_progress(f"FRM Risk Register saved → {report_path}")
+    write_final_report(intake.case_id, content_en, "en")
+    mark_deliverable_written(intake.case_id, "frm_risk_register")
 
     return deliverable
+
+
+def run_frm_workflow(
+    intake: CaseIntake,
+    selected_modules: list[int],
+    registry: ToolRegistry,
+    hook_engine: HookEngine,
+    document_manager: Optional[DocumentManager] = None,
+    console: Optional[Console] = None,
+    on_progress: Optional[Callable[[str], None]] = None,
+) -> FRMDeliverable:
+    """CLI entry point — pipeline + Module 2 inline review + finalize.
+
+    Signature unchanged. run.py calls this; behaviour is identical to pre-split.
+    Streamlit pages call run_frm_pipeline() + run_frm_finalize() directly.
+    """
+    if console is None:
+        console = Console()
+    if on_progress is None:
+        on_progress = lambda msg: console.print(f"  [cyan]{msg}[/cyan]")
+
+    _validate_module_order(selected_modules)
+
+    risk_items, citations, completed_modules, exec_summary = run_frm_pipeline(
+        intake, selected_modules, registry, hook_engine, document_manager, on_progress
+    )
+
+    # CLI-only: interactive review loop for Module 2 items
+    # (Streamlit applies review to all modules via card UI — see pages/6_FRM.py)
+    if 2 in completed_modules:
+        from agents.junior_analyst.agent import JuniorAnalyst
+        junior = JuniorAnalyst(registry, hook_engine, document_manager, "frm_risk_register")
+        module_intake = intake.model_copy(update={"workflow": "frm_risk_register"})
+        context = {
+            "case_id": intake.case_id,
+            "workflow": "frm_risk_register",
+            "frm_module": 2,
+            "frm_module_name": FRM_MODULES[2],
+        }
+        m2_items = [r for r in risk_items if r.risk_id.startswith("M2-")]
+        other_items = [r for r in risk_items if not r.risk_id.startswith("M2-")]
+        reviewed_m2 = _frm_approve_flag_rewrite_loop(console, m2_items, junior, module_intake, context)
+        risk_items = reviewed_m2 + other_items
+
+    return run_frm_finalize(intake, risk_items, citations, completed_modules, exec_summary)
 
 
 # ── Approve / Flag / Rewrite loop (Module 2) ─────────────────────────────────
