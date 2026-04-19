@@ -266,7 +266,12 @@ elif st.session_state.frm_stage == "done":
         else:
             finalized.append(risk)  # no instructions — keep original
 
-    with st.spinner("Finalizing and writing report..."):
+    rewrite_count = sum(1 for d in reviewed.values() if d.get("action") == "rewrite")
+    spinner_text = (
+        f"Applying {rewrite_count} rewrite(s) and assembling report..."
+        if rewrite_count else "Assembling report..."
+    )
+    with st.spinner(spinner_text):
         deliverable = run_frm_finalize(
             intake,
             finalized,
@@ -275,23 +280,20 @@ elif st.session_state.frm_stage == "done":
             result["exec_summary"],
         )
 
-    st.success(f"FRM Risk Register complete — {len(finalized)} risks across {len(result['completed_modules'])} module(s)")
-
-    # Download button for the markdown report
-    from tools.file_tools import case_dir
-    report_path = case_dir(intake.case_id) / "final_report.en.md"
-    if report_path.exists():
-        st.download_button(
-            label="Download final_report.en.md",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=f"FRM_{intake.client_name}_{intake.case_id}.md",
-            mime="text/markdown",
-        )
-
-    st.markdown(f"**Case ID:** `{intake.case_id}`")
-    st.markdown(f"**Location:** `cases/{intake.case_id}/`")
-
-    # Show executive summary inline
+    # FRM-specific: executive summary expander shown above the standard done zone
     if deliverable.executive_summary:
-        with st.expander("Executive Summary"):
+        with st.expander("Executive Summary", expanded=True):
             st.markdown(deliverable.executive_summary)
+
+    from tools.file_tools import case_dir
+    from streamlit_app.shared.done_zone import render_done_zone
+
+    render_done_zone(
+        st,
+        case_id=intake.case_id,
+        client_name=intake.client_name,
+        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        workflow_label="FRM Risk Register",
+        session_state_keys=["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed", "frm_dm", "frm_reg_results"],
+        stage_key="frm_stage",
+    )
