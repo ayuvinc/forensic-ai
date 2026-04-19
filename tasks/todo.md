@@ -977,7 +977,19 @@ CONV-02 ← CONV-01 + EMB-02-REF
 
 - [x] **[UX-F-06]** Visual design — create `.streamlit/config.toml` + fix h2/h3 selector + wire severity CSS per UX-016: create `/Users/akaushal011/forensic-ai/.streamlit/config.toml` with `[theme]` block (`primaryColor="#D50032"`, `backgroundColor="#FFFFFF"`, `secondaryBackgroundColor="#F5F2F0"`, `textColor="#282827"`, `font="sans serif"`); fix CSS selector in `session.py` `_CSS` to target `h2, h3` (not h2 only) for red bottom border; wire severity CSS classes in `pipeline.py` `_render_event()`: CRITICAL → `st.markdown('<div class="severity-critical">...</div>', unsafe_allow_html=True)`, WARNING → same with `severity-warning`; add sidebar footer: `st.sidebar.caption(f"GoodWork Forensic AI · {today}")`; remove button color overrides from `_CSS` that now duplicate config.toml. ← deps: none | AC: `.streamlit/config.toml` exists with correct keys; browser shows #D50032 primary color on first load (not CSS-injected); CRITICAL events in pipeline log show left-border accent style; `st.subheader()` text shows red underline (h3 rule now applied).
 
-- [x] **[UX-F-07]** Settings completeness + T&C textarea + firm.json consolidation per UX-017: add `tc_text` field to Settings page as `st.text_area("Standard Terms & Conditions", height=300)` with helper text; store in `firm.json["tc_text"]`; add completeness indicator at top of Settings page — visual checklist of 5 items (Firm Name, Logo, Pricing, T&C, Team) with green/amber/grey states; in Proposal workflow intake, add pre-flight check: read `firm.json`, if firm_name blank → `st.warning("Firm profile incomplete — go to Settings...")` with `st.page_link()` to Settings; add roadmap item to consolidate `firm_profile.json` and `pricing_model.json` into `firm.json` (mark as REFACTOR-01 in todo, do not implement now). ← deps: none | AC: Settings page shows completeness indicator above tabs; T&C textarea saves to firm.json; Proposal page shows warning when firm_name is blank; REFACTOR-01 logged in todo.md.
+- [x] **[UX-F-07]** [READY_FOR_REVIEW] Settings completeness + T&C textarea + firm.json consolidation per UX-017: add `tc_text` field to Settings page as `st.text_area("Standard Terms & Conditions", height=300)` with helper text; store in `firm.json["tc_text"]`; add completeness indicator at top of Settings page — visual checklist of 5 items (Firm Name, Logo, Pricing, T&C, Team) with green/amber/grey states; in Proposal workflow intake, add pre-flight check: read `firm.json`, if firm_name blank → `st.warning("Firm profile incomplete — go to Settings...")` with `st.page_link()` to Settings; add roadmap item to consolidate `firm_profile.json` and `pricing_model.json` into `firm.json` (mark as REFACTOR-01 in todo, do not implement now). ← deps: none | AC: Settings page shows completeness indicator above tabs; T&C textarea saves to firm.json; Proposal page shows warning when firm_name is blank; REFACTOR-01 logged in todo.md.
+
+---
+
+### REFACTOR-01 — Consolidate firm_profile.json + pricing_model.json → firm.json (DO NOT IMPLEMENT NOW)
+
+Roadmap: merge `firm_profile/firm_profile.json` and `firm_profile/pricing_model.json` into
+`firm.json` for a single unified config used by both CLI and Streamlit paths.
+Priority: LOW. Gate: after P9-07A (Language Standard Settings) lands.
+
+- [ ] REFACTOR-01a Merge pricing fields from pricing_model.json into firm.json
+- [ ] REFACTOR-01b Merge firm profile fields from firm_profile.json into firm.json
+- [ ] REFACTOR-01c Update CLI setup_wizard.py to read/write firm.json only
 
 ---
 
