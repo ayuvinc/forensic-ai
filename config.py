@@ -125,6 +125,28 @@ def get_model(role: str, workflow: str | None = None) -> str:
     return model
 
 
+def reload() -> None:
+    """Re-read .env and rebuild API key globals in place.
+
+    Call this after the Streamlit setup page writes a new .env so the rest of
+    the process picks up the new keys without requiring an app restart.
+    Uses override=True so values already set in the environment are replaced.
+    """
+    import importlib
+    import sys
+
+    load_dotenv(override=True)
+
+    # Re-read keys into module-level names so all callers see the new values
+    current_module = sys.modules[__name__]
+    current_module.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+    current_module.TAVILY_API_KEY    = os.getenv("TAVILY_API_KEY", "")
+    current_module.RESEARCH_MODE     = os.getenv(
+        "RESEARCH_MODE",
+        "live" if os.getenv("TAVILY_API_KEY") else "knowledge_only",
+    )
+
+
 def validate_config() -> list[str]:
     """Return a list of missing required config values."""
     missing = []

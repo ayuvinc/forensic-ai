@@ -491,9 +491,9 @@ def _run_document_ingestion(document_manager, console: Console) -> None:
 
 
 def _load_firm_name() -> str:
-    """Load firm name from firm_profile.json, fallback to default."""
+    """Load firm name from firm_profile/firm.json (canonical), fallback to default."""
     import json
-    path = Path(__file__).parent / "firm_profile" / "firm_profile.json"
+    path = Path(__file__).parent / "firm_profile" / "firm.json"
     if path.exists():
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
