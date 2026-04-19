@@ -1197,3 +1197,423 @@ _AK confirmed all decisions directly in session conversation._
 **Fallback:** If sentence-transformers not available (offline env), skip embedding; fall back to full-document context (existing behavior).
 
 **New dependencies:** `sentence-transformers>=2.7.0`, `chromadb>=0.4.0`
+
+---
+
+## Session 024 BA — Sprint-EMB + Phase 9 Schemas + New Workflow Designs (2026-04-19)
+
+---
+
+### BA-P9-01 — ProjectIntake Schema Requirements
+- Status: DRAFT
+- Scope: `schemas/project.py` — ProjectIntake model; slug derivation and path-traversal guard (R-019)
+
+**User outcome:** Maher names an engagement in plain language ("GiveBrite DD") and the system creates a safe, predictable filesystem path for it — with no risk of accidental file writes outside the `cases/` directory.
+
+**Business rules:**
+  - `project_name`: free-text string, 1–80 chars. Required. No validation on content — Maher can name projects however he likes.
+  - `project_slug`: derived automatically from `project_name` at validation time (not stored separately by the user — it is a computed field):
+    1. Lowercase the entire string
+    2. Replace all whitespace sequences with a single hyphen
+    3. Strip all characters that are not `[a-z0-9-]`
+    4. Collapse consecutive hyphens to one
+    5. Strip leading and trailing hyphens
+    6. If the result is empty after stripping: raise `ValueError("project_name produces an empty slug — please provide at least one alphanumeric character")`
+    7. Enforce maximum slug length of 60 chars (truncate before stripping trailing hyphen)
+  - Path-traversal guard (R-019 — mandatory, non-negotiable): before any filesystem write, `project_slug` must be re-validated against a strict allowlist pattern `^[a-z0-9][a-z0-9-]{0,58}[a-z0-9]$` (or single char `^[a-z0-9]$`). If it fails: raise `ValueError` — do not create any directory.
+  - Additionally: reject slugs that are or contain `.`, `..`, `/`, `\`, `~`, `$`, `%`, null bytes, or any Unicode character outside ASCII. These are blocked at validation, not just stripped — if the source string contains them after slugification, it means the slug is too aggressively sanitised and the name is ambiguous. Raise a clear error prompting Maher to rename.
+  - `service_type`: one of the confirmed GoodWork workflow identifiers (e.g. `investigation_report`, `frm_risk_register`, `due_diligence`, `sanctions_screening`, `transaction_testing`, `policy_sop`, `training_material`, `client_proposal`). Required.
+  - `created_at`: UTC datetime, set at intake.
+  - `primary_jurisdiction`: string, default `"UAE"`.
+  - `operating_jurisdictions`: list of strings, default `["UAE"]`.
+  - `language_standard`: one of `["acfe_internal", "expert_witness", "regulatory_submission", "board_pack"]`, default `"acfe_internal"` (per BA-P9-05).
+  - `client_name`: string, required. Used for cover page and context only — not part of slug derivation.
+  - `industry`: string, optional. Pre-populated via taxonomy picker if available.
+  - `language`: `"en"` or `"ar"`, default `"en"`.
+  - `engagement_letter_registered`: bool, default `False`. Set to `True` when `register_engagement_letter()` is called on this project. Pipeline cannot run until this is `True` (existing gate, carried forward).
+  - Slug collision detection: before creating the project directory, check whether `cases/{slug}/` already exists. If it does: surface to Maher — "A project at `cases/{slug}/` already exists. Open it or choose a different name?" Do not silently overwrite.
+  - Backward compatibility: existing `CaseIntake` UUID-based cases are not affected. `ProjectIntake` is additive — both models coexist. `CaseTracker` renders both.
+
+**Edge cases:**
+  - `project_name` is entirely non-ASCII (e.g. Arabic): slug becomes empty after stripping → raise `ValueError` with message "Project name must contain at least one Latin alphanumeric character for the filesystem path. Please provide a short English identifier."
+  - `project_name` is a single space or only special chars: same as above.
+  - Two different project names produce the same slug (e.g. "GiveBrite DD" and "GiveBrite-DD"): collision detected at filesystem check; Maher prompted to distinguish them.
+  - Maher provides a name with `../` in it (deliberate or accidental): stripped during slug derivation; but the path-traversal guard validates the final slug independently and would catch any residual traversal patterns.
+
+**Out of scope:** Slug validation of `client_name` (used for display only, never written to filesystem directly). Renaming a project after creation (no rename workflow in v1).
+
+**Open questions for AK:**
+  - Should `service_type` be set at project creation, or can a project be created without a service type and have it selected at first final run? (Matters for whether `ProjectIntake` has `service_type` as required or optional.)
+  - Should a single project support multiple service types simultaneously (e.g. DD + Sanctions on the same project), or is it always one service type per project slug? The BA-P9-01 session decision said same project_name + same service_type = same folder, implying service_type is part of the key — clarify whether the slug encodes the service type.
+
+---
+
+### BA-P9-02 — InputSession Schema Requirements
+- Status: DRAFT
+- Scope: `schemas/project.py` — InputSession model; lifecycle states from creation through final-run trigger
+
+**User outcome:** Every time Maher opens a project to add materials (without running the pipeline), a session record is created automatically. He can see a history of what was added in each session and when.
+
+**Business rules:**
+  - `InputSession` represents one working session where Maher adds materials to a project but does not trigger the AI pipeline. It is NOT a pipeline run — it is a pre-pipeline accumulation record.
+  - Fields:
+    - `session_id`: UUID4, generated at session start.
+    - `project_slug`: FK to `ProjectIntake.project_slug`. Required.
+    - `session_type`: `Literal["input", "final_run"]`. Set at session start. An `input` session adds materials; a `final_run` session triggers the pipeline.
+    - `started_at`: UTC datetime.
+    - `ended_at`: UTC datetime, optional. Set when session is explicitly closed or when `session_type == "final_run"` completes.
+    - `documents_added`: list of `doc_id` strings (registered via `DocumentManager` during this session).
+    - `notes_added`: list of note file paths written during this session (relative to project root).
+    - `key_facts_added`: integer count of new key facts appended to `key_facts.json` during this session.
+    - `red_flags_added`: integer count of new red flags appended to `red_flags.json` during this session.
+    - `pipeline_triggered`: bool, default `False`. Set `True` when `session_type == "final_run"` and pipeline is actually invoked.
+    - `pipeline_run_id`: optional string, populated when pipeline is triggered. References the orchestrator run record.
+    - `status`: `Literal["open", "closed", "pipeline_complete", "pipeline_failed"]`.
+  - Lifecycle:
+    1. `open` — session created; Maher is actively working. Materials added here are logged.
+    2. `closed` — input session ended without pipeline trigger. All materials persisted. Session can be resumed (creates a new `InputSession`, not reopens the old one).
+    3. `pipeline_complete` — `final_run` session; pipeline ran to completion.
+    4. `pipeline_failed` — `final_run` session; pipeline failed before completion. Error stored in associated `CaseState.error`.
+  - Session log persistence: each `InputSession` is serialised to `A_Engagement_Management/session_log.jsonl` (append-only, one line per session close event). This is distinct from `audit_log.jsonl` which records agent-level events.
+  - Auto-save on close: if Maher closes the app without explicitly ending the session, the session is auto-saved with `status = "closed"` and `ended_at = now()`. Unsaved text notes are flushed to `D_Working_Papers/session_notes_{YYYYMMDD_HHMMSS}.md` before close.
+  - Transition to formal Case: when `pipeline_triggered = True`, the orchestrator creates a `CaseState` object with a new `case_id` (UUID format) linked to the `project_slug`. The `InputSession` becomes the provenance record for that case run. Multiple `final_run` sessions can exist for the same project (e.g. first run produces a draft; Maher adds more documents and runs again — second `final_run` session, new `CaseState`).
+  - A project can have many `InputSession` records. The most recent `final_run` session with `pipeline_complete` is the "current version" of the project.
+
+**Edge cases:**
+  - App crash during an `open` session: on next launch, detect `open` sessions in `session_log.jsonl`. Offer to review what was added. Session status updated to `closed` with a `crash_recovery` flag.
+  - `final_run` session with `pipeline_failed`: session status set to `pipeline_failed`. Maher can retry — creates a new `final_run` session (does not reopen the failed one). All materials from prior sessions remain accumulated.
+  - Maher opens a `final_run` session but decides not to trigger: allowed. `session_type` can be changed before pipeline trigger. Ends as `closed`.
+  - Zero materials in project, `final_run` attempted: blocked with warning (BA-P9-01 edge case carried forward). Maher must acknowledge "zero-information baseline only" before proceeding.
+
+**Out of scope:** Session sharing between users. Real-time sync of session state to cloud. Session comments or annotations on individual documents within the session record (those go in notes).
+
+**Open questions for AK:**
+  - Should `InputSession` be visible in the Streamlit UI as a history tab, or is it purely a machine record for resumability and audit? (Affects whether it needs display fields like `session_title` or `summary`.)
+  - When a `final_run` session completes, should the previous pipeline outputs (E_Drafts/) be automatically versioned, or does Maher manually trigger versioning? (Relates to BA-R-02.)
+
+---
+
+### BA-P9-03 — ProjectState Schema Requirements
+- Status: DRAFT
+- Scope: `schemas/project.py` — ProjectState model; relationship to existing `CaseState`
+
+**User outcome:** Maher can see the full status of a named project — how many sessions it has had, which pipeline runs have completed, which are in progress, and what the overall project health is — without having to cross-reference multiple JSON files manually.
+
+**Business rules:**
+  - `ProjectState` is the project-level aggregation over one or more `CaseState` records and multiple `InputSession` records. It does NOT replace `CaseState` — it wraps it.
+  - Fields:
+    - `project_slug`: string. Primary key. Must match `ProjectIntake.project_slug`.
+    - `project_name`: string. Display name (denormalised from `ProjectIntake` for convenience).
+    - `service_type`: string. From `ProjectIntake`.
+    - `created_at`: UTC datetime.
+    - `last_updated`: UTC datetime. Updated on every input session close and every pipeline state transition.
+    - `total_input_sessions`: integer. Count of all `InputSession` records for this project.
+    - `total_pipeline_runs`: integer. Count of all `CaseState` records linked to this project.
+    - `latest_case_id`: optional string. The `case_id` of the most recent pipeline run (most recent `CaseState`).
+    - `latest_pipeline_status`: optional `CaseStatus`. Denormalised from the most recent `CaseState.status`.
+    - `latest_final_report_path`: optional string. Relative path to the most recent final report (`.docx` or `.md`). Populated by post-hook `persist_artifact`.
+    - `document_count`: integer. Total documents registered across all sessions. Sourced from `DocumentIndex`.
+    - `has_engagement_letter`: bool. Denormalised from `ProjectIntake.engagement_letter_registered`.
+    - `language_standard`: string. From `ProjectIntake`.
+    - `case_ids`: list of strings. All `case_id` values linked to this project (all pipeline runs, in chronological order).
+    - `project_health`: `Literal["no_materials", "materials_only", "pipeline_running", "draft_ready", "final_approved", "error"]`. Computed field — not stored by Maher, derived at read time:
+      - `no_materials` — project created, zero documents, zero notes
+      - `materials_only` — documents/notes present, no pipeline run yet
+      - `pipeline_running` — a `CaseState` with non-terminal status exists
+      - `draft_ready` — latest `CaseState.status` is `PARTNER_REVIEW_COMPLETE` or `OWNER_READY`
+      - `final_approved` — latest `CaseState.status` is `OWNER_APPROVED` or `DELIVERABLE_WRITTEN`
+      - `error` — latest `CaseState.status` is `PIPELINE_ERROR`
+  - Persistence: `ProjectState` is serialised to `cases/{project_slug}/project_state.json`. This file is the single source of truth for the project-level status that the Case Tracker reads.
+  - Update triggers: `ProjectState` is updated (recomputed + overwritten atomically) after:
+    1. Any `InputSession` closes
+    2. Any `CaseState` transition (hooked via `post_hooks.append_audit_event`)
+    3. Any document registration
+  - Relationship to `CaseState`: one project → many `CaseState` records. Each `CaseState` has a `case_id` (UUID) and a `project_slug` field (new field to add to `CaseState`). `ProjectState.case_ids` lists all of them.
+  - Case Tracker rendering: Case Tracker reads `project_state.json` for new-format projects. For legacy UUID cases (no `project_state.json`), it reads `state.json` directly. Both paths must produce a renderable row in the tracker table.
+  - Audit trail: `audit_log.jsonl` at the project root records all events across all pipeline runs in this project. It is project-scoped, not case-scoped, in the new model.
+
+**Edge cases:**
+  - Project with no pipeline runs: `latest_case_id = None`, `latest_pipeline_status = None`, `project_health = "materials_only"` (or `"no_materials"` if nothing uploaded).
+  - Pipeline run fails and Maher retries: `case_ids` has two entries; `latest_case_id` points to the retry; `latest_pipeline_status` reflects the retry's current status.
+  - `project_state.json` is missing but project folder exists (e.g. manual creation or corruption): Case Tracker detects missing file, logs a warning, renders the row with `project_health = "error"` and a "Repair" action that regenerates `project_state.json` from existing `state.json` and `document_index.json`.
+  - Legacy UUID case opened: no `ProjectState` for it. Case Tracker renders it directly from `state.json`. No migration required.
+
+**Out of scope:** Cross-project aggregation (no firm-level summary schema in v1). Project archiving or deletion. `ProjectState` as a user-editable file (it is machine-written only).
+
+**Open questions for AK:**
+  - Should `CaseState` gain a `project_slug` field in this sprint, or is the link maintained only in `ProjectState.case_ids`? (Bidirectional link vs one-directional.) Architect preference affects schema diff.
+  - Should `project_health` be a computed Pydantic property (derived at model construction) or a stored field updated by hooks? Stored is more resilient across restarts; computed is always fresh. Trade-off is resumability vs consistency.
+
+---
+
+### BA-EMB-01 — EmbeddingEngine Business Rules
+- Status: DRAFT
+- Scope: `tools/embedding_engine.py` — EmbeddingEngine class; wiring into `DocumentManager.register_document()`
+
+**User outcome:** When Maher uploads a document, it is automatically embedded so that later, when the AI pipeline drafts findings, it can retrieve only the relevant 3–5 chunks for each finding area — instead of forcing the full document into every agent call.
+
+**Business rules:**
+
+**When to embed:**
+  - Embedding runs as a step inside `DocumentManager.register_document()`, after text extraction and section indexing, before returning the `DocumentEntry`.
+  - Embedding is always async from the user's perspective — it must not block the "document registered" confirmation Maher sees. Implementation: run embedding synchronously but after the index save, so the UI is unblocked.
+  - Only embed documents where text extraction succeeded. If `text == "[EXTRACTION FAILED: ...]"`, skip embedding and log a warning to `audit_log.jsonl`.
+  - Duplicate documents (detected by hash): do not re-embed. The existing vector entries are still valid.
+
+**Chunking rules:**
+  - Target chunk size: 500 tokens (~2,000 chars). Use a sliding window with 10% overlap (~50 tokens) to preserve context across chunk boundaries.
+  - Split on sentence boundaries where possible (do not cut mid-sentence). Fallback: split on paragraph breaks. Final fallback: hard split at char limit.
+  - Each chunk carries metadata: `doc_id`, `project_slug`, `case_id`, `chunk_index` (integer), `section_id` (from `DocumentSection` if available), `filename`, `source_excerpt` (first 100 chars of chunk for display in search results).
+  - Minimum chunk size: 100 chars. Chunks shorter than this are merged into the previous chunk.
+  - Excel files: each sheet is treated as a separate chunk group. Row data is chunked by row batches (50 rows per chunk) rather than by character count.
+
+**Model and index:**
+  - Embedding model: `all-MiniLM-L6-v2` (default sentence-transformers model, ~80MB download). This model downloads automatically on first use via `sentence-transformers` library. The download is ~90MB and requires internet connectivity.
+  - Vector store: ChromaDB, persistent collection at `cases/{project_slug}/D_Working_Papers/vector_index/` (P9 projects) or `cases/{case_id}/vector_index/` (legacy).
+  - Collection name: `case_{project_slug}` (or `case_{case_id}` for legacy). One collection per project.
+  - Each document adds its chunks to the project's shared collection — not a separate collection per document.
+
+**Fallback behaviour (R-NEW-07 — mandatory):**
+  - On `EmbeddingEngine` instantiation: attempt to import `sentence_transformers` and `chromadb`. If either import fails: set `self.available = False`. Log once to stderr: "sentence-transformers or chromadb not available — falling back to full-document context". Do not raise an exception.
+  - If `self.available = False`: `embed_document()` is a no-op. `retrieve_chunks()` returns `None`. Callers must check the return value and fall back to full-document reading via `DocumentManager`.
+  - If model download fails (network unavailable): catch the download exception, set `self.available = False` with the same fallback behaviour. Log: "sentence-transformers model download failed — offline mode detected, falling back to full-document context".
+  - Fallback is silent to Maher — he should never see an error from the embedding system. It either works or it does not; the pipeline continues either way.
+  - `DocumentEntry` gains an `embedding_status` field: `Literal["embedded", "skipped_extraction_failed", "skipped_fallback", "pending"]`. Set at registration. Used by pipeline to decide retrieval strategy.
+
+**Retrieval contract — what the agent receives:**
+  - Entry point: `EmbeddingEngine.retrieve_chunks(query: str, project_slug: str, n_results: int = 5, doc_ids: list[str] | None = None) -> list[ChunkResult] | None`
+  - Returns `None` if `self.available = False` (caller falls back to full-document context).
+  - `ChunkResult` fields: `chunk_text` (the chunk), `doc_id`, `filename`, `section_id` (optional), `chunk_index`, `distance` (ChromaDB cosine distance), `source_citation` (formatted string: `"{filename} — {section_title or 'Section unknown'}, chunk {chunk_index}"`).
+  - Results are ranked by distance (ascending — lower = more similar). Top `n_results` returned.
+  - Optional `doc_ids` filter: restricts retrieval to chunks from specified documents only (for when the pipeline knows which documents are relevant).
+  - Maximum total chars returned across all chunks: 8,000 chars (configurable via `config.EMBEDDING_RETRIEVE_MAX_CHARS`). If top-N chunks exceed this limit, truncate the lowest-ranked chunks (not the text within a chunk — drop whole chunks).
+  - Agent-facing context format: the pipeline wraps `ChunkResult` list into a formatted context block before injecting into the agent prompt:
+    ```
+    [RELEVANT EVIDENCE — retrieved from vector index]
+    Source: {source_citation}
+    ---
+    {chunk_text}
+    ---
+    [END EVIDENCE BLOCK]
+    ```
+  - Provenance preserved: `source_citation` is included so the agent can attribute findings to the correct document and section.
+
+**What gets indexed:**
+  - All document types that produce extractable text: `.txt`, `.md`, `.pdf`, `.docx`, `.csv`, `.eml`, `.msg`.
+  - Excel (`.xlsx`, `.xls`): indexed in row-batch chunks (see chunking rules above).
+  - Engagement letter: indexed like any other document — no special exemption.
+  - Documents where extraction fails (`[EXTRACTION FAILED: ...]`): not indexed. `embedding_status = "skipped_extraction_failed"`.
+
+**Edge cases:**
+  - Empty document (zero chars after extraction): `embedding_status = "skipped_extraction_failed"`. No chunks created. No error raised.
+  - Very short document (<100 chars total): treated as a single chunk. Embedded as-is.
+  - Collection already exists when re-registering after crash: ChromaDB `get_or_create_collection` handles idempotency. Duplicate chunk detection: check by `doc_id + chunk_index` metadata before inserting.
+  - Project has many documents and vector index grows large: no size cap in v1. Flag as a future concern if index exceeds 1GB.
+  - `n_results` requested is larger than total chunks in collection: return all available chunks. No error.
+
+**Out of scope:** Fine-tuning or custom embedding models. Per-agent embedding collections. Cross-project retrieval. Hybrid BM25 + vector search (v1 vector only).
+
+**Open questions for AK:**
+  - Should the embedding step happen synchronously inside `register_document()` (adds latency per upload but keeps things simple) or asynchronously in a background thread (faster UX but adds complexity)? Given Streamlit's threading model, async is non-trivial. BA recommendation: synchronous in v1, with a spinner shown while embedding runs.
+  - Should `retrieve_chunks()` be exposed as a tool that agents can call themselves (tool_use loop), or should the orchestrator pre-fetch chunks before invoking each agent? BA recommendation: orchestrator pre-fetches once per finding area and injects as context — cleaner than giving agents a retrieval tool.
+
+---
+
+### BA-WORK-01 — Interim Workpaper Generation
+- Status: CONFIRMED — 2026-04-19 (AK answered all 3 questions)
+- Scope: NEW DESIGN — mid-engagement workpaper as a named deliverable, available inside the Input Session workspace
+
+**AK decisions (2026-04-19):**
+- Trigger: available at ANY point after Junior draft exists — mid-pipeline OR post-pipeline. Maher has full control.
+- Structure: Maher-driven at generation time. Generator presents each of the 9 sections as opt-in/opt-out, asks if anything additional is needed. Fixed structure rejected — Maher configures per workpaper.
+- Promotion: workpapers CAN be promoted to final reports. Maher reviews, confirms, system applies full report template, writes to `F_Final/` with `PROMOTED_FROM_WORKPAPER` flag in audit_log.
+
+**User outcome:** Partway through an engagement, Maher can generate a professional interim workpaper that documents what has been found so far — structured finding notes, open questions, evidence references, and a status summary. This is NOT a final report. It is an internal document that keeps the engagement organised and can be shared with a supervisor, co-consultant, or used as a progress memo to the client.
+
+**Background (domain context):** In physical forensic engagements, consultants maintain working papers throughout — structured notes on what has been reviewed, what findings are emerging, what questions remain open. These are the audit trail between "raw evidence" and "final report". A sole practitioner like Maher currently has no structured way to capture this mid-engagement state in the tool. Without it, he either keeps informal notes outside the tool (breaking the audit trail) or waits until the full pipeline run to see any structured output.
+
+**Business rules:**
+
+**Trigger:**
+  - Available from the Input Session workspace, from the moment at least one document is registered and at least one session note or key fact has been added. Not available on a zero-material project.
+  - Triggered manually by Maher: "Generate Interim Workpaper" button in the Streamlit workspace sidebar. Never auto-triggered.
+  - Can be generated multiple times. Each generation creates a new versioned file (`D_Working_Papers/interim_workpaper.v1.md`, `v2`, etc.). Previous versions are preserved, not overwritten.
+  - Does NOT require the full 3-agent pipeline. It is a single-agent (Sonnet) generation, much faster (~30 seconds target).
+
+**What goes in an interim workpaper:**
+  1. **Header**: Project name, client name, engagement type, date generated, "PRELIMINARY — NOT FOR DISTRIBUTION" watermark (in the DOCX header and MD front-matter).
+  2. **Materials reviewed to date**: auto-generated from `DocumentIndex` — list of all registered documents with brief summary of each (from `DocumentEntry.summary`).
+  3. **Key facts established**: pulled from `D_Working_Papers/key_facts.json` — formatted as a numbered list with source attribution.
+  4. **Red flags identified**: pulled from `D_Working_Papers/red_flags.json` — formatted by severity (high → medium → low). Each red flag includes source and action status.
+  5. **Emerging findings** (Sonnet-generated): model reviews accumulated materials (via embedding retrieval if available, else full-document) and drafts 3–7 emerging finding narratives. Each finding: title, evidence observed so far, implication (tentative), open questions to confirm or refute. Language standard: ACFE Internal Review regardless of project setting (workpapers are always internal). All findings labelled "PRELIMINARY — subject to further investigation".
+  6. **Leads register status**: pulled from `D_Working_Papers/leads_register.json` — open leads listed with current status. Confirmed leads flagged as likely to be in final report.
+  7. **Matters pending / open questions**: compiled from `open_questions` in emerging findings + open leads + any unanswered items from `D_Working_Papers/intake_qa.json`.
+  8. **Next steps**: Sonnet proposes 3–5 specific next steps based on open questions and red flags. Maher can edit these before saving.
+  9. **Audit trail summary**: count of sessions, documents registered, facts recorded — a one-line status.
+
+**Generation pipeline:**
+  - Single agent: Sonnet (not the full Junior → PM → Partner chain).
+  - Model is explicitly instructed: "This is a preliminary internal workpaper. Do not present findings as conclusions. Use qualified language throughout ('evidence suggests', 'it appears', 'further review required'). Every finding must reference at least one registered document by filename."
+  - No PM or Partner review step. Maher reviews the output directly.
+  - Language standard injection: ACFE Internal Review, hardcoded for workpapers (not overridable).
+  - Output formats: `.md` only (no DOCX for workpapers — internal document, not client-facing). Saved to `D_Working_Papers/interim_workpaper.v{N}.md`.
+  - Workpaper generation does NOT transition `CaseState`. It is not a pipeline event. It does NOT write to `E_Drafts/` or `F_Final/`.
+  - Audit log entry: `append_audit_event` records a `WORKPAPER_GENERATED` event (new event type) with version number and Sonnet model used.
+
+**Evidence chain enforcement:**
+  - Every emerging finding must cite at least one `DocumentEntry` by `doc_id` and `filename`. If no supporting evidence exists in the registered materials, the finding must be labelled "ANALYTICAL INFERENCE — no documentary evidence found yet".
+  - Findings labelled ANALYTICAL INFERENCE are highlighted in the output with a warning: "This observation is based on the model's analysis of the client/industry context, not on a registered document. Do not include in final report without documentary support."
+  - This is how workpapers differ from the full pipeline: the evidence chain is tracked but the bar is lower — provisional findings with explicit provenance labels are acceptable here, whereas the Partner agent would reject them.
+
+**Edge cases:**
+  - No documents registered yet: "Generate Interim Workpaper" is greyed out with tooltip "Upload at least one document to generate a workpaper."
+  - Only engagement letter registered (no substantive evidence): workpaper can still be generated. Sections 3–6 will be sparse; model notes this explicitly in the output.
+  - Workpaper generated, then more documents uploaded, then workpaper generated again: both versions preserved. Version history shown in sidebar. Maher can compare.
+  - Workpaper content conflicts with later final report (common — findings evolve): workpapers are explicitly internal. The DOCX header "PRELIMINARY — NOT FOR DISTRIBUTION" is the control. No reconciliation logic needed between workpaper and final report.
+  - Maher wants to share the workpaper with a client: the tool does not prevent it, but the "PRELIMINARY — NOT FOR DISTRIBUTION" header is always present. If Maher wants a client-facing interim memo, he should run the full pipeline (which has the Partner review gate).
+
+**Out of scope:** Workpaper → final report auto-merge (promotion is manual, not automatic). Workpaper review by a separate agent (one-pass Sonnet, reviewed by Maher). Workpapers for Mode B workflows (Proposal, Policy, Training — one-pass, no workpaper needed).
+
+**Open questions for AK:** None — all resolved 2026-04-19.
+
+---
+
+### BA-CONV-01 — Conversational Evidence Mode
+- Status: CONFIRMED — 2026-04-19 (AK answered placement and scope questions)
+- Scope: NEW DESIGN — exploratory conversation mode over registered case documents; distinct from the pipeline and from general chat
+
+**AK decisions (2026-04-19):**
+- Placement: persistent collapsible chat panel available on ALL engagement pages (not standalone page, not tab). Single shared component injected via bootstrap(). Opens against current case_id context. Premium feel — always present, never intrusive.
+- Entry point: chat icon / "Ask AI" tab on right edge of every engagement page. Slides open as a panel over content without navigation.
+
+**User outcome:** Maher can open a registered case document and have a back-and-forth conversation with the model about it — asking "What does this email chain say about the approval process?", "Does this transaction pattern suggest structuring?", "Flag anything suspicious in pages 12–18" — without triggering the full pipeline. The conversation is saved as a working paper, so leads and observations from the conversation are not lost.
+
+**Background (domain context):** Evidence review in forensic work is non-linear. A consultant reads a bank statement, notices an anomaly, asks a question, follows a thread, backtracks, re-reads a different document. The current pipeline model forces a linear flow: ingest → pipeline run → review output. That is the right model for final deliverables. But it is the wrong model for discovery. Discovery is conversational. The gap is: Maher currently has no way to have that conversational exploration within the tool, with the output preserved as case evidence.
+
+**Business rules:**
+
+**When it is available:**
+  - Conversational Evidence Mode (CEM) is available in the Input Session workspace for any project that has at least one document registered.
+  - Entry point: "Explore Documents" or "Evidence Chat" button in the Streamlit workspace sidebar.
+  - Available at any time during the project lifecycle — before, during, and after pipeline runs. It is independent of pipeline state.
+
+**How it differs from a pipeline run:**
+  - CEM is NOT a pipeline run. It does not create a `CaseState`. It does not trigger Junior, PM, or Partner agents. It does not write to `E_Drafts/` or `F_Final/`.
+  - CEM is NOT general chat. The model is strictly scoped to the registered documents of this project. It may not introduce external knowledge as findings — only as context ("this pattern is consistent with a structuring scheme, which is a form of AML…"). External knowledge as explanation is allowed; external knowledge as evidence is not.
+  - The model in CEM operates as a "document assistant", not as a drafting agent. It surfaces, quotes, and explains what is in the documents. It does not draft findings or conclusions.
+
+**Conversation mechanics:**
+  - Model used: Sonnet (for analytical depth; Haiku is insufficient for multi-document evidence reasoning).
+  - System prompt for CEM: "You are reviewing the documents registered for this forensic engagement. You can only present findings and observations that are directly supported by the registered documents. For each observation, state the source document and quote the relevant passage. You may explain forensic concepts, fraud patterns, and regulatory context as background. You must not present inferences as conclusions. All observations are preliminary."
+  - Context injection: at conversation start, the model receives:
+    1. `DocumentIndex` summary (all registered documents: filename, doc_type, brief summary).
+    2. `key_facts.json` and `red_flags.json` (accumulated context from prior sessions).
+    3. The first user message.
+  - On each user turn: if the query references specific content (e.g. "look at the bank statement"), `EmbeddingEngine.retrieve_chunks()` is called with the user query to fetch relevant chunks. Chunks are injected as context before the model responds. If embedding is unavailable: `DocumentManager.find_relevant_docs()` is used to identify relevant documents, and `read_excerpt()` is used to retrieve content.
+  - Document-specific conversations: Maher can say "focus on [filename]" — all subsequent retrieval is filtered to that `doc_id`.
+  - Multi-document reasoning: Maher can ask "compare the vendor list in the PO register with the vendor list in the payment run" — model retrieves from both documents and reasons across them.
+  - No context window per turn limit is imposed by CEM, but total injected context per turn (chunks + conversation history) is capped at `config.CEM_CONTEXT_CHARS` (default: 16,000 chars). Oldest conversation turns are dropped first when this limit is approached (sliding window on conversation history).
+
+**State saving — what gets preserved:**
+  - CEM conversation persistence: the full conversation (user turns + model turns) is saved to `D_Working_Papers/evidence_chat_{YYYYMMDD_HHMMSS}.md` on session close. Append-only. Each new CEM session in the same project creates a new file.
+  - Lead capture: during the conversation, Maher can click "Save as Lead" on any model response. This extracts the model's observation and appends it to `D_Working_Papers/leads_register.json` with:
+    - `source: "evidence_chat"`, `session_file: "evidence_chat_{timestamp}.md"`, `status: "Open"`, `description`: the model's observation text.
+  - Key fact capture: Maher can click "Save as Key Fact" on any model response. Appends to `D_Working_Papers/key_facts.json` with `source_doc_id` and `source_excerpt` from the chunk that generated the observation.
+  - Red flag capture: same mechanism — "Save as Red Flag" button on model responses.
+  - All saved leads, facts, and red flags from CEM are then available in the Input Session workspace and are passed to the pipeline on the next Final Run.
+  - Conversation is NOT automatically converted into a pipeline input. Maher explicitly promotes observations by clicking "Save as Lead/Fact/Red Flag". Unsaved observations are in the chat transcript only.
+
+**Evidence chain integrity:**
+  - Every model response in CEM that makes an evidentiary observation must include a source attribution inline: "(Source: {filename}, {section or chunk reference})". Model is instructed to do this in the system prompt.
+  - Model may NOT make an evidentiary observation if no registered document supports it. If asked "Do you think there's fraud here?", model responds: "Based on the documents registered so far, I can note the following observations…" and lists only document-supported items.
+  - CEM conversations are stored but are NOT part of the formal audit trail (`audit_log.jsonl`). They are working materials. The formal audit trail event is only written when a Lead, Key Fact, or Red Flag is saved from the conversation.
+
+**Session management:**
+  - CEM session starts when Maher opens the "Explore Documents" view.
+  - CEM session ends when Maher closes the view or explicitly clicks "End Conversation".
+  - On session end: conversation saved to `D_Working_Papers/evidence_chat_{timestamp}.md`. Summary of leads/facts/flags saved during the session shown to Maher before close.
+  - Conversation history is NOT loaded on next CEM session start (each conversation starts fresh). Prior conversations are accessible as read-only files in the Working Papers view.
+
+**Edge cases:**
+  - Maher asks about a document that has not been registered: model responds "I don't have access to that document. Please register it in the Evidence folder first."
+  - Maher asks a general knowledge question unrelated to the case: model responds in context ("In the context of this engagement…") and directs back to the registered documents. It does not refuse, but it also does not provide general advice detached from the case.
+  - Very long conversation (>50 turns): oldest turns are dropped from context (sliding window). A banner warns Maher when history is being trimmed. Full transcript is still preserved in the saved file.
+  - Maher closes the app mid-conversation without ending the session: auto-save to `D_Working_Papers/evidence_chat_{timestamp}_recovered.md`. Any leads/facts/flags already clicked "Save" on are preserved in the JSON files (they are saved on click, not on session close).
+  - Model produces a response that Maher believes misquotes the document: Maher can click "Flag Response" — this appends a `FLAGGED` annotation to the conversation transcript. Flagged responses are not saved as leads/facts. No further automated action.
+  - Embedding unavailable (fallback mode): CEM still works via keyword search + excerpt. Performance degrades — model receives less targeted context. Banner shown: "Semantic search unavailable — using keyword matching. Results may be less precise."
+
+---
+
+## Session 024 — Report Templates & Config
+
+### BA-TPL-01 — Report Template Management System
+- Status: DRAFT
+- Scope: Settings → Templates tab; `firm_profile/templates/` directory; `update_report_template` tool; `OutputGenerator.generate_docx()` fallback logic
+
+**User outcome:** Maher can manage branded Word templates per workflow type from the Settings page. Base templates are pre-installed and always present as a fallback. Uploading a custom template overrides the base for that workflow type without deleting it.
+
+**Business rules:**
+  - One template slot per workflow type. Supported workflow types: `frm_risk_register`, `investigation_report`, `client_proposal`, `due_diligence`, `sanctions_screening`, `transaction_testing`, `workpaper`.
+  - Base templates ship with the product as `firm_profile/templates/{workflow_type}_base.docx`. They are read-only — never deletable and never overwritten by an upload. They serve as permanent fallback.
+  - Custom templates are stored as `firm_profile/templates/{workflow_type}_custom.docx`. Uploading a new custom template for a workflow type that already has one triggers versioning before saving: the existing `_custom.docx` is renamed to `{workflow_type}_custom.v{N}.docx` where N is the next available integer. The new file is then saved as `_custom.docx`.
+  - The Settings page exposes a **Templates** tab. For each workflow type, the tab shows: (a) whether a custom template exists, (b) the version history (list of `_custom.v{N}.docx` files), and (c) an upload control to replace the current custom template.
+  - Upload is handled via the `update_report_template(workflow_type: str, file_bytes: bytes)` AI tool call. The tool: (1) validates the file is a valid .docx (magic bytes check), (2) checks file size ≤ 5 MB, (3) opens the file with `python-docx` and extracts named paragraph styles, (4) verifies that all seven required styles are present: `GW_Title`, `GW_Heading1`, `GW_Heading2`, `GW_Body`, `GW_TableHeader`, `GW_Caption`, `GW_Disclaimer`, (5) if valid, rotates the existing custom template (versioning step above), then saves the new file.
+  - `OutputGenerator.generate_docx()` resolves the template path at generation time: checks for `{workflow_type}_custom.docx` first; if absent or if the file is unreadable, falls back to `{workflow_type}_base.docx`. The resolution is logged to audit_log as `{event: "template_resolved", template: "<filename>", fallback: true/false}`.
+  - If `_custom.docx` exists but is missing one or more required named styles at generation time, `OutputGenerator` falls back to the base template and logs a warning: `{event: "template_fallback", reason: "missing_required_styles", missing: [...], fallback_to: "{workflow_type}_base.docx"}`.
+  - Template versioned history is retained indefinitely (no auto-purge). Maher can download any version from the Templates tab but cannot re-activate a past version directly — they must re-upload it.
+
+**Edge cases:**
+  - Upload is not a valid .docx (e.g. a .pdf or a renamed file): tool returns error `"invalid_file_type"`. No file is saved. UI shows: "File must be a valid .docx document."
+  - File exceeds 5 MB: tool returns error `"file_too_large"`. No file is saved. UI shows: "Template file must be under 5 MB."
+  - File is a valid .docx but is corrupted (python-docx raises on open): tool returns error `"file_corrupted"`. No file is saved. UI shows: "The uploaded file could not be read. Please check the file and try again."
+  - One or more required named styles are missing: tool returns error `"missing_required_styles"` with a list of the missing style names. No file is saved. UI shows the list so Maher can correct the template in Word before re-uploading.
+  - `firm_profile/templates/` directory does not yet exist at upload time: tool creates it before saving.
+  - Base template file is missing from the install (e.g. corrupted install): `OutputGenerator` raises a hard error and surfaces it to Maher in the UI. Generation is blocked until the base template is restored.
+  - Maher uploads the same file a second time (identical bytes): tool still proceeds normally — versioning runs, a new `_custom.docx` is saved, and the previous one is versioned. No de-duplication check.
+
+**Out of scope:** PPTX template management (separate feature, not in this sprint). Multi-user template sharing or a cloud template library. In-app template editing or style management (Maher edits templates in Microsoft Word externally). Automated style injection (tool does not add missing styles — it rejects uploads that lack them).
+
+**Open questions for AK:**
+  - Should the Templates tab show a preview thumbnail of the first page of each template, or is a filename + upload-date listing sufficient for v1?
+  - Do versioned templates (`_custom.v{N}.docx`) need a UI to download them, or is access via the file system acceptable for now?
+  - Should `GW_Disclaimer` be mandatory for all workflow types, or only for investigation_report and sanctions_screening? Some workflows (e.g. training_material) may not have a disclaimer section.
+
+---
+
+### BA-TPL-02 — Engagement-Time Template Selection
+- Status: DRAFT
+- Scope: Intake UI (Zone A, all workflow types); case `state.json`; audit_log; one-time upload flow
+
+**User outcome:** At the start of every engagement, Maher is explicitly asked which report template to use before the pipeline runs. There is no silent default. The choice is recorded in the case state and audit trail.
+
+**Business rules:**
+  - The template selector is the last item rendered in Zone A (intake) for every workflow type, immediately before the Run button. It is never hidden or auto-skipped.
+  - The selector presents up to three options, depending on what templates exist for the workflow type:
+    - **(a) Global saved template** — shown only if `{workflow_type}_custom.docx` exists in `firm_profile/templates/`. Label: "Use saved template: {workflow_type}_custom.docx (uploaded {date})". This option is pre-selected by default when available.
+    - **(b) One-time upload for this engagement** — always shown. When selected, a file uploader appears inline in Zone A. The uploaded file is validated (same .docx + size check as BA-TPL-01) but is NOT saved to `firm_profile/templates/`. It is stored temporarily for this pipeline run only (in memory or as a temp file scoped to the session). After the engagement run completes, the file is discarded.
+    - **(c) No template — plain Word output** — always shown. OutputGenerator generates a document using python-docx defaults (no named styles applied, no firm branding). This is the correct option for quick internal drafts.
+  - If no custom template exists for the workflow type, option (a) is suppressed. Maher sees only (b) and (c). There is no "use base template" option exposed to Maher — the base template is an internal fallback only.
+  - Maher's selection is stored in `state.json` under the key `report_template_used`. Value format:
+    - Option (a): `{"source": "global", "filename": "frm_risk_register_custom.docx", "resolved_at": "<ISO timestamp>"}`
+    - Option (b): `{"source": "one_time", "filename": "<original upload filename>", "resolved_at": "<ISO timestamp>"}`
+    - Option (c): `{"source": "none", "filename": null, "resolved_at": "<ISO timestamp>"}`
+  - Template selection is recorded in `audit_log.jsonl` at the moment Maher clicks Run (not at the moment of selection). Event format: `{event: "template_selected", workflow: "<workflow_type>", template: "<filename or null>", scope: "global" | "one_time" | "none", case_id: "<id>", timestamp: "<ISO>"}`.
+  - If Maher does not interact with the template selector (e.g. scrolls past it and clicks Run without choosing), the system applies the pre-selected default: (a) if a custom template exists, (c) otherwise. The audit event is still written with `scope: "global"` or `scope: "none"` as appropriate.
+  - The one-time upload (option b) does NOT trigger the `update_report_template` AI tool. It is a direct file read by `OutputGenerator` with the same validation checks (valid .docx, ≤ 5 MB, required styles present). If validation fails, Run is blocked and the error is shown inline.
+  - For one-time uploads, missing required styles cause a warning (not a hard block): "Template is missing styles: [list]. Output will use default formatting for those sections." Maher can proceed or cancel and fix the template.
+
+**Edge cases:**
+  - Maher selects option (a) (global template) but the file has been deleted from `firm_profile/templates/` between selection and the time OutputGenerator runs: OutputGenerator falls back to the base template. A warning banner is shown in Zone B: "Saved template not found — using base template instead." The audit event is updated with `fallback: true`.
+  - Maher selects option (b) and uploads a file, then changes selection to option (c): the uploaded file is discarded immediately (removed from memory/temp). No file persists.
+  - Maher uploads a file for option (b) that fails validation (invalid .docx, too large, or corrupted): the Run button remains disabled. The error is shown inline next to the uploader. Maher must either fix the file or choose a different option before Run is enabled.
+  - The workflow type has no base template in `firm_profile/templates/` (broken install): same hard error as BA-TPL-01 — generation is blocked, error surfaced to Maher.
+  - Maher resumes an in-progress case (non-terminal state.json): the template selector is not re-shown. The template recorded in `state.json` at first run is used. Maher cannot change the template mid-engagement without starting a new case.
+
+**Out of scope:** Allowing Maher to change the template after a pipeline run has started. Template preview inside the Streamlit UI. Applying different templates to different sections of the same report. PPTX template selection (separate).
+
+**Open questions for AK:**
+  - For option (b) one-time uploads: if the upload is missing required styles and Maher proceeds with the warning, should the fallback for those specific sections come from the base template's styles or from python-docx defaults? Base template styles would produce more consistent output but is slightly more complex to implement.
+  - Should the template selector state be preserved if Maher refreshes the browser mid-intake (before clicking Run)? Or is losing the selection on refresh acceptable in v1?
+  - Is there a case where Maher wants to save a one-time upload as the new global template immediately after using it? If so, a "Save to firm templates" checkbox on option (b) would cover this without a separate Settings round-trip.
+
+**Out of scope:** Real-time collaboration in CEM (multiple users). CEM conversations as discoverable legal documents (they are working papers, explicitly marked as such). Automated Lead extraction without Maher clicking "Save as Lead" (never auto-extract — Maher controls what enters the case record). CEM for Mode B workflows (Proposal, Policy, Training — these do not have evidence documents in the forensic sense).

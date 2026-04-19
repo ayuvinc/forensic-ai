@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: AK
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-19T05:57:25Z — state transition by MCP server
+Last updated:   2026-04-19T07:42:03Z — state transition by MCP server
 
 ---
 
@@ -48,6 +48,14 @@ ARCH-INS-02 (case index) ← write_state() ──────── P8-09-TRACKE
 ARCH-INS-03 (circuit breaker) ← Phase 8 ─────── pre-production
 Phase 9 (chaining UI) ← Sprint-10G
 Phase 7 (blank framework) ← P7-GATE
+Sprint-TPL-01 (TemplateManager) ─── TPL-02, TPL-03, TPL-04, TPL-05
+Sprint-EMB-01 (EmbeddingEngine) ──── EMB-02, EMB-03
+Sprint-EMB-02 (ingestion wire) ────── CONV-01
+Sprint-P9-01a/b/c (schemas) ──────── P9-UI-01, P9-02..09
+Sprint-WORK-01 (WorkpaperGenerator) ─ WORK-02, WORK-03
+Sprint-CONV-01 (EvidenceChat) ─────── CONV-02
+Sprint-CONV-02 ← EMB-02 + CONV-01
+Sprint-UX-FIXES ─ parallel (no schema deps)
 ```
 
 Completed tasks archived in: releases/completed-tasks.md
@@ -855,4 +863,127 @@ FR-06 ← FR-02 + FR-03 + FR-04 + FR-05
 - [ ] FE-07 Case Tracker + Project workspace — surface Previous_Versions/
   - In project detail expander: "Previous Versions" section listing versioned reports with download buttons
   - Only shown if `Previous_Versions/` folder exists in project root
+
+---
+
+### Sprint-TPL — Report Template System (Session 024)
+
+**BA:** BA-TPL-01, BA-TPL-02
+**Security:** Template uploads are .docx only — validate magic bytes (PK header), size cap 5MB, no macro execution. Template path resolution must not escape `firm_profile/templates/` directory (R-019 pattern). Base templates are read-only — never deletable.
+**Note:** `templates.json` already exists in `firm_profile/templates/` with 8 workflow slots. `OutputGenerator.generate_docx()` already accepts `template_path=None`. Sprint-TPL formalises the manager layer, Settings UI, and intake selector on top of this foundation.
+
+```
+TPL-01 (TemplateManager) ─── TPL-02, TPL-03, TPL-04, TPL-05
+TPL-02 (output_generator) ─── TPL-05
+TPL-03 (settings tab) ──────── TPL-05
+TPL-04 (intake selector) ───── TPL-05
+```
+
+- [ ] **[TPL-01]** Create `tools/template_manager.py` — `TemplateManager` class: `resolve(workflow_type, custom_path=None) -> Path` (fallback chain: custom → base → raise); `validate_docx(path) -> ValidationResult` (magic bytes PK check, ≤5MB, python-docx open, check all 7 required styles: GW_Title, GW_Heading1, GW_Heading2, GW_Body, GW_TableHeader, GW_Caption, GW_Disclaimer); `update_custom(workflow_type, file_bytes) -> Path` (version-rotates existing `_custom.docx` to `_custom.v{N}.docx`, saves new file atomically); `list_templates() -> dict` (reads `firm_profile/templates/templates.json`, returns per-workflow slot with base/custom/versions). Reads/writes `firm_profile/templates/templates.json`. All path operations confined to `firm_profile/templates/` — any path traversal attempt raises ValueError. ← deps: none | AC: `TemplateManager().resolve("frm_risk_register")` returns path ending in `frm_risk_register_base.docx` when no custom exists; `resolve("frm_risk_register", custom_path="../../evil")` raises ValueError; `validate_docx()` returns ValidationResult with `missing_styles` list when styles absent.
+
+- [ ] **[TPL-02]** Update `tools/output_generator.py` — `generate_docx()` to call `TemplateManager().resolve(workflow_type)` when `template_path=None`; apply named styles from template (GW_Title for cover, GW_Heading1 for h1, GW_Heading2 for h2, GW_Body for paragraphs) when template is loaded and styles exist; fall back silently to current basic styling if named style is absent from template; log resolution event to audit_log via `{event: "template_resolved", template: "<filename>", fallback: true/false}`. ← deps: TPL-01 | AC: `generate_docx(content_md="# Title\n\nBody", output_path=..., workflow_type="frm_risk_register")` uses base template and does not crash; audit event `template_resolved` written with `fallback: false` when base template applied.
+
+- [ ] **[TPL-03]** Update `pages/settings.py` — redesign as 4-tab layout `st.tabs(["Firm Profile", "Pricing", "Team & T&C", "Report Templates"])` per UX-018. Tab 4 (Report Templates): render one row per workflow type (Investigation, Due Diligence, FRM, TT, Sanctions, Proposal) showing current template filename, last updated timestamp, and three inline actions — "Upload Custom" (opens conditional `st.file_uploader` for that row), "Preview" (popover showing detected styles from `validate_docx()`), "Reset to Base" (with explicit confirmation). Upload validation fires on upload event: pass → st.success; partial (missing non-critical styles) → st.warning + proceed allowed; fail (missing GW_Heading1 or GW_Body) → st.error + save blocked. Completeness badge at top of page (above tabs): 5 chips — Firm Profile / Pricing / Team / T&C / Templates — green/amber/grey. ← deps: TPL-01 | AC: Tab 4 renders 6 workflow rows; upload of a valid .docx with all 7 styles → st.success + templates.json updated; upload of .docx missing GW_Heading1 → st.error + no file saved; Reset to Base requires explicit "Confirm Reset" button click before deletion.
+
+- [ ] **[TPL-04]** Add template selector to `streamlit_app/shared/intake.py` — `template_selector(st, workflow_type) -> Optional[Path]`. Renders as collapsed `st.expander("Report template", expanded=False)` per UX-019, positioned below last intake field and above Run button. Radio group: (a) "Use saved template: {filename}" — shown only if custom exists for workflow type, pre-selected by default if available; (b) "Upload for this engagement only" — always shown, reveals inline `st.file_uploader`; (c) "Plain Word output (no template)" — always shown, pre-selected if no custom exists. Confirmation caption below radio showing selected template and scope. Session state: selected path stored in `st.session_state["report_template_path"]`; one-time bytes in `st.session_state["report_template_bytes"]`. Template selection event written to audit_log at Run click: `{event: "template_selected", workflow, template, scope: "global"|"one_time"|"none"}`. Add `template_selector()` call to all workflow pages that generate docx output. ← deps: TPL-01 | AC: workflow page with no custom template shows only options (b) and (c); option (a) pre-selected when custom exists; option (b) with no file uploaded disables Run button; selection written to audit_log on Run.
+
+- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx`; open file in python-docx and confirm at least one paragraph with style matching a GW_ style name is present; audit_log contains `template_resolved` event with `fallback: false`; `templates.json` shows correct base filename in `frm_risk_register.base` slot. ← deps: TPL-01, TPL-02, TPL-03, TPL-04 | AC: smoke test script runs without exception and all three assertions pass.
+
+---
+
+### Sprint-EMB — Semantic Embeddings Layer — UPDATED (Session 024 refinements)
+
+**Note:** Sprint-EMB tasks EMB-00 through EMB-04 already written above (Session 022 entries). The tasks below refine and extend the existing entries based on BA-EMB-01 (Session 024 BA pass).
+
+- [ ] **[EMB-01-REF]** Refine `EmbeddingEngine` spec per BA-EMB-01: class takes `case_id`; `embed_document(doc_entry: DocumentEntry)` chunks at 800-char boundary with 80-char overlap; `retrieve(query, case_id, top_k=5) -> list[ChunkResult]` where `ChunkResult` has `chunk_text`, `source_doc_id`, `source_filename`, `chunk_index`, `source_citation` (formatted as `{filename}, chunk {n}`); two-layer fallback — (1) `ImportError` on `sentence_transformers` → `self.available = False`, log warning, no crash; (2) download error (first-run model download fails) → same `self.available = False`. 8000-char cap on total retrieved context per query. ← deps: EMB-00 | AC: `EmbeddingEngine("test-case")` with sentence-transformers absent → `engine.available == False` and `retrieve()` returns `[]` without raising; with library available, `retrieve("fraud indicators")` returns list of `ChunkResult` with non-empty `source_citation`.
+
+- [ ] **[EMB-02-REF]** Refine DocumentManager wire-up per BA-EMB-01: `register_document()` calls `EmbeddingEngine.embed_document()` synchronously (spinner shown in Streamlit during upload per BA open-question resolution — synchronous v1); add `embedding_status: Literal["indexed","pending","failed","unavailable"]` field to `DocumentEntry` schema; if `EmbeddingEngine.available == False` → set status `"unavailable"`, skip embed, no crash; if embedding raises → set status `"failed"`, log warning, return normally. ← deps: EMB-01-REF | AC: `DocumentEntry` has `embedding_status` field; registering a document with engine unavailable returns `embedding_status="unavailable"`; registering with engine available returns `embedding_status="indexed"`.
+
+- [ ] **[EMB-03-REF]** Embedding status badge in Streamlit per UX-013: add `embedding_status` badge to document list in (a) Input Session workspace document panel, (b) Case Tracker detail expander. Badge states: "Indexed — {N} chunks" (green), "Pending" (amber), "Failed" (red), "Unavailable — embedding library not installed" (grey). On hover/expand: chunk count, model name, indexed_at timestamp if available. ← deps: EMB-02-REF | AC: document registered with `embedding_status="indexed"` shows green badge with chunk count; `"unavailable"` shows grey badge with install hint text.
+
+---
+
+### Sprint-P9 — Phase 9 Schema Foundation (Session 024 — refines existing P9-01 tasks)
+
+**Note:** P9-01a/b/c tasks are already written above in the Phase 9 section. The tasks below are the ADDITIONAL tasks designed in Session 024 (BA-P9-01, BA-P9-02, BA-P9-03 extended specs).
+
+- [ ] **[P9-01-SLUG]** `schemas/project.py` — `ProjectIntake` Pydantic validator on `project_slug` (7-step): (1) strip leading/trailing whitespace; (2) lowercase; (3) replace spaces and underscores with hyphens; (4) strip all characters not in `[a-z0-9-]`; (5) collapse multiple consecutive hyphens to one; (6) strip leading/trailing hyphens; (7) raise ValueError if result is empty. Allowlist post-validation: raise ValueError if slug contains `..`, `/`, `\`, null byte `\x00`. This is R-019 mitigation. ← deps: none | AC: `"Project Alpha / FRM"` → `"project-alpha-frm"`; `"../etc/passwd"` → ValueError; `"   "` → ValueError; `"__test__"` → `"test"`; `"valid-slug"` → `"valid-slug"`.
+
+- [ ] **[P9-01-SESSION]** `schemas/project.py` — `InputSession`: `session_id: str`, `project_slug: str`, `mode: Literal["input","final_run"]`, `status: Literal["open","closed","abandoned","error"]` (4-state lifecycle), `started_at: datetime`, `closed_at: Optional[datetime]`, `documents_registered: list[str]`, `notes_path: Optional[str]`, `key_facts_count: int = 0`, `red_flags_count: int = 0`. Path for session log: `cases/{project_slug}/D_Working_Papers/session_log.jsonl`. ← deps: P9-01-SLUG | AC: `InputSession(project_slug="test", mode="input", status="open", started_at=datetime.now(), session_id="s1", documents_registered=[])` validates with no error; `status="invalid"` raises ValidationError.
+
+- [ ] **[P9-01-STATE]** `schemas/project.py` — `ProjectState`: `project_slug: str`, `status: CaseStatus`, `project_health: Literal["green","amber","red"]` (enum), `cases: dict[str, str]` (workflow_type → case_id mapping), `sessions: list[InputSession]`, `language_standard: str = "acfe"`, `context_budget_used_pct: float = 0.0`, `interim_context_written: bool = False`, `last_updated: datetime`, `is_legacy: bool = False` (backward-compat UUID flag for pre-P9 cases). Update triggers: `last_updated` auto-updates on any state change. ← deps: P9-01-SESSION | AC: `ProjectState` imports cleanly; `project_health="invalid"` raises ValidationError; `is_legacy` defaults to False; `cases` dict is empty dict by default (not None).
+
+- [ ] **[P9-01-AC]** Import smoke test + security tests for `schemas/project.py`: `from schemas.project import ProjectIntake, InputSession, ProjectState` succeeds; path traversal test `ProjectIntake(project_name="../etc/passwd", ...)` raises ValueError; empty slug `ProjectIntake(project_name="   ", ...)` raises ValueError; invalid language standard `ProjectIntake(language_standard="invalid")` raises ValidationError; run as `python -m pytest tests/test_project_schema.py -v` (create minimal test file if none exists). ← deps: P9-01-SLUG, P9-01-SESSION, P9-01-STATE | AC: all 4 assertions pass; test file runs without import errors.
+
+---
+
+### Sprint-WORK — Interim Workpaper Generation (Session 024)
+
+**BA:** BA-WORK-01 — CONFIRMED 2026-04-19
+**Security:** Reads persisted artifacts only — no new API calls unless explicitly triggered by Maher. ANALYTICAL INFERENCE label is a data integrity requirement. Output written to `D_Working_Papers/` only — not E_Drafts or F_Final (unless promoted). Workpaper generation does NOT transition CaseState unless Maher promotes to final.
+**AK decisions locked:** (1) Trigger: any point after Junior draft exists — mid or post pipeline; (2) Structure: Maher-driven, presents 9 sections as opt-in/opt-out at generation time; (3) Promotion: workpapers can be promoted to final report → written to F_Final/ with PROMOTED_FROM_WORKPAPER audit flag.
+**Gate:** UNBLOCKED — ready to build.
+
+```
+WORK-01 (WorkpaperGenerator) ─── WORK-02, WORK-03
+```
+
+- [ ] **[WORK-01]** Create `workflows/workpaper.py` — `WorkpaperGenerator` class: `generate(case_id: str, source_artifacts: dict) -> Path`. Single Sonnet call. System prompt hardcodes ACFE Internal Review language standard and instructs: "Every finding must cite at least one registered document by doc_id and filename. If no documentary support exists, label the finding 'ANALYTICAL INFERENCE — no documentary evidence found yet'." 9-section structure per BA-WORK-01: (1) Header with PRELIMINARY watermark; (2) Materials reviewed (from DocumentIndex); (3) Key facts (from key_facts.json); (4) Red flags (from red_flags.json, sorted high→medium→low); (5) Emerging findings (Sonnet-generated, 3–7 items, each with evidence citation); (6) Leads register status (from leads_register.json); (7) Open questions (from findings + open leads + intake_qa); (8) Next steps (Sonnet-generated, 3–5 items); (9) Audit trail summary (session count, document count, facts count). Output: `.md` only (no DOCX for workpapers per BA-WORK-01 out-of-scope). Saved to `D_Working_Papers/interim_workpaper.v{N}.md` (N = next available integer, never overwrites). Appends `WORKPAPER_GENERATED` event to `audit_log.jsonl` with version and model used. ← deps: P9-01-STATE (for ProjectState), EMB-01-REF (optional retrieval) | AC: `generate()` produces a .md file in D_Working_Papers/; file contains "PRELIMINARY" watermark text; findings without doc citations are labelled "ANALYTICAL INFERENCE"; audit_log contains `WORKPAPER_GENERATED` event; calling `generate()` twice creates `v1.md` and `v2.md` — no overwrite.
+
+- [ ] **[WORK-02]** Trigger in Case Tracker — "Generate Workpaper" button in detail expander per UX-015: visible for cases with status `JUNIOR_DRAFT_COMPLETE` or `PM_REVIEW_COMPLETE`. Button calls `WorkpaperGenerator.generate(case_id, source_artifacts)` where source_artifacts are loaded from case folder E_Drafts (junior_output.v*.json, pm_review.v*.json). Shows download button in Case Tracker detail expander after generation: `st.download_button("Download Workpaper (.md)", ...)` with filename pattern `workpaper_{case_id}_{YYYYMMDD}.md`. Greyed out (disabled, tooltip "No draft material yet") for cases with status `INTAKE_CREATED`. Not shown for terminal states (`OWNER_APPROVED`, `DELIVERABLE_WRITTEN`). ← deps: WORK-01 | AC: button visible for `JUNIOR_DRAFT_COMPLETE` case; button absent for `INTAKE_CREATED` case; generated file downloadable from tracker without navigating to case folder.
+
+- [ ] **[WORK-03]** Secondary trigger in pipeline done stage — secondary `st.button("Generate Interim Workpaper")` below primary download button on Investigation and FRM done stages per UX-015. Calls same `WorkpaperGenerator.generate()`. Shows inline `st.spinner("Generating workpaper...")` during generation. Renders a second download button for the workpaper after generation. Does not re-trigger the pipeline. ← deps: WORK-01 | AC: button present on FRM done stage and Investigation done stage; clicking generates workpaper without any agent pipeline re-run (verify by checking audit_log — no new Junior/PM/Partner events); workpaper download available immediately after generation.
+
+---
+
+### Sprint-CONV — Conversational Evidence Mode (Session 024)
+
+**BA:** BA-CONV-01 — CONFIRMED 2026-04-19
+**Security:** Context window cap (16,000 chars per turn) prevents prompt injection via large document uploads. Per-turn source attribution is an audit integrity requirement. CEM conversations are stored as working materials — NOT part of formal audit_log. Audit event written only when Lead/Fact/Red Flag is explicitly saved. Model strictly scoped to registered documents only.
+**AK decisions locked:** Placement = persistent collapsible chat panel on ALL engagement pages (not standalone page, not tab). Single shared component injected via bootstrap(). Right-edge slide-out panel. Replace CONV-02 standalone page design with shared panel component.
+**Gate:** UNBLOCKED — ready to build. Note: CONV-02 design updated — build as `streamlit_app/shared/evidence_chat_panel.py` injected on all pages, not as `14_Evidence_Chat.py`.
+
+```
+CONV-01 (EvidenceChat backend) ─── CONV-02
+CONV-02 ← CONV-01 + EMB-02-REF
+```
+
+- [ ] **[CONV-01]** Create `workflows/evidence_chat.py` — `EvidenceChat` class: `chat(case_id: str, message: str, selected_doc_ids: list[str], conversation_history: list[dict]) -> str`. Single Sonnet turn. System prompt: "You are reviewing the documents registered for this forensic engagement. You can only present findings and observations directly supported by the registered documents. For each observation, state the source document and quote the relevant passage. You may explain forensic concepts and fraud patterns as background context. You must not present inferences as conclusions. All observations are preliminary." Context injection per turn (capped at `config.CEM_CONTEXT_CHARS` = 16,000 chars): (1) DocumentIndex summary of all registered docs; (2) key_facts.json and red_flags.json content; (3) `EmbeddingEngine.retrieve(message, case_id, top_k=5)` chunks if embedding available, else `DocumentManager.find_relevant_docs()` excerpt; (4) conversation history (oldest turns dropped first when cap approached). Document-scoped mode: if `selected_doc_ids` is non-empty, retrieval filtered to those doc_ids only. Saves full conversation turn to `D_Working_Papers/evidence_chat_{YYYYMMDD_HHMMSS}.md` on each session_end call (append-only; new CEM session = new file). Auto-save to `evidence_chat_{timestamp}_recovered.md` on mid-session app close. ← deps: EMB-02-REF | AC: `chat(case_id, "What does the bank statement show?", [], [])` returns a non-empty string; system prompt injection confirmed via code inspection; context cap of 16000 chars enforced (verify by unit test with large doc); conversation save creates file in D_Working_Papers/.
+
+- [ ] **[CONV-02]** Create `pages/14_Evidence_Chat.py` (or tab within Investigation per UX-D-07 decision — build as standalone page, refactor to tab if AK decides option B post-build). Two-panel layout per UX-014: Left panel (1/3 width) — document selector loaded from `DocumentManager` index for active case (`st.session_state.active_project` or case_id picker if no active project); each document has a checkbox "Include in context"; shows embedding status badge per EMB-03-REF. Right panel (2/3 width) — chat interface: `st.chat_input("Ask about the evidence...")` + `st.chat_message()` rendering (user and assistant). Per assistant response: three action buttons below the message — "Save as Lead" (appends to leads_register.json + audit event), "Save as Key Fact" (appends to key_facts.json), "Save as Red Flag" (severity selectbox appears before saving). "Flag Response" button appends `FLAGGED` annotation to conversation transcript. Persistent banner at top of right panel: `st.warning("Evidence Exploration Mode — outputs are not reviewed deliverables. Use the Investigation pipeline for reviewed reports.")`. Conversation persists across sessions via `cases/{id}/evidence_chat.jsonl` (new file per session). History trimming banner shown when >50 turns: `st.info("Older turns have been trimmed from context. Full transcript saved to Working Papers.")`. "End Conversation" button closes session and triggers conversation save. ← deps: CONV-01, EMB-02-REF | AC: page loads without error when no active case; chat input sends message and renders response; "Save as Lead" button appends to leads_register.json (verify file exists and has entry); "NOT FOR CLIENT REVIEW" equivalent warning banner present; conversation saved to evidence_chat_{timestamp}.md on "End Conversation" click.
+
+---
+
+### Sprint-UX-FIXES — High-Priority UX Fixes (Session 024)
+
+**UX source:** UX-007 through UX-011, UX-016, UX-017 (all Session 024 review findings)
+**Security:** No new data paths. No schema changes. UI layer only.
+**Note:** These tasks can run in parallel with all other sprints — no schema or tool dependencies.
+
+- [ ] **[UX-F-01]** Renumber pages + add sidebar section dividers per UX-007: rename page files to eliminate gaps and create groupings (01_Investigation, 02_Persona_Review, 03_Scope → or per AK-approved mapping TBD); inject sidebar section headers in `streamlit_app/shared/session.py` bootstrap via `st.sidebar.markdown` — "INVESTIGATION", "COMPLIANCE", "BUSINESS", "UTILITIES" labels with dividers above each group. Add `st.info("Run Scope first for any new engagement...")` callout on 0_Scope.py. Add `st.page_link()` calls to landing page workflow grid (Streamlit 1.31+; fallback to markdown links if unavailable). Move Case Tracker to sidebar position just before Settings/Team. ← deps: none | AC: sidebar shows section dividers visible in browser; no page-number gaps in sidebar nav; Scope page shows "Start here" callout.
+
+- [ ] **[UX-F-02]** Workflow-specific intake labels + DD merged form per UX-008: update `generic_intake_form()` to accept `submit_label` param mapped from `workflow_id` (e.g. "Run Investigation", "Draft Proposal", "Begin Scoping"); add `placeholder` text to description field per workflow_id map; merge Due Diligence generic + specific fields into single `dd_intake_form()` (eliminates two-phase render); move FRM module dependency enforcement to `st.on_change` callback on multiselect (auto-add Module 2, show inline `st.info()` without clearing form). ← deps: none | AC: FRM page shows "Module 2 added automatically" inline on multiselect change without form submit; DD page renders all fields in one form (no second form appearing after submit); Investigation Run button labelled "Run Investigation" not "Start".
+
+- [ ] **[UX-F-03]** Progress bar + agent label mapping + failure log capture per UX-009: add `st.progress()` bar above status block in running stage (3-step: 33% after Junior start event, 66% after PM start, 100% after Partner complete; FRM: step per module × 3); map internal agent IDs to user-facing labels in `run_in_status()` or `PipelineEvent` construction (`junior_analyst` → "Consultant (Draft)", `pm_review` → "Consultant (Review)", `partner` → "Consultant (Sign-off)"); add static estimated time caption at run start: `st.caption("Estimated time: 2–4 minutes...")`; on pipeline failure, add `st.expander("View pipeline log")` rendering last N events captured in `st.session_state["pipeline_log_events"]` (store events during `on_progress` callbacks). ← deps: none | AC: progress bar visible during FRM run (verify by inspection); agent label "Consultant (Draft)" appears in log (not "junior_analyst"); failure expander appears on pipeline error state.
+
+- [ ] **[UX-F-04]** Inline report preview + copy case ID + "Start Another" in Zone C per UX-010: add `st.expander("Preview report", expanded=False)` in done stage containing `st.markdown(report_text[:3000])` with "Show more" toggle; add "Copy Case ID" button (or render case_id as `st.code()` for easy selection) next to case ID display; collapse `**Location:** cases/{id}/` into "Technical details" expander; add primary "Start Another [Workflow Name]" button in Zone C main content area (not sidebar-only); for FRM done-stage rewrites, update spinner text to `f"Applying {rewrite_count} rewrite(s)..."`. ← deps: none | AC: done stage shows report preview expander; case ID displayed in selectable format; "Start Another FRM" button present in main content below download; location path hidden by default in collapsed expander.
+
+- [ ] **[UX-F-05]** Case Tracker — status label mapping + dataframe row selection + Client column + engagement_id scaffold per UX-011: add `_STATUS_LABELS` dict mapping all CaseStatus values to human-readable strings ("Draft Ready", "Under Review", "Approved", "Error — action needed" etc.); replace `st.selectbox` detail driver with `st.dataframe(on_select="rerun", selection_mode="single-row")` (Streamlit 1.35+; fall back to selectbox if version check fails); add "Client" column to dataframe populated from `client_name` in index; add `engagement_id` column to `cases/index.json` schema (null for all existing cases — Phase 9 ready scaffold); add "Resume / Open" button in detail expander using `st.switch_page()` mapped from workflow key to page path. ← deps: none | AC: tracker shows "Draft Ready" not "JUNIOR_DRAFT_COMPLETE"; Client column visible; row click drives detail panel without requiring separate selectbox interaction; engagement_id field present in index (null for legacy cases).
+
+- [ ] **[UX-F-06]** Visual design — create `.streamlit/config.toml` + fix h2/h3 selector + wire severity CSS per UX-016: create `/Users/akaushal011/forensic-ai/.streamlit/config.toml` with `[theme]` block (`primaryColor="#D50032"`, `backgroundColor="#FFFFFF"`, `secondaryBackgroundColor="#F5F2F0"`, `textColor="#282827"`, `font="sans serif"`); fix CSS selector in `session.py` `_CSS` to target `h2, h3` (not h2 only) for red bottom border; wire severity CSS classes in `pipeline.py` `_render_event()`: CRITICAL → `st.markdown('<div class="severity-critical">...</div>', unsafe_allow_html=True)`, WARNING → same with `severity-warning`; add sidebar footer: `st.sidebar.caption(f"GoodWork Forensic AI · {today}")`; remove button color overrides from `_CSS` that now duplicate config.toml. ← deps: none | AC: `.streamlit/config.toml` exists with correct keys; browser shows #D50032 primary color on first load (not CSS-injected); CRITICAL events in pipeline log show left-border accent style; `st.subheader()` text shows red underline (h3 rule now applied).
+
+- [ ] **[UX-F-07]** Settings completeness + T&C textarea + firm.json consolidation per UX-017: add `tc_text` field to Settings page as `st.text_area("Standard Terms & Conditions", height=300)` with helper text; store in `firm.json["tc_text"]`; add completeness indicator at top of Settings page — visual checklist of 5 items (Firm Name, Logo, Pricing, T&C, Team) with green/amber/grey states; in Proposal workflow intake, add pre-flight check: read `firm.json`, if firm_name blank → `st.warning("Firm profile incomplete — go to Settings...")` with `st.page_link()` to Settings; add roadmap item to consolidate `firm_profile.json` and `pricing_model.json` into `firm.json` (mark as REFACTOR-01 in todo, do not implement now). ← deps: none | AC: Settings page shows completeness indicator above tabs; T&C textarea saves to firm.json; Proposal page shows warning when firm_name is blank; REFACTOR-01 logged in todo.md.
+
+---
+
+### Sprint-P9-UI — Phase 9 Engagements UI (Session 024)
+
+**UX:** UX-012
+**AK decision locked (2026-04-19):** New `01_Engagements.py` as top-level home. `0_Scope.py` becomes a step inside New Engagement flow — not standalone. Premium two-panel engagement dashboard.
+**Gate:** UNBLOCKED — ready to build after P9-01 schemas complete.
+**Security:** Same as Phase 8 — localhost:8501, single user; all data in `projects/{slug}/`; slug used only via validated path from P9-01a.
+
+- [ ] **[P9-UI-01]** Create `pages/01_Engagements.py` — two-panel engagement home per UX-012. Left panel (1/3 width): list of named engagement cards from `ProjectManager.list_projects()` — each card shows Engagement Name, Client, Status (health roll-up: green all-done, amber any-error, blue in-progress), Last Activity. "New Engagement" button at top of left panel. Right panel (2/3 width): selected engagement detail — shows all cases under engagement as mini-tracker (workflow type, status, last updated), plus "Run New Workflow" button that routes to relevant workflow page with `active_project` pre-set in session_state. Empty state (no engagements): `st.info("No engagements yet. Start your first engagement.")` with prominent "New Engagement" button spanning both panels. "New Engagement" wizard: multi-field form (Project Name, Client Name, Service Type selectbox, Language Standard selectbox — 4 options per BA-P9-05, Naming Convention); slug preview shown as `st.caption("Folder name: cases/{slug}/")` updating on keystroke; collision detection before `create_project()` call; on success: `st.success("Engagement created: cases/{slug}/")` + list of 6 created subfolders. ← deps: P9-01-SLUG, P9-01-STATE, P9-02 (all from Phase 9 section above) | AC: page loads without error; "New Engagement" form creates `cases/{slug}/` with 6 subfolders; collision warning shown if slug exists; engagement cards visible after creation; "Run New Workflow" sets `st.session_state.active_project`.
+
+- [ ] **[P9-UI-02]** Wire `engagement_id` / `active_project` into all workflow intake pages — add "Continue Engagement" option at top of intake form on all workflow pages: if `st.session_state.active_project` is set, show `st.info("Continuing engagement: {project_name} — client: {client_name}")` banner and pre-fill `client_name`, `language_standard` from project context; lock those fields (render as `st.text()` not `st.text_input()`). If no `active_project`: existing behavior unchanged (standalone case with UUID, backward compat). Add `engagement_id` to `state.json` at case creation if `active_project` is set. ← deps: P9-UI-01, P9-01-STATE | AC: workflow page with `active_project` set shows pre-filled client name and "Continuing engagement" banner; field is read-only (not editable); without `active_project`, page behaves identically to Phase 8 behavior; `state.json` contains `engagement_id` matching project slug when created via engagement context.
 
