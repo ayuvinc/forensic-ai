@@ -12,3 +12,5 @@ extract-msg>=0.48.0
 pdfplumber>=0.10.0
 beautifulsoup4>=4.12.0
 html2text>=2020.1.16
+sentence-transformers>=2.7.0
+chromadb>=0.4.0

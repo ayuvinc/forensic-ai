@@ -16,14 +16,7 @@ _CSS = """
 
 [data-testid="stSidebar"] { padding-top: 1rem; }
 
-.stButton > button[kind="primary"] {
-  background-color: #D50032 !important;
-  border: none;
-  border-radius: 6px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-}
-.stButton > button[kind="primary"]:hover { background-color: #761E2F !important; }
+/* Button colors are now set via .streamlit/config.toml primaryColor — no CSS override needed */
 
 .severity-critical { border-left: 4px solid #D50032; background: #FFF0F2; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
 .severity-warning  { border-left: 4px solid #B8860B; background: #FFFBEA; padding: 12px 16px; border-radius: 0 6px 6px 0; margin-bottom: 8px; }
@@ -39,7 +32,7 @@ _CSS = """
   color: #4F4F4E;
 }
 
-h2 { color: #282827; font-weight: 600 !important; border-bottom: 2px solid #D50032; padding-bottom: 8px; }
+h2, h3 { color: #282827; font-weight: 600 !important; border-bottom: 2px solid #D50032; padding-bottom: 8px; }
 </style>
 """
 
@@ -92,6 +85,11 @@ def bootstrap(st) -> dict:
     st.session_state.hook_engine = hook_engine
     st.session_state.firm_name = firm_name
     st.session_state.research_mode = getattr(config, "RESEARCH_MODE", "knowledge_only")
+
+    # Sidebar footer — firm identity + today's date
+    import datetime
+    today = datetime.date.today().strftime("%d %b %Y")
+    st.sidebar.caption(f"GoodWork Forensic AI · {today}")
 
     return st.session_state
 

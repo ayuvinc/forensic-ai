@@ -37,14 +37,26 @@ class PipelineEvent:
 
 
 def _render_event(st, event: PipelineEvent) -> None:
-    """Render a single PipelineEvent using the appropriate Streamlit severity call."""
-    label = f"[{event.agent}] {event.message}"
+    """Render a PipelineEvent using branded severity CSS classes.
+
+    CRITICAL and WARNING use left-border accent divs (defined in session._CSS).
+    INFO uses a plain st.info() — no custom styling needed.
+    The CSS classes are injected once by bootstrap() via session._CSS.
+    """
+    import html as _html
+    label = f"[{event.agent}] {_html.escape(event.message)}"
     if event.severity == "CRITICAL":
-        st.error(label)
+        st.markdown(
+            f'<div class="severity-critical">{label}</div>',
+            unsafe_allow_html=True,
+        )
     elif event.severity == "WARNING":
-        st.warning(label)
+        st.markdown(
+            f'<div class="severity-warning">{label}</div>',
+            unsafe_allow_html=True,
+        )
     else:
-        st.info(label)
+        st.info(f"[{event.agent}] {event.message}")
 
 
 def run_in_status(st, label: str, fn: Callable, *args, **kwargs) -> Any:
