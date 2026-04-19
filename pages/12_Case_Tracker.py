@@ -45,15 +45,31 @@ _PIPELINE_ERROR_GUIDANCE = (
 )
 
 
+_STATUS_LABELS: dict[str, str] = {
+    "OWNER_APPROVED":         "Approved",
+    "DELIVERABLE_WRITTEN":    "Complete",
+    "PM_REVISION_REQUESTED":  "Revision (PM)",
+    "PARTNER_REVISION_REQ":   "Revision (Partner)",
+    "PIPELINE_ERROR":         "Error",
+    "INTAKE_CREATED":         "Intake",
+    "JUNIOR_DRAFT_COMPLETE":  "Draft",
+    "PM_REVIEW_COMPLETE":     "PM Review",
+    "PARTNER_REVIEW_COMPLETE":"Partner Review",
+    "OWNER_READY":            "Ready",
+    "OWNER_REJECTED":         "Rejected",
+}
+
+
 def _status_badge(status: str) -> str:
-    """Return coloured emoji prefix + status for table display."""
+    """Return coloured prefix + human label for table display."""
+    label = _STATUS_LABELS.get(status, status.replace("_", " ").title())
     if status in _GREEN_TERMINAL:
-        return f"🟢 {status}"
+        return f"✓ {label}"
     if status in _AMBER_REVISION:
-        return f"🟡 {status}"
+        return f"~ {label}"
     if status == "PIPELINE_ERROR":
-        return f"🔴 {status}"
-    return f"🔵 {status}"
+        return f"✗ {label}"
+    return label
 
 
 def _workflow_label(key: str) -> str:
@@ -159,28 +175,49 @@ for e in entries_sorted:
     rows.append({
         "Case ID":      cid_display,
         "_case_id":     cid,           # full ID retained for detail lookup — not shown
+        "Client":       e.get("client_name", ""),
         "Workflow":     _workflow_label(e.get("workflow", "")),
         "Status":       _status_badge(e.get("status", "")),
         "Last Updated": e.get("last_updated", "")[:19].replace("T", " "),
+        "_engagement_id": e.get("engagement_id", ""),  # scaffold — not shown
     })
 
 df = pd.DataFrame(rows)
-# st.dataframe — table itself scrolls natively; no st.columns() wrapper (UX-004 mobile)
-st.dataframe(df.drop(columns=["_case_id"]), use_container_width=True, hide_index=True)
-
-# ── Row detail — selectbox drives one-expander-at-a-time (UX-D-02) ────────────
-st.divider()
-case_id_list = [r["_case_id"] for r in rows]
-selected = st.selectbox(
-    "Select case",
-    options=["— select a case to view details —"] + case_id_list,
-    key="tracker_selected_case",
-    label_visibility="collapsed",
+display_cols = ["Case ID", "Client", "Workflow", "Status", "Last Updated"]
+# on_select="rerun" enables row-click selection (UX-F-05)
+event = st.dataframe(
+    df[display_cols],
+    use_container_width=True,
+    hide_index=True,
+    on_select="rerun",
+    selection_mode="single-row",
+    key="tracker_df",
 )
 
-if selected and selected != "— select a case to view details —":
+# ── Row detail — driven by dataframe row click or selectbox fallback ──────────
+st.divider()
+selected_rows = event.selection.get("rows", []) if hasattr(event, "selection") else []
+if selected_rows:
+    selected_idx = selected_rows[0]
+    selected = rows[selected_idx]["_case_id"] if selected_idx < len(rows) else None
+else:
+    # Selectbox fallback for environments where dataframe row-click is unavailable
+    case_id_list = [r["_case_id"] for r in rows]
+    selected = st.selectbox(
+        "Select case",
+        options=["— select a case to view details —"] + case_id_list,
+        key="tracker_selected_case",
+        label_visibility="collapsed",
+    )
+    if selected == "— select a case to view details —":
+        selected = None
+
+if selected:
     entry = next((e for e in entries if e.get("case_id") == selected), None)
     status = entry.get("status", "") if entry else ""
+    engagement_id = entry.get("engagement_id", "") if entry else ""
 
     with st.expander(f"Case: {selected}", expanded=True):
+        if engagement_id:
+            st.caption(f"Engagement ID: {engagement_id}")
         _render_case_detail(selected, status)

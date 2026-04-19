@@ -14,6 +14,24 @@ session = bootstrap(st)
 st.title("Client Proposal")
 st.caption("Generate a full 7-section forensic consulting proposal with team selection and fee structure")
 
+# UX-F-07: pre-flight firm profile check — warn if profile is incomplete
+_firm_json = __import__("config", fromlist=["FIRM_PROFILE_DIR"]).FIRM_PROFILE_DIR / "firm.json"
+if _firm_json.exists():
+    import json as _json
+    _profile = _json.loads(_firm_json.read_text(encoding="utf-8"))
+    _missing = [f for f, v in [
+        ("Firm Name", _profile.get("firm_name", "").strip()),
+        ("Pricing Model", _profile.get("pricing_model", "").strip()),
+        ("Terms & Conditions", _profile.get("terms_and_conditions", "").strip()),
+    ] if not v]
+    if _missing:
+        st.warning(
+            f"Firm profile incomplete — missing: {', '.join(_missing)}. "
+            "Go to **Settings** to fill in these fields before generating a proposal."
+        )
+else:
+    st.warning("Firm profile not set up. Go to **Settings** to configure it before generating a proposal.")
+
 if "prop_stage" not in st.session_state:
     st.session_state.prop_stage = "intake"
 

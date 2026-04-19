@@ -72,12 +72,19 @@ def write_artifact(case_id: str, agent: str, artifact_type: str, data: Any, vers
     return target
 
 
-def _update_case_index(case_id: str, workflow: str, status: str, last_updated: str) -> None:
+def _update_case_index(
+    case_id: str,
+    workflow: str,
+    status: str,
+    last_updated: str,
+    client_name: str = "",
+    engagement_id: str = "",
+) -> None:
     """Upsert one entry in cases/index.json by case_id.
 
     Index exists so Case Tracker reads O(1) from a single file rather than
     scanning O(n) case directories. Written atomically via .tmp → os.replace().
-    Contains no PHI — only case_id, workflow, status, last_updated.
+    Contains no PHI — only case_id, workflow, status, last_updated, client_name, engagement_id.
 
     Raises ValueError if index.json exists but is corrupt JSON.
     """
@@ -90,10 +97,12 @@ def _update_case_index(case_id: str, workflow: str, status: str, last_updated: s
         entries = []
 
     entry = {
-        "case_id": case_id,
-        "workflow": workflow,
-        "status": status,
-        "last_updated": last_updated,
+        "case_id":       case_id,
+        "workflow":      workflow,
+        "status":        status,
+        "last_updated":  last_updated,
+        "client_name":   client_name,
+        "engagement_id": engagement_id,
     }
 
     # Upsert: replace in-place to preserve ordering of existing entries
@@ -132,10 +141,12 @@ def build_case_index() -> Path:
             continue
 
         entries.append({
-            "case_id": case_id,
-            "workflow": state.get("workflow", ""),
-            "status": state.get("status", ""),
-            "last_updated": state.get("last_updated", ""),
+            "case_id":       case_id,
+            "workflow":      state.get("workflow", ""),
+            "status":        state.get("status", ""),
+            "last_updated":  state.get("last_updated", ""),
+            "client_name":   state.get("client_name", ""),
+            "engagement_id": state.get("engagement_id", ""),
         })
 
     tmp = _INDEX_PATH.with_suffix(".tmp")
@@ -159,6 +170,8 @@ def write_state(case_id: str, state: dict) -> Path:
             workflow=state.get("workflow", ""),
             status=state.get("status", ""),
             last_updated=state.get("last_updated", datetime.now(timezone.utc).isoformat()),
+            client_name=state.get("client_name", ""),
+            engagement_id=state.get("engagement_id", ""),
         )
     except Exception as exc:
         print(f"[WARN] case index update failed for {case_id}: {exc}", file=sys.stderr)

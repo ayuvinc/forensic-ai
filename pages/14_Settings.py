@@ -91,6 +91,31 @@ if st.session_state.settings_saved:
     placeholder.empty()
     st.session_state.settings_saved = False
 
+# ── Profile completeness indicator (UX-F-07) ─────────────────────────────────
+_completeness_items = [
+    ("Firm Name",          bool(profile.get("firm_name", "").strip())),
+    ("Logo",               bool(profile.get("logo_path"))),
+    ("Currency",           bool(profile.get("currency"))),
+    ("Pricing Model",      bool(profile.get("pricing_model"))),
+    ("Terms & Conditions", bool(profile.get("terms_and_conditions", "").strip())),
+]
+filled = sum(1 for _, ok in _completeness_items if ok)
+total  = len(_completeness_items)
+pct    = filled / total
+
+if pct == 1.0:
+    st.success(f"Profile complete ({filled}/{total})")
+elif pct >= 0.6:
+    st.warning(f"Profile {filled}/{total} complete — fill in remaining fields for best results")
+else:
+    st.error(f"Profile {filled}/{total} complete — proposals may be incomplete")
+
+with st.expander("Completeness checklist", expanded=False):
+    for label, ok in _completeness_items:
+        st.write(f"{'✓' if ok else '○'} {label}")
+
+st.divider()
+
 # ── Form fields ───────────────────────────────────────────────────────────────
 
 firm_name = st.text_input(
@@ -135,15 +160,24 @@ if pricing_model == "T&M":
         placeholder="e.g. 750",
     )
 
+terms_and_conditions = st.text_area(
+    "Standard Terms & Conditions",
+    value=profile.get("terms_and_conditions", ""),
+    height=150,
+    placeholder="Paste your standard T&C text here — included in all proposals.",
+    help="Injected into the T&C section of every client proposal.",
+)
+
 st.divider()
 
 # ── Save button — disabled when Firm Name is empty (UX-005) ──────────────────
 if st.button("Save", type="primary", disabled=not firm_name.strip(), key="save_btn"):
     data: dict = {
-        "firm_name":     firm_name.strip(),
-        "logo_path":     logo_path.strip() or None,
-        "currency":      currency,
-        "pricing_model": pricing_model,
+        "firm_name":           firm_name.strip(),
+        "logo_path":           logo_path.strip() or None,
+        "currency":            currency,
+        "pricing_model":       pricing_model,
+        "terms_and_conditions": terms_and_conditions.strip(),
     }
     if pricing_model == "T&M":
         data["day_rate"]  = day_rate.strip()
