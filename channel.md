@@ -65,6 +65,135 @@ runtime_impact: none
 
 <!-- Agents append messages here. Architect clears at session close. -->
 
+### qa — Phase-C-UXF07-recheck — QA_APPROVED — 2026-04-19T17:15:00Z
+```yaml
+status: QA_APPROVED
+tasks: [UX-F-07]
+verdict: QA_APPROVED
+codex_gate: WAIVED (permanent — CODEX-GATE-WAIVER 2026-04-17)
+qa_run_equivalent: pytest 120 passed 0 failed
+
+defect_resolution:
+  D-01 [RESOLVED]:
+    pages/14_Settings.py lines 94-117: completeness block now renders BEFORE
+    form fields (before firm_name text_input at line 121). Divider at line 117
+    separates indicator from form. Profile dict loaded at page start — indicator
+    reflects saved state correctly.
+    Result: PASS
+
+  D-02 [RESOLVED]:
+    tasks/todo.md lines 984-992: REFACTOR-01 entry added with correct heading,
+    gate condition (P9-07A), and three sub-tasks (01a/01b/01c). Marked DO NOT
+    IMPLEMENT NOW. No implementation code added.
+    Result: PASS
+
+ac_final_check [UX-F-07]:
+  - Completeness indicator above form fields: PASS (lines 94-117 before line 121)
+  - T&C textarea saves to firm.json["terms_and_conditions"]: PASS (carried from Phase-C)
+  - Proposal page pre-flight warning when firm_name blank: PASS (carried from Phase-C)
+  - REFACTOR-01 logged in todo.md: PASS
+
+security: No new surface. Position change only — profile already loaded from firm.json.
+```
+
+---
+
+### qa — Phase-C — 2026-04-19T16:45:00Z
+```yaml
+status: PARTIAL_APPROVED
+tasks_approved: [EMB-02-REF, TPL-02, UX-F-03, UX-F-04, UX-F-05, TEST-04, TEST-06, TEST-07]
+tasks_rejected: [UX-F-07]
+codex_gate: WAIVED (permanent — CODEX-GATE-WAIVER 2026-04-17)
+qa_run_equivalent: pytest 120 passed 0 failed
+
+ac_results:
+
+  EMB-02-REF:
+    - DocumentEntry has embedding_status field: PASS
+    - engine unavailable → status "unavailable": PASS
+    - engine available → status "indexed": PASS
+    - engine raises → status "failed", no crash: PASS
+
+  TPL-02:
+    - generate_docx(workflow_type=...) uses base template, no crash: PASS (8 tests)
+    - audit event template_resolved written: PASS (test_audit_event_written)
+    - fallback:true when no template: PASS (code)
+    - no .tmp file remains: PASS (test)
+
+  UX-F-03:
+    - st.progress() bar added above status block: PASS
+    - _AGENT_LABELS maps junior → "Consultant (Draft)": PASS (7 entries)
+    - failure log expander on exception: PASS
+    - estimated time caption: PASS
+    - pipeline_log_events session state: PASS
+
+  UX-F-04:
+    - Preview expander in done stage: PASS
+    - st.code(case_id) for selection: PASS
+    - Technical details collapsed by default: PASS
+    - Primary "Start Another" button: PASS
+    - FRM spinner text uses rewrite_count: PASS
+    - All 3 workflow pages use render_done_zone(): PASS (02_Investigation, 09_Due_Diligence, 06_FRM)
+
+  UX-F-05:
+    - Human-readable labels replace raw status constants: PASS
+    - Client column in dataframe: PASS
+    - on_select="rerun" row-click selection + selectbox fallback: PASS
+    - engagement_id in index.json schema: PASS
+    - WARNING W-01: "Draft" used instead of spec-example "Draft Ready" — cosmetic, non-blocking
+
+  UX-F-07: QA_REJECTED
+    D-01: Completeness indicator placed BELOW form fields (bottom of page).
+          Spec requires "at top of Settings page" — move block to BEFORE firm_name text_input.
+    D-02: REFACTOR-01 entry missing from tasks/todo.md.
+          AC explicitly requires: add roadmap item for firm_profile.json + pricing_model.json
+          consolidation into firm.json.
+
+  TEST-04:
+    - validate_schema blocks on HookVetoError: PASS
+    - persist_artifact writes correct path, no .tmp: PASS
+    - append_audit_event_hook appends JSON: PASS
+    - extract_citations populates index, deduplicates: PASS
+
+  TEST-06:
+    - generate_docx produces valid .docx (python-docx opens): PASS
+    - file size > 0: PASS
+    - no .tmp file remains: PASS
+    - audit event written when case_id provided: PASS
+    - template resolution chain (explicit → TemplateManager → plain): PASS (3 tests)
+
+  TEST-07:
+    - engagement_scoping smoke: no exception, returns ConfirmedScope: PASS
+    - due_diligence smoke: no exception, returns FinalDeliverable: PASS
+    - frm_pipeline smoke: no exception, returns (risk_items, citations, modules, summary): PASS
+    - WARNING W-02: file artifact assertions (audit_log.jsonl, final_report.en.md) not
+      implemented — tests verify return types only. Progressive enhancement for TEST-07b.
+
+security:
+  - EMB-02-REF: embedding_status internal metadata only, no new API surface. PASS.
+  - TPL-02: TemplateManager._safe_path() boundary preserved. PASS.
+  - UX-F-03: html.escape() applied on event.message before markdown injection. PASS.
+  - UX-F-04: report_path reads from case_dir (validated path), no user-controlled path. PASS.
+  - UX-F-05: client_name from state.json metadata only, no PHI in table. PASS.
+  - UX-F-07: T&C stored in firm.json, rendered in st.text_area (no HTML execution). PASS.
+
+defects_for_junior_dev:
+  D-01 [UX-F-07 pages/14_Settings.py]:
+    Move the entire completeness indicator block (divider + _completeness_items + status
+    banner + expander) to BEFORE the firm_name text_input line, directly after the
+    success banner block. Profile is loaded at page start — indicator reads saved state
+    correctly at any position.
+
+  D-02 [UX-F-07 tasks/todo.md]:
+    Add this entry in the PENDING TASKS section:
+    ### REFACTOR-01 — Consolidate firm_profile.json + pricing_model.json → firm.json
+    Roadmap: merge firm_profile/firm_profile.json and firm_profile/pricing_model.json
+    into firm.json. DO NOT IMPLEMENT NOW — pending CLI/Streamlit path alignment.
+    Gate: after P9-07A.
+
+next_action: /junior-dev to fix D-01 and D-02 (UX-F-07 only), then re-submit for QA
+```
+
 ### qa — Phase-B — QA_APPROVED — 2026-04-19T16:00:00Z
 ```yaml
 status: QA_APPROVED
