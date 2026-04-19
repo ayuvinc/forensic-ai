@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: junior-dev
+Active persona: AK
 Blocking issue: none
-Last updated:   2026-04-19T02:39:06Z — state transition by MCP server
+Last updated:   2026-04-19T05:57:25Z — state transition by MCP server
 
 ---
 
@@ -442,7 +442,7 @@ WARNING: FRM-R-01..08 must be built behind a new workflow path until P7-GATE (FR
 
 ---
 
-### Phase 9 — Engagement Management Framework (GATED on P8-14 + feature/P8-phase8-streamlit → main merge)
+### Phase 9 — Engagement Management Framework (GATE CLEARED — P8 merged 97626d9, P8-14 superseded Session 022)
 
 **Design authority:** Architect Session 021. All decisions confirmed by AK in session.
 **BA sign-off:** BA-P9-01 through BA-P9-06 in tasks/ba-logic.md.
@@ -720,7 +720,7 @@ P9-09 (Wire all workflow pages to project context) ← all above
 
 ---
 
-### Sprint-EMB — Semantic Embeddings Layer (Session 022 — GATED on P8-14 merge)
+### Sprint-EMB — Semantic Embeddings Layer (Session 022 — GATE CLEARED — P8 merged 97626d9)
 
 **BA:** BA-R-11
 **Security:** All paths via case_dir(); ChromaDB runs in-process; no shell execution; no external data transmission beyond Haiku extraction API call.
@@ -740,7 +740,7 @@ EMB-04 (pipeline context) ──── P9-09 wire-up
 
 ---
 
-### Sprint-AIC — Smart Intake Completion (Session 022 — GATED on P8-14 merge)
+### Sprint-AIC — Smart Intake Completion (Session 022 — GATE CLEARED — P8 merged 97626d9)
 
 **BA:** BA-R-10
 **Security:** No new data paths; Haiku/Sonnet API calls gated on RESEARCH_MODE; results stored only in D_Working_Papers/; no client data transmitted beyond existing API call pattern.
