@@ -70,81 +70,14 @@ Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09,
 
 ## PENDING TASKS
 
----
 
 ---
+
 
 ### AKR-08b — docs/hld.md architect session [P2, human-input-required]
 
 - [ ] AKR-08b Run /architect session: populate docs/hld.md gaps + draft docs/lld/ files per feature.
       PARTIAL: hld.md derived from CLAUDE.md; gaps marked [TO VERIFY VIA /architect SESSION]. Full session pending.
-
----
-
-### Sprint-03 — Proposal + PPT QA Gate (NOT YET RUN)
-
-Proposal workflow (Option 7) and PPT pack (Option 8) implemented in sprint-02 but never QA'd.
-
-- [ ] PQA-01 Firm profile setup — confirm pricing_model.json, team.json, firm_profile.json written correctly; confirm loaded in _load_pricing()
-- [ ] PQA-02 Proposal intake → _persist_intake() → intake.json + state.json written
-- [ ] PQA-03 _select_team() — Haiku selects relevant members; fallback to team[:4] if API error
-- [ ] PQA-04 _generate_proposal() — Sonnet returns 7-section markdown; check all sections present
-- [ ] PQA-05 proposal.docx generated via OutputGenerator; graceful skip if python-docx missing
-- [ ] PQA-06 PPT chain prompt — user offered deck after proposal; both paths (Y/N) work
-- [ ] PQA-07 Standalone Option 8 — run_proposal_deck_workflow() with all 6 audience types
-- [ ] PQA-08 DeckStoryboard validates against schema (case_id, slides[], open_questions)
-- [ ] PQA-09 Per-slide files written: slide_01_prompt.md .. slide_NN_prompt.md
-- [ ] PQA-10 deck_master_prompt.v1.md written with system prompt + step prompts
-- [ ] PQA-11 Fallback storyboard returned if Sonnet JSON parse fails (open_questions flag set)
-- [ ] PQA-12 case_tracker (Option 9) discovers PROP-XXXX cases via intake.json
-
----
-
-### Sprint-03 — Pricing Model Gap
-
-ISSUE: run_firm_profile_setup() is only triggered once. If user skips it, _load_pricing() returns
-silent fallback {model:daily, currency:AED, rates:{}} — fee section generates blank.
-
-- [ ] PGP-01 Add pricing completeness check in run_client_proposal_workflow(): if rates all empty, warn and offer to run firm profile setup inline
-- [ ] PGP-02 Add pricing review step: show loaded rates before drafting; allow inline override without touching firm_profile/
-
----
-
-### Sprint-03 — Open Codex Findings
-
-#### C-01b — Upgrade client_proposal to orchestrated path (Medium)
-Files: workflows/client_proposal.py
-
-- [ ] C-01b Move client_proposal onto orchestrated path (Junior draft → PM review → Partner sign-off). Higher effort; closes quality gap for highest-value workflow.
-
-#### C-04c / QR-17 — Document ingestion smoke test (Low, gated on API key)
-Files: tools/document_manager.py, run.py
-
-- [ ] QR-17 / C-04c Document ingestion path: _offer_document_ingestion() / _run_document_ingestion() → register_document() → document_index.json written → read_excerpt() returns ≤8k chars. GATED on live API key.
-
-#### C-06 — Integration tests (Low)
-
-- [ ] C-06a Integration test: investigation_report happy path (mocked API)
-- [ ] C-06b Integration test: FRM multi-module run (modules 1, 2, 3 with dependency enforcement)
-- [ ] C-06c Integration test: interrupted resume — write partial state.json, restart, verify orchestrator offers resume
-- [ ] C-06d Integration test: document ingestion → read_excerpt → agent receives bounded content
-- [ ] C-06e Integration test: persona review against a saved case folder
-
----
-
-### Frontend Migration — Streamlit (Decision: Option A confirmed)
-
-- [ ] FE-01 Replace ui/ terminal components with Streamlit pages
-- [ ] FE-02 Conversational intake → Streamlit multi-step form per workflow
-- [ ] FE-03 Pipeline progress → Streamlit spinner + status text (replaces CLI spinner that collides with input prompts — confirmed UX bug in P7-GATE test)
-- [ ] FE-04 Output display → Streamlit markdown render + file download buttons
-- [ ] FE-05 Firm profile setup → Streamlit settings page (replaces terminal wizard)
-- [ ] FE-06 Case tracker → Streamlit table with case status + open/download links
-- [ ] FE-07 Risk item review → Streamlit card per item with A/F/R buttons (replaces hidden CLI prompt — confirmed UX bug in P7-GATE test)
-- [ ] FE-08 Case folder UX — final deliverables surfaced prominently; interim artifacts (*.v{N}.json, pm_review, junior_output) moved to cases/{id}/interim/ subfolder; only final_report.* and audit_log.jsonl in root
-- [ ] FE-09 Word document design — apply firm branding template (logo, fonts, header/footer) to all .docx outputs; requires firm_profile/template.docx as base template loaded by file_tools.py
-- [ ] FE-10 FRM Risk Register — Excel output (.xlsx) — **BLOCKED: MISSING_BA_SIGNOFF** — no BA entry for Excel as required output format; needs /ba session before build
-- [ ] FE-11 FRM Risk Register — two-tier risk structure (Design-Level vs Operational-Level) — **BLOCKED: MISSING_BA_SIGNOFF** — no BA entry for tier taxonomy or schema change to RiskItem; needs /ba session before build
 
 ---
 
@@ -161,7 +94,7 @@ P7-06 ← P7-04 ─────── P7-07
 P7-07 ← P7-05, P7-06
 ```
 
-- [x] P7-GATE Run `python run.py` with live API keys — PASSED Session 015 (knowledge_only mode, 2 FRM modules, no crash, final_report.en.md written)
+- ~~[x] P7-GATE~~ PASSED Session 015 — gate cleared
 - [ ] P7-01a Grep for "GoodWork", "Maher", "forensic" as string literals. Confirm only 4 locations: run.py:331, partner/prompts.py:8, setup_wizard.py:161, run.py:2.
 - [ ] P7-02a Create `instance_config/` directory
 - [ ] P7-02b Create `instance_config/firm.json` — {firm_name, firm_type, primary_industry, primary_jurisdiction, enabled_workflows[], persona_set[], language_default, billing_currency}
@@ -181,107 +114,15 @@ P7-07 ← P7-05, P7-06
 
 ---
 
-### Phase 8 — Streamlit Frontend Migration (Session 016 — Corrected Plan)
 
-**Design authority:** Architect Session 016. Supersedes P8-01..06 from prior stub plan.
-**CLI stays intact:** `run.py` unchanged. Streamlit is an additive layer only.
-**Security model:** local localhost:8501 only; all data stays in cases/ and firm_profile/; same hooks/sanitisation chain applies; no new audit events required.
+### Phase 8 — Manual Verification (requires live API key + streamlit run)
 
-**Ultraplan corrections applied:**
-- P8-00-EXTRACT is a hard prerequisite for all page tasks (missing from ultraplan)
-- FE-09 fix is in `tools/file_tools.py:150`, not `tools/output_generator.py` (template support already exists in output_generator)
-- FE-08: post-run migration preferred over `interim=True` flag (version counter gap in next_version())
-- Review loop expanded to all modules in Streamlit (aligns with BA-002 Step 5 — Module 2-only was a CLI shortcut, not a requirement)
-- FE-10, FE-11: BLOCKED pending BA sign-off
+These [ ] tasks were not automated — require AK to run manually. Low priority.
 
-```
-PHASE 8 DEPENDENCY GRAPH:
-P8-00-EXTRACT ─────────────────────────────── P8-03-SHARED, P8-06-FRM, P8-08-PAGES
-P8-01 (requirements.txt)  ── no deps, trivial
-P8-02-SPLIT (FRM workflow) ─────────────────── P8-06-FRM
-P8-03-SHARED ← P8-00-EXTRACT ───────────────── P8-04-APP, P8-06-FRM, P8-08-PAGES, P8-09-TRACKER, P8-10-SETTINGS
-P8-04-APP ← P8-03-SHARED ───────────────────── P8-14-SMOKE
-P8-05-FE08 (interim folder) ── no deps ──────── P8-14-SMOKE
-P8-06-FRM ← P8-02-SPLIT + P8-03-SHARED ─────── P8-14-SMOKE
-P8-07-FE09 (docx branding) ── no deps ──────── P8-14-SMOKE
-ARCH-INS-01 ← P8-03-SHARED ─────────────────── P8-08-PAGES
-ARCH-INS-02 ← write_state() ────────────────── P8-09-TRACKER
-P8-08-PAGES ← P8-03-SHARED + ARCH-INS-01 ──── P8-11-DOCIN, P8-14-SMOKE
-P8-09-TRACKER ← P8-03-SHARED + ARCH-INS-02 ── P8-14-SMOKE
-P8-10-SETTINGS ← P8-03-SHARED ─────────────── P8-14-SMOKE
-P8-11-DOCIN ← P8-08-PAGES ─────────────────── P8-14-SMOKE
-P8-12-EXCEL — BLOCKED: MISSING_BA_SIGNOFF
-P8-13-TIER  — BLOCKED: MISSING_BA_SIGNOFF
-P8-14-SMOKE ← all above
-```
-
----
-
-#### P8-00-EXTRACT — Extract _mark_deliverable_written() from run.py [PREREQUISITE]
-**Files:** `run.py`, `tools/file_tools.py`
-**Why:** Defined at `run.py:423` — Streamlit pages cannot import from run.py. All page completions need this to advance state to DELIVERABLE_WRITTEN. Must be extracted to `tools/file_tools.py` first.
-**Change:** Move function body to `file_tools.py`; `run.py` imports it from there. No behaviour change.
-
-- [x] P8-00a Move `_mark_deliverable_written()` from `run.py:423` to `tools/file_tools.py` as `mark_deliverable_written(case_id, workflow)`
-- [x] P8-00b Update `run.py` to import from `tools.file_tools` (shim kept for existing call sites)
-- [ ] P8-00c Verify CLI smoke: `python run.py` Option 6 still advances state after completion — MANUAL, requires AK + API key
-
----
-
-
-#### P8-02-SPLIT — FRM workflow split: run_frm_pipeline + run_frm_finalize
-**File:** `workflows/frm_risk_register.py`
-**Gate for:** P8-06-FRM
-**Constraint:** `run_frm_workflow()` signature and behaviour unchanged — CLI regression must be zero.
-**Behavioral note:** Review loop currently fires for Module 2 only (line 153). `run_frm_pipeline()` returns all modules' risk items unreviewed. Streamlit page applies A/F/R to all items — aligns with BA-002 Step 5. CLI retains Module 2-only review loop inside `run_frm_workflow()`.
-
-- [x] P8-02a Extract pipeline body into `run_frm_pipeline()` — returns (risk_items, citations, completed_modules, exec_summary)
-- [x] P8-02b Create `run_frm_finalize()` — assembles deliverable, writes report, calls mark_deliverable_written
-- [x] P8-02c Keep `run_frm_workflow()` intact — signature unchanged, verified by import test
-- [ ] P8-02d Verify CLI: `python run.py` Option 6 produces identical output to pre-split — MANUAL, requires AK + API key
-
----
-
-#### P8-05-FE08 — Case folder interim restructure
-**File:** `tools/file_tools.py` — `write_final_report()` only
-**Approach:** Post-run migration (not `interim=True` flag — version counter in `next_version()` scans root only; adding interim/ routing would silently reset version counters)
-
-- [x] P8-05a Post-run migration added to `write_final_report()` — shutil.move() for *.v*.json → interim/; FE-09 template_path fix included in same change
-- [ ] P8-05b Verify interim folder structure after live run — MANUAL, requires AK + API key
-
----
-
-#### P8-06-FRM — pages/6_FRM.py (highest priority — fixes FE-07)
-**New file:** `pages/6_FRM.py`
-**Deps:** P8-02-SPLIT, P8-03-SHARED, P8-00-EXTRACT
-**Stage machine:** `st.session_state["frm_stage"]` ∈ {intake, running, reviewing, done}
-
-- [x] P8-06a Intake stage: frm_intake_form() wired; module dep validation with st.warning
-- [x] P8-06b Running stage: run_in_status() calling run_frm_pipeline(); result in session_state
-- [x] P8-06c Reviewing stage: st.expander per RiskItem; A/F/R selectbox + note; all modules (not Module 2 only)
-- [x] P8-06d Done stage: run_frm_finalize() with reviewed items; st.download_button; mark_deliverable_written called
-- [ ] P8-06e Verify: FRM end-to-end in Streamlit — A/F/R visible and clickable — MANUAL, requires AK + streamlit run
-
----
-
-
-#### P8-12-EXCEL — BLOCKED: MISSING_BA_SIGNOFF
-FE-10 Excel output. No BA entry exists for Excel as a required output format.
-Do not build until /ba session produces entry in tasks/ba-logic.md.
-
-#### P8-13-TIER — BLOCKED: MISSING_BA_SIGNOFF
-FE-11 Two-tier risk structure (Design-Level vs Operational-Level). No BA entry for tier taxonomy or schema change to RiskItem.
-Do not build until /ba session produces entry in tasks/ba-logic.md.
-
----
-
-#### P8-14-SMOKE — ~~SUPERSEDED~~ (Session 022)
-**Status:** Superseded by design change. Phase 9 + Sprint-RD replaces the report-writing path entirely (F_Final/, BaseReportBuilder, versioning). Testing the old flat-folder, UUID-case flow against the new design is meaningless.
-**Branch:** feature/P8-phase8-streamlit → merged to main (pages load, 4 bugs fixed in commit 36f0cc5, pipeline runs). Report-writing rebuilt in Sprint-RD.
-- [x] P8-14a browser opens, sidebar shows 14 pages — CONFIRMED (AK session 022)
-- [x] P8-14f CLI `python run.py` — no crash — CONFIRMED (AK session 022)
-- [~] P8-14b FRM finalize → report write — report-writing path rebuilt in Sprint-RD; not tested against old design
-- [~] P8-14c/d/e — superseded by Phase 9 folder structure
+- [ ] P8-00c Verify CLI smoke: `python run.py` Option 6 still advances state after completion
+- [ ] P8-02d Verify CLI: `python run.py` Option 6 produces identical output to pre-split
+- [ ] P8-05b Verify interim folder structure after live run
+- [ ] P8-06e Verify: FRM end-to-end in Streamlit — A/F/R visible and clickable
 
 ---
 
@@ -308,15 +149,6 @@ Do not build until /ba session produces entry in tasks/ba-logic.md.
 - [ ] INS-03c Apply same breaker instance to `regulatory_lookup.py`, `sanctions_check.py`, `company_lookup.py`. One shared breaker per provider (not per call).
 - [ ] INS-03d Add `CIRCUIT_BREAKER_FAILURE_THRESHOLD`, `CIRCUIT_BREAKER_WINDOW_SECONDS`, `CIRCUIT_BREAKER_RESET_SECONDS` to `config.py` with defaults above.
 - [ ] INS-03e Smoke test: set `RESEARCH_MODE=live`, disable network, run FRM workflow — confirm no 3min hang; confirm `disclaimer="circuit_open_fallback"` appears in citations index.
-
----
-
-### Phase 9 — Workflow Chaining (GATED on Phase 8)
-
-- [ ] CH-01 Post-workflow "Add another deliverable to this case?" prompt (Y/N)
-- [ ] CH-02 If Y → present only compatible follow-on workflows based on existing case type
-- [ ] CH-03 Chain state: state.json updated with all workflow runs; case_tracker shows all deliverables per case_id
-- [ ] CH-04 Integration test: investigation_report → persona_review on same case_id
 
 ---
 
@@ -382,32 +214,8 @@ FRM flow design (confirmed):
 
 ---
 
-### Sprint-10L Phase B — Behavioral Matrix (GATED on P7-GATE + BA sign-off)
-
-**Scope:** Full 10-component design from docs/lld/sprint-10L-review-chain-design.md.
-MISSING_BA_SIGNOFF: REVIEW_MODE enum, verdict spectrum, DocLevel axis, Phase axis, Authority Level
-have no BA entry in ba-logic.md. Do not start until BA session completes for this feature.
-
-**Files touched:** config.py, schemas/artifacts.py, core/orchestrator.py,
-agents/project_manager/prompts.py + agent.py, agents/partner/prompts.py + agent.py,
-workflows/sanctions_screening.py, workflows/due_diligence.py,
-workflows/transaction_testing.py, workflows/investigation_report.py
-
-- [ ] SRL-B-BA Write BA entries for behavioral matrix to ba-logic.md (AK input required)
-- [ ] SRL-B-01 config.py — REVIEW_MODE flag with validation (DEMO/DEV/CLIENT_DRAFT/CLIENT_FINAL)
-- [ ] SRL-B-02 schemas/artifacts.py — ReviewVerdict enum; update ApprovalDecision + RevisionRequest
-- [ ] SRL-B-03 core/orchestrator.py — behavioral_matrix(), universal_blocker_checks(),
-      D0/D1 equivalence enforcement, FINAL-phase multiplier lock
-- [ ] SRL-B-04 agents/project_manager/prompts.py — rewrite to consume full matrix context
-- [ ] SRL-B-05 agents/partner/prompts.py — same
-- [ ] SRL-B-06 agents/project_manager/agent.py + agents/partner/agent.py — pass matrix context
-- [ ] SRL-B-07 workflows/sanctions_screening.py, due_diligence.py — BLOCK not loop for G-A
-- [ ] SRL-B-08 workflows/transaction_testing.py, investigation_report.py — intake completeness gates
-
----
-
----
-
+### Sprint-10L Phase B — Behavioral Matrix
+**BLOCKED: MISSING_BA_SIGNOFF** — moved to tasks/blocked-backlog.md
 
 ---
 
@@ -485,98 +293,10 @@ P9-09 (Wire all workflow pages to project context) ← all above
 
 ---
 
-#### P9-01 — schemas/project.py (PREREQUISITE)
-**New file:** `schemas/project.py`
-**BA:** BA-P9-01, BA-P9-03, BA-P9-05
-**Security model:** as above. Slug field enforces sanitized pattern via Pydantic validator.
-
-**Schemas to define:**
-- `ProjectIntake` — project_name: str, project_slug: str (derived, validated), client_name: str, service_type: str, language_standard: Literal["acfe","expert_witness","regulatory","board_pack"] = "acfe", created_at: datetime, naming_convention: str
-- `InputSession` — session_id: str, project_slug: str, mode: Literal["input","final_run"], timestamp: datetime, documents_registered: list[str], notes_path: Optional[str], key_facts_count: int, red_flags_count: int
-- `ProjectState` — project_slug: str, status: CaseStatus, sessions: list[InputSession], language_standard: str, context_budget_used_pct: float, interim_context_written: bool, last_updated: datetime
-
-- [ ] P9-01a Define `ProjectIntake` schema with Pydantic validator on `project_slug`: strip non-alphanumeric/hyphen chars; block `..`, `/`, `\`, null bytes; raise ValueError on empty result
-- [ ] P9-01b Define `InputSession` schema
-- [ ] P9-01c Define `ProjectState` schema
-
-#### AC — P9-01
-- [ ] `from schemas.project import ProjectIntake, InputSession, ProjectState` imports with no errors
-- [ ] `ProjectIntake(project_name="Project Alpha / FRM", ...)` → `project_slug` = `"project-alpha-frm"` (slash stripped, spaces → hyphens)
-- [ ] `ProjectIntake(project_name="../etc/passwd", ...)` raises `ValueError` — path traversal blocked
-- [ ] `ProjectIntake(project_name="   ", ...)` raises `ValueError` — empty slug blocked
-- [ ] `ProjectIntake(language_standard="invalid")` raises `ValidationError`
-
----
-
-#### P9-02 — tools/project_manager.py (PREREQUISITE)
-**New file:** `tools/project_manager.py`
-**Deps:** P9-01
-**BA:** BA-P9-01, BA-P9-02, BA-P9-03, BA-P9-04
-**Security model:** all filesystem writes via `case_dir()` helper only; no user-controlled path component after slug sanitization.
-
-**Class:** `ProjectManager`
-- `create_project(intake: ProjectIntake) -> Path` — creates `cases/{slug}/` + A-F subfolder structure; writes `state.json` with ProjectState; logs to `audit_log.jsonl`
-- `list_projects() -> list[dict]` — reads `cases/index.json`; returns entries where source is "P9" (named projects) + legacy UUID entries with a `legacy=True` flag
-- `get_project(slug: str) -> ProjectState` — reads `cases/{slug}/state.json`
-- `create_af_structure(slug: str)` — creates the 6 standard subfolders under `cases/{slug}/`
-- `start_input_session(slug: str) -> InputSession` — creates timestamped subfolder in `C_Evidence/`; initializes `InputSession`; appends to session_log
-- `add_session_note(slug: str, note: str)` — appends to `D_Working_Papers/session_notes_{YYYYMMDD}.md` (atomic write)
-- `add_key_fact(slug: str, fact: dict)` — appends to `D_Working_Papers/key_facts.json`
-- `add_red_flag(slug: str, flag: dict)` — appends to `D_Working_Papers/red_flags.json`
-- `get_context_summary(slug: str) -> dict` — returns document count, estimated token usage pct, interim_context exists
-- `write_interim_context(slug: str, content: str)` — atomic write to `D_Working_Papers/interim_context.md`; updates state.json `interim_context_written = True`
-- `detect_slug_collision(slug: str) -> bool` — returns True if `cases/{slug}/` already exists
-
-- [ ] P9-02a `create_project()` + `create_af_structure()` — creates all 6 folders atomically (all-or-nothing: if any mkdir fails, rollback all created dirs)
-- [ ] P9-02b `list_projects()` — reads cases/index.json; flags legacy entries
-- [ ] P9-02c `get_project()` + `get_context_summary()`
-- [ ] P9-02d `start_input_session()` + `add_session_note()` + `add_key_fact()` + `add_red_flag()`
-- [ ] P9-02e `write_interim_context()` — atomic write; updates state.json
-
-#### AC — P9-02
-- [ ] `create_project()` creates exactly 6 subfolders: A_Engagement_Management, B_Planning, C_Evidence, D_Working_Papers, E_Drafts, F_Final
-- [ ] `create_project()` with a project_name whose slug collides with an existing folder raises `ValueError("Project slug already exists: ...")`
-- [ ] `add_session_note()` appends (not overwrites) — calling twice in one day produces one file with two entries
-- [ ] `write_interim_context()` uses `.tmp` → `os.replace()` pattern — atomic
-- [ ] `get_context_summary()` returns `interim_context_written = True` after `write_interim_context()` called
-
----
-
-#### P9-03A — pages/1_Engagements.py — Active Engagements list
-**New file:** `pages/1_Engagements.py`
-**Deps:** P9-02
-**BA:** BA-P9-01, BA-P9-03
-**Security model:** same as P8-09 tracker; no PII in list view; slug used only via case_dir()
-
-- [ ] P9-03Aa Read `cases/index.json` via `ProjectManager.list_projects()`; render table: Project Name | Service Type | Status | Last Session
-- [ ] P9-03Ab Each row: "Open" button → sets `st.session_state.active_project = slug`; routes to Project Workspace (P9-05)
-- [ ] P9-03Ac "New Engagement" button → navigates to New Engagement wizard (P9-03B)
-- [ ] P9-03Ad Empty state: `st.info("No projects yet. Start a new engagement.")` with prominent "New Engagement" button
-- [ ] P9-03Ae Legacy cases (UUID format, `legacy=True`) shown in a separate "Legacy Cases" expander below the main table
-
-#### AC — P9-03A
-- [ ] Table renders with columns: Project Name, Service Type, Status, Last Session — sorted by Last Session descending
-- [ ] Legacy cases shown in collapsed expander, not in main table
-- [ ] "Open" button sets `st.session_state.active_project` and does NOT trigger a pipeline run
-- [ ] Empty index → `st.info()` shown, no error
-
----
-
-#### P9-03B — New Engagement wizard (within pages/1_Engagements.py)
-**File:** `pages/1_Engagements.py` (same page, different st.session_state stage)
-**Deps:** P9-01, P9-02
-**BA:** BA-P9-01, BA-P9-05
-
-- [ ] P9-03Ba Multi-field wizard form: Project Name, Client Name, Service Type (selectbox), Language Standard (selectbox — ACFE / Expert Witness / Regulatory Submission / Board Pack), Naming Convention (text_input with suggestion like "ClientName_ServiceType")
-- [ ] P9-03Bb On submit: validate project_name → derive slug → detect collision → call `ProjectManager.create_project()` → show success with folder structure created confirmation
-- [ ] P9-03Bc Slug preview: as Maher types the Project Name, show "Folder name: cases/project-alpha-frm/" live (via `st.caption()` updated on each keystroke — use `on_change` or just display below input)
-- [ ] P9-03Bd Collision warning: if slug already exists, show `st.warning("A project with this name already exists. Open it instead?")` with "Open Existing" button
-
-#### AC — P9-03B
-- [ ] Language Standard selectbox has exactly 4 options matching BA-P9-05 labels
-- [ ] Slug preview updates as project name is typed — shown as `st.caption()` below the name field
-- [ ] Collision detected before `create_project()` called — no duplicate folder created
-- [ ] On success: `st.success("Project created: cases/{slug}/")` + list of 6 created subfolders shown
+#### P9-01, P9-02, P9-03A, P9-03B — DONE
+Schemas (schemas/project.py), ProjectManager (tools/project_manager.py),
+and Engagements page (pages/01_Engagements.py) built in Phase A + Phase D.
+Full specs archived in releases/completed-tasks.md.
 
 ---
 
@@ -744,7 +464,7 @@ EMB-03 (retrieval UI) ──────── independent
 EMB-04 (pipeline context) ──── P9-09 wire-up
 ```
 
-- [x] EMB-00 Add `sentence-transformers>=2.7.0` and `chromadb>=0.4.0` to `requirements.txt`
+- ~~[x] EMB-00~~ DONE (requirements.txt updated)
 - [ ] EMB-01 `tools/embedding_engine.py` — `EmbeddingEngine(case_id)`: chunk_document(), embed_and_index(), search(query, n=5), get_context_for_query(query, max_chars=8000). Graceful fallback if sentence-transformers unavailable (R-NEW-07).
 - [ ] EMB-02 Wire into `DocumentManager.register_document()`: chunk+embed on upload; Haiku extraction → append to `D_Working_Papers/case_intake.md`
 - [ ] EMB-03 Semantic search UI in Input Session workspace: `st.text_input` + Search → ranked chunks with source citation
@@ -873,69 +593,20 @@ FR-06 ← FR-02 + FR-03 + FR-04 + FR-05
 ### Sprint-TPL — Report Template System (Session 024)
 
 **BA:** BA-TPL-01, BA-TPL-02
-**Security:** Template uploads are .docx only — validate magic bytes (PK header), size cap 5MB, no macro execution. Template path resolution must not escape `firm_profile/templates/` directory (R-019 pattern). Base templates are read-only — never deletable.
-**Note:** `templates.json` already exists in `firm_profile/templates/` with 8 workflow slots. `OutputGenerator.generate_docx()` already accepts `template_path=None`. Sprint-TPL formalises the manager layer, Settings UI, and intake selector on top of this foundation.
-
-```
-TPL-01 (TemplateManager) ─── TPL-02, TPL-03, TPL-04, TPL-05
-TPL-02 (output_generator) ─── TPL-05
-TPL-03 (settings tab) ──────── TPL-05
-TPL-04 (intake selector) ───── TPL-05
-```
-
-- [x] **[TPL-01]** Create `tools/template_manager.py` — `TemplateManager` class: `resolve(workflow_type, custom_path=None) -> Path` (fallback chain: custom → base → raise); `validate_docx(path) -> ValidationResult` (magic bytes PK check, ≤5MB, python-docx open, check all 7 required styles: GW_Title, GW_Heading1, GW_Heading2, GW_Body, GW_TableHeader, GW_Caption, GW_Disclaimer); `update_custom(workflow_type, file_bytes) -> Path` (version-rotates existing `_custom.docx` to `_custom.v{N}.docx`, saves new file atomically); `list_templates() -> dict` (reads `firm_profile/templates/templates.json`, returns per-workflow slot with base/custom/versions). Reads/writes `firm_profile/templates/templates.json`. All path operations confined to `firm_profile/templates/` — any path traversal attempt raises ValueError. ← deps: none | AC: `TemplateManager().resolve("frm_risk_register")` returns path ending in `frm_risk_register_base.docx` when no custom exists; `resolve("frm_risk_register", custom_path="../../evil")` raises ValueError; `validate_docx()` returns ValidationResult with `missing_styles` list when styles absent.
-
-- [x] **[TPL-02]** Update `tools/output_generator.py` — `generate_docx()` to call `TemplateManager().resolve(workflow_type)` when `template_path=None`; apply named styles from template (GW_Title for cover, GW_Heading1 for h1, GW_Heading2 for h2, GW_Body for paragraphs) when template is loaded and styles exist; fall back silently to current basic styling if named style is absent from template; log resolution event to audit_log via `{event: "template_resolved", template: "<filename>", fallback: true/false}`. ← deps: TPL-01 | AC: `generate_docx(content_md="# Title\n\nBody", output_path=..., workflow_type="frm_risk_register")` uses base template and does not crash; audit event `template_resolved` written with `fallback: false` when base template applied.
-
-- [x] **[TPL-03]** Update `pages/settings.py` — redesign as 4-tab layout `st.tabs(["Firm Profile", "Pricing", "Team & T&C", "Report Templates"])` per UX-018. Tab 4 (Report Templates): render one row per workflow type (Investigation, Due Diligence, FRM, TT, Sanctions, Proposal) showing current template filename, last updated timestamp, and three inline actions — "Upload Custom" (opens conditional `st.file_uploader` for that row), "Preview" (popover showing detected styles from `validate_docx()`), "Reset to Base" (with explicit confirmation). Upload validation fires on upload event: pass → st.success; partial (missing non-critical styles) → st.warning + proceed allowed; fail (missing GW_Heading1 or GW_Body) → st.error + save blocked. Completeness badge at top of page (above tabs): 5 chips — Firm Profile / Pricing / Team / T&C / Templates — green/amber/grey. ← deps: TPL-01 | AC: Tab 4 renders 6 workflow rows; upload of a valid .docx with all 7 styles → st.success + templates.json updated; upload of .docx missing GW_Heading1 → st.error + no file saved; Reset to Base requires explicit "Confirm Reset" button click before deletion.
-
-- [x] **[TPL-04]** Add template selector to `streamlit_app/shared/intake.py` — `template_selector(st, workflow_type) -> Optional[Path]`. Renders as collapsed `st.expander("Report template", expanded=False)` per UX-019, positioned below last intake field and above Run button. Radio group: (a) "Use saved template: {filename}" — shown only if custom exists for workflow type, pre-selected by default if available; (b) "Upload for this engagement only" — always shown, reveals inline `st.file_uploader`; (c) "Plain Word output (no template)" — always shown, pre-selected if no custom exists. Confirmation caption below radio showing selected template and scope. Session state: selected path stored in `st.session_state["report_template_path"]`; one-time bytes in `st.session_state["report_template_bytes"]`. Template selection event written to audit_log at Run click: `{event: "template_selected", workflow, template, scope: "global"|"one_time"|"none"}`. Add `template_selector()` call to all workflow pages that generate docx output. ← deps: TPL-01 | AC: workflow page with no custom template shows only options (b) and (c); option (a) pre-selected when custom exists; option (b) with no file uploaded disables Run button; selection written to audit_log on Run.
+**Note:** TPL-01 through TPL-04 DONE (merged Phase C + Phase D). TPL-05 is the remaining AC smoke test.
 
 - [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx`; open file in python-docx and confirm at least one paragraph with style matching a GW_ style name is present; audit_log contains `template_resolved` event with `fallback: false`; `templates.json` shows correct base filename in `frm_risk_register.base` slot. ← deps: TPL-01, TPL-02, TPL-03, TPL-04 | AC: smoke test script runs without exception and all three assertions pass.
-
----
-
-### Sprint-EMB — Semantic Embeddings Layer — UPDATED (Session 024 refinements)
-
-**Note:** Sprint-EMB tasks EMB-00 through EMB-04 already written above (Session 022 entries). The tasks below refine and extend the existing entries based on BA-EMB-01 (Session 024 BA pass).
-
-- [x] **[EMB-01-REF]** Refine `EmbeddingEngine` spec per BA-EMB-01: class takes `case_id`; `embed_document(doc_entry: DocumentEntry)` chunks at 800-char boundary with 80-char overlap; `retrieve(query, case_id, top_k=5) -> list[ChunkResult]` where `ChunkResult` has `chunk_text`, `source_doc_id`, `source_filename`, `chunk_index`, `source_citation` (formatted as `{filename}, chunk {n}`); two-layer fallback — (1) `ImportError` on `sentence_transformers` → `self.available = False`, log warning, no crash; (2) download error (first-run model download fails) → same `self.available = False`. 8000-char cap on total retrieved context per query. ← deps: EMB-00 | AC: `EmbeddingEngine("test-case")` with sentence-transformers absent → `engine.available == False` and `retrieve()` returns `[]` without raising; with library available, `retrieve("fraud indicators")` returns list of `ChunkResult` with non-empty `source_citation`.
-
-- [x] **[EMB-02-REF]** Refine DocumentManager wire-up per BA-EMB-01: `register_document()` calls `EmbeddingEngine.embed_document()` synchronously (spinner shown in Streamlit during upload per BA open-question resolution — synchronous v1); add `embedding_status: Literal["indexed","pending","failed","unavailable"]` field to `DocumentEntry` schema; if `EmbeddingEngine.available == False` → set status `"unavailable"`, skip embed, no crash; if embedding raises → set status `"failed"`, log warning, return normally. ← deps: EMB-01-REF | AC: `DocumentEntry` has `embedding_status` field; registering a document with engine unavailable returns `embedding_status="unavailable"`; registering with engine available returns `embedding_status="indexed"`.
-
-- [x] **[EMB-03-REF]** Embedding status badge in Streamlit per UX-013: add `embedding_status` badge to document list in (a) Input Session workspace document panel, (b) Case Tracker detail expander. Badge states: "Indexed — {N} chunks" (green), "Pending" (amber), "Failed" (red), "Unavailable — embedding library not installed" (grey). On hover/expand: chunk count, model name, indexed_at timestamp if available. ← deps: EMB-02-REF | AC: document registered with `embedding_status="indexed"` shows green badge with chunk count; `"unavailable"` shows grey badge with install hint text.
-
----
-
-### Sprint-P9 — Phase 9 Schema Foundation (Session 024 — refines existing P9-01 tasks)
-
-**Note:** P9-01a/b/c tasks are already written above in the Phase 9 section. The tasks below are the ADDITIONAL tasks designed in Session 024 (BA-P9-01, BA-P9-02, BA-P9-03 extended specs).
-
-- [x] **[P9-01-SLUG]** `schemas/project.py` — `ProjectIntake` Pydantic validator on `project_slug` (7-step): (1) strip leading/trailing whitespace; (2) lowercase; (3) replace spaces and underscores with hyphens; (4) strip all characters not in `[a-z0-9-]`; (5) collapse multiple consecutive hyphens to one; (6) strip leading/trailing hyphens; (7) raise ValueError if result is empty. Allowlist post-validation: raise ValueError if slug contains `..`, `/`, `\`, null byte `\x00`. This is R-019 mitigation. ← deps: none | AC: `"Project Alpha / FRM"` → `"project-alpha-frm"`; `"../etc/passwd"` → ValueError; `"   "` → ValueError; `"__test__"` → `"test"`; `"valid-slug"` → `"valid-slug"`.
-
-- [x] **[P9-01-SESSION]** `schemas/project.py` — `InputSession`: `session_id: str`, `project_slug: str`, `mode: Literal["input","final_run"]`, `status: Literal["open","closed","abandoned","error"]` (4-state lifecycle), `started_at: datetime`, `closed_at: Optional[datetime]`, `documents_registered: list[str]`, `notes_path: Optional[str]`, `key_facts_count: int = 0`, `red_flags_count: int = 0`. Path for session log: `cases/{project_slug}/D_Working_Papers/session_log.jsonl`. ← deps: P9-01-SLUG | AC: `InputSession(project_slug="test", mode="input", status="open", started_at=datetime.now(), session_id="s1", documents_registered=[])` validates with no error; `status="invalid"` raises ValidationError.
-
-- [x] **[P9-01-STATE]** `schemas/project.py` — `ProjectState`: `project_slug: str`, `status: CaseStatus`, `project_health: Literal["green","amber","red"]` (enum), `cases: dict[str, str]` (workflow_type → case_id mapping), `sessions: list[InputSession]`, `language_standard: str = "acfe"`, `context_budget_used_pct: float = 0.0`, `interim_context_written: bool = False`, `last_updated: datetime`, `is_legacy: bool = False` (backward-compat UUID flag for pre-P9 cases). Update triggers: `last_updated` auto-updates on any state change. ← deps: P9-01-SESSION | AC: `ProjectState` imports cleanly; `project_health="invalid"` raises ValidationError; `is_legacy` defaults to False; `cases` dict is empty dict by default (not None).
-
-- [x] **[P9-01-AC]** Import smoke test + security tests for `schemas/project.py`: `from schemas.project import ProjectIntake, InputSession, ProjectState` succeeds; path traversal test `ProjectIntake(project_name="../etc/passwd", ...)` raises ValueError; empty slug `ProjectIntake(project_name="   ", ...)` raises ValueError; invalid language standard `ProjectIntake(language_standard="invalid")` raises ValidationError; run as `python -m pytest tests/test_project_schema.py -v` (create minimal test file if none exists). ← deps: P9-01-SLUG, P9-01-SESSION, P9-01-STATE | AC: all 4 assertions pass; test file runs without import errors.
+- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx`; open file in python-docx and confirm at least one paragraph with style matching a GW_ style name is present; audit_log contains `template_resolved` event with `fallback: false`; `templates.json` shows correct base filename in `frm_risk_register.base` slot. ← deps: TPL-01, TPL-02, TPL-03, TPL-04 | AC: smoke test script runs without exception and all three assertions pass.
 
 ---
 
 ### Sprint-WORK — Interim Workpaper Generation (Session 024)
 
 **BA:** BA-WORK-01 — CONFIRMED 2026-04-19
-**Security:** Reads persisted artifacts only — no new API calls unless explicitly triggered by Maher. ANALYTICAL INFERENCE label is a data integrity requirement. Output written to `D_Working_Papers/` only — not E_Drafts or F_Final (unless promoted). Workpaper generation does NOT transition CaseState unless Maher promotes to final.
-**AK decisions locked:** (1) Trigger: any point after Junior draft exists — mid or post pipeline; (2) Structure: Maher-driven, presents 9 sections as opt-in/opt-out at generation time; (3) Promotion: workpapers can be promoted to final report → written to F_Final/ with PROMOTED_FROM_WORKPAPER audit flag.
-**Gate:** UNBLOCKED — ready to build.
+**Note:** WORK-01 DONE (merged Phase D). WORK-02 and WORK-03 are next.
 
-```
-WORK-01 (WorkpaperGenerator) ─── WORK-02, WORK-03
-```
-
-- [x] **[WORK-01]** Create `workflows/workpaper.py` — `WorkpaperGenerator` class: `generate(case_id: str, source_artifacts: dict) -> Path`. Single Sonnet call. System prompt hardcodes ACFE Internal Review language standard and instructs: "Every finding must cite at least one registered document by doc_id and filename. If no documentary support exists, label the finding 'ANALYTICAL INFERENCE — no documentary evidence found yet'." 9-section structure per BA-WORK-01: (1) Header with PRELIMINARY watermark; (2) Materials reviewed (from DocumentIndex); (3) Key facts (from key_facts.json); (4) Red flags (from red_flags.json, sorted high→medium→low); (5) Emerging findings (Sonnet-generated, 3–7 items, each with evidence citation); (6) Leads register status (from leads_register.json); (7) Open questions (from findings + open leads + intake_qa); (8) Next steps (Sonnet-generated, 3–5 items); (9) Audit trail summary (session count, document count, facts count). Output: `.md` only (no DOCX for workpapers per BA-WORK-01 out-of-scope). Saved to `D_Working_Papers/interim_workpaper.v{N}.md` (N = next available integer, never overwrites). Appends `WORKPAPER_GENERATED` event to `audit_log.jsonl` with version and model used. ← deps: P9-01-STATE (for ProjectState), EMB-01-REF (optional retrieval) | AC: `generate()` produces a .md file in D_Working_Papers/; file contains "PRELIMINARY" watermark text; findings without doc citations are labelled "ANALYTICAL INFERENCE"; audit_log contains `WORKPAPER_GENERATED` event; calling `generate()` twice creates `v1.md` and `v2.md` — no overwrite.
-
+- ~~[x] WORK-01~~ DONE — workflows/workpaper.py built Phase D
 - [ ] **[WORK-02]** Trigger in Case Tracker — "Generate Workpaper" button in detail expander per UX-015: visible for cases with status `JUNIOR_DRAFT_COMPLETE` or `PM_REVIEW_COMPLETE`. Button calls `WorkpaperGenerator.generate(case_id, source_artifacts)` where source_artifacts are loaded from case folder E_Drafts (junior_output.v*.json, pm_review.v*.json). Shows download button in Case Tracker detail expander after generation: `st.download_button("Download Workpaper (.md)", ...)` with filename pattern `workpaper_{case_id}_{YYYYMMDD}.md`. Greyed out (disabled, tooltip "No draft material yet") for cases with status `INTAKE_CREATED`. Not shown for terminal states (`OWNER_APPROVED`, `DELIVERABLE_WRITTEN`). ← deps: WORK-01 | AC: button visible for `JUNIOR_DRAFT_COMPLETE` case; button absent for `INTAKE_CREATED` case; generated file downloadable from tracker without navigating to case folder.
-
 - [ ] **[WORK-03]** Secondary trigger in pipeline done stage — secondary `st.button("Generate Interim Workpaper")` below primary download button on Investigation and FRM done stages per UX-015. Calls same `WorkpaperGenerator.generate()`. Shows inline `st.spinner("Generating workpaper...")` during generation. Renders a second download button for the workpaper after generation. Does not re-trigger the pipeline. ← deps: WORK-01 | AC: button present on FRM done stage and Investigation done stage; clicking generates workpaper without any agent pipeline re-run (verify by checking audit_log — no new Junior/PM/Partner events); workpaper download available immediately after generation.
 
 ---
@@ -958,25 +629,8 @@ CONV-02 ← CONV-01 + EMB-02-REF
 
 ---
 
-### Sprint-UX-FIXES — High-Priority UX Fixes (Session 024)
-
-**UX source:** UX-007 through UX-011, UX-016, UX-017 (all Session 024 review findings)
-**Security:** No new data paths. No schema changes. UI layer only.
-**Note:** These tasks can run in parallel with all other sprints — no schema or tool dependencies.
-
-- [x] **[UX-F-01]** Renumber pages + add sidebar section dividers per UX-007: rename page files to eliminate gaps and create groupings (01_Investigation, 02_Persona_Review, 03_Scope → or per AK-approved mapping TBD); inject sidebar section headers in `streamlit_app/shared/session.py` bootstrap via `st.sidebar.markdown` — "INVESTIGATION", "COMPLIANCE", "BUSINESS", "UTILITIES" labels with dividers above each group. Add `st.info("Run Scope first for any new engagement...")` callout on 0_Scope.py. Add `st.page_link()` calls to landing page workflow grid (Streamlit 1.31+; fallback to markdown links if unavailable). Move Case Tracker to sidebar position just before Settings/Team. ← deps: none | AC: sidebar shows section dividers visible in browser; no page-number gaps in sidebar nav; Scope page shows "Start here" callout.
-
-- [x] **[UX-F-02]** Workflow-specific intake labels + DD merged form per UX-008: update `generic_intake_form()` to accept `submit_label` param mapped from `workflow_id` (e.g. "Run Investigation", "Draft Proposal", "Begin Scoping"); add `placeholder` text to description field per workflow_id map; merge Due Diligence generic + specific fields into single `dd_intake_form()` (eliminates two-phase render); move FRM module dependency enforcement to `st.on_change` callback on multiselect (auto-add Module 2, show inline `st.info()` without clearing form). ← deps: none | AC: FRM page shows "Module 2 added automatically" inline on multiselect change without form submit; DD page renders all fields in one form (no second form appearing after submit); Investigation Run button labelled "Run Investigation" not "Start".
-
-- [x] **[UX-F-03]** Progress bar + agent label mapping + failure log capture per UX-009: add `st.progress()` bar above status block in running stage (3-step: 33% after Junior start event, 66% after PM start, 100% after Partner complete; FRM: step per module × 3); map internal agent IDs to user-facing labels in `run_in_status()` or `PipelineEvent` construction (`junior_analyst` → "Consultant (Draft)", `pm_review` → "Consultant (Review)", `partner` → "Consultant (Sign-off)"); add static estimated time caption at run start: `st.caption("Estimated time: 2–4 minutes...")`; on pipeline failure, add `st.expander("View pipeline log")` rendering last N events captured in `st.session_state["pipeline_log_events"]` (store events during `on_progress` callbacks). ← deps: none | AC: progress bar visible during FRM run (verify by inspection); agent label "Consultant (Draft)" appears in log (not "junior_analyst"); failure expander appears on pipeline error state.
-
-- [x] **[UX-F-04]** Inline report preview + copy case ID + "Start Another" in Zone C per UX-010: add `st.expander("Preview report", expanded=False)` in done stage containing `st.markdown(report_text[:3000])` with "Show more" toggle; add "Copy Case ID" button (or render case_id as `st.code()` for easy selection) next to case ID display; collapse `**Location:** cases/{id}/` into "Technical details" expander; add primary "Start Another [Workflow Name]" button in Zone C main content area (not sidebar-only); for FRM done-stage rewrites, update spinner text to `f"Applying {rewrite_count} rewrite(s)..."`. ← deps: none | AC: done stage shows report preview expander; case ID displayed in selectable format; "Start Another FRM" button present in main content below download; location path hidden by default in collapsed expander.
-
-- [x] **[UX-F-05]** Case Tracker — status label mapping + dataframe row selection + Client column + engagement_id scaffold per UX-011: add `_STATUS_LABELS` dict mapping all CaseStatus values to human-readable strings ("Draft Ready", "Under Review", "Approved", "Error — action needed" etc.); replace `st.selectbox` detail driver with `st.dataframe(on_select="rerun", selection_mode="single-row")` (Streamlit 1.35+; fall back to selectbox if version check fails); add "Client" column to dataframe populated from `client_name` in index; add `engagement_id` column to `cases/index.json` schema (null for all existing cases — Phase 9 ready scaffold); add "Resume / Open" button in detail expander using `st.switch_page()` mapped from workflow key to page path. ← deps: none | AC: tracker shows "Draft Ready" not "JUNIOR_DRAFT_COMPLETE"; Client column visible; row click drives detail panel without requiring separate selectbox interaction; engagement_id field present in index (null for legacy cases).
-
-- [x] **[UX-F-06]** Visual design — create `.streamlit/config.toml` + fix h2/h3 selector + wire severity CSS per UX-016: create `/Users/akaushal011/forensic-ai/.streamlit/config.toml` with `[theme]` block (`primaryColor="#D50032"`, `backgroundColor="#FFFFFF"`, `secondaryBackgroundColor="#F5F2F0"`, `textColor="#282827"`, `font="sans serif"`); fix CSS selector in `session.py` `_CSS` to target `h2, h3` (not h2 only) for red bottom border; wire severity CSS classes in `pipeline.py` `_render_event()`: CRITICAL → `st.markdown('<div class="severity-critical">...</div>', unsafe_allow_html=True)`, WARNING → same with `severity-warning`; add sidebar footer: `st.sidebar.caption(f"GoodWork Forensic AI · {today}")`; remove button color overrides from `_CSS` that now duplicate config.toml. ← deps: none | AC: `.streamlit/config.toml` exists with correct keys; browser shows #D50032 primary color on first load (not CSS-injected); CRITICAL events in pipeline log show left-border accent style; `st.subheader()` text shows red underline (h3 rule now applied).
-
-- [x] **[UX-F-07]** [QA_APPROVED] Settings completeness + T&C textarea + firm.json consolidation per UX-017: add `tc_text` field to Settings page as `st.text_area("Standard Terms & Conditions", height=300)` with helper text; store in `firm.json["tc_text"]`; add completeness indicator at top of Settings page — visual checklist of 5 items (Firm Name, Logo, Pricing, T&C, Team) with green/amber/grey states; in Proposal workflow intake, add pre-flight check: read `firm.json`, if firm_name blank → `st.warning("Firm profile incomplete — go to Settings...")` with `st.page_link()` to Settings; add roadmap item to consolidate `firm_profile.json` and `pricing_model.json` into `firm.json` (mark as REFACTOR-01 in todo, do not implement now). ← deps: none | AC: Settings page shows completeness indicator above tabs; T&C textarea saves to firm.json; Proposal page shows warning when firm_name is blank; REFACTOR-01 logged in todo.md.
+### Sprint-UX-FIXES — DONE
+UX-F-01 through UX-F-07 all completed and merged. See releases/completed-tasks.md.
 
 ---
 
@@ -994,62 +648,30 @@ Priority: LOW. Gate: after P9-07A (Language Standard Settings) lands.
 
 ### Sprint-P9-UI — Phase 9 Engagements UI (Session 024)
 
-**UX:** UX-012
-**AK decision locked (2026-04-19):** New `01_Engagements.py` as top-level home. `0_Scope.py` becomes a step inside New Engagement flow — not standalone. Premium two-panel engagement dashboard.
-**Gate:** UNBLOCKED — ready to build after P9-01 schemas complete.
-**Security:** Same as Phase 8 — localhost:8501, single user; all data in `projects/{slug}/`; slug used only via validated path from P9-01a.
+**Note:** P9-UI-01 DONE (merged Phase D). P9-UI-02 is next.
 
-- [x] **[P9-UI-01]** Create `pages/01_Engagements.py` — two-panel engagement home per UX-012. Left panel (1/3 width): list of named engagement cards from `ProjectManager.list_projects()` — each card shows Engagement Name, Client, Status (health roll-up: green all-done, amber any-error, blue in-progress), Last Activity. "New Engagement" button at top of left panel. Right panel (2/3 width): selected engagement detail — shows all cases under engagement as mini-tracker (workflow type, status, last updated), plus "Run New Workflow" button that routes to relevant workflow page with `active_project` pre-set in session_state. Empty state (no engagements): `st.info("No engagements yet. Start your first engagement.")` with prominent "New Engagement" button spanning both panels. "New Engagement" wizard: multi-field form (Project Name, Client Name, Service Type selectbox, Language Standard selectbox — 4 options per BA-P9-05, Naming Convention); slug preview shown as `st.caption("Folder name: cases/{slug}/")` updating on keystroke; collision detection before `create_project()` call; on success: `st.success("Engagement created: cases/{slug}/")` + list of 6 created subfolders. ← deps: P9-01-SLUG, P9-01-STATE, P9-02 (all from Phase 9 section above) | AC: page loads without error; "New Engagement" form creates `cases/{slug}/` with 6 subfolders; collision warning shown if slug exists; engagement cards visible after creation; "Run New Workflow" sets `st.session_state.active_project`.
-
+- ~~[x] P9-UI-01~~ DONE — pages/01_Engagements.py built Phase D
 - [ ] **[P9-UI-02]** Wire `engagement_id` / `active_project` into all workflow intake pages — add "Continue Engagement" option at top of intake form on all workflow pages: if `st.session_state.active_project` is set, show `st.info("Continuing engagement: {project_name} — client: {client_name}")` banner and pre-fill `client_name`, `language_standard` from project context; lock those fields (render as `st.text()` not `st.text_input()`). If no `active_project`: existing behavior unchanged (standalone case with UUID, backward compat). Add `engagement_id` to `state.json` at case creation if `active_project` is set. ← deps: P9-UI-01, P9-01-STATE | AC: workflow page with `active_project` set shows pre-filled client name and "Continuing engagement" banner; field is read-only (not editable); without `active_project`, page behaves identically to Phase 8 behavior; `state.json` contains `engagement_id` matching project slug when created via engagement context.
 
 ---
 
-### Sprint-SETUP — First-Run Setup Page (Session 024 — SHIP BLOCKER — runs BEFORE Phase A)
-
-**BA:** BA-SETUP-01 — CONFIRMED 2026-04-19
-**Security:** .env written at runtime — must use load_dotenv(override=True) + config.reload() pattern. setup.json is a cache not authority. No lockout on corrupt/missing setup.json.
-**Gate:** UNBLOCKED. Must complete before any other sprint — this is the ship blocker.
-
-- [x] **[SETUP-00]** Consolidate firm profile config: rename `firm_profile/firm_profile.json` references in `core/setup_wizard.py` and `run.py` to read `firm_profile/firm.json` — same file Streamlit uses. Add `config.reload()` function to `config.py` that calls `load_dotenv(override=True)` and rebuilds API clients. ← deps: none | AC: `python run.py` and `streamlit run app.py` both read from `firm_profile/firm.json`; no references to `firm_profile.json` remain outside setup_wizard.py CLI path.
-
-- [x] **[SETUP-01]** Create `streamlit_app/shared/readiness.py` — `check_readiness() -> ReadinessResult` dataclass: checks all 5 conditions (`.env` + ANTHROPIC_API_KEY, `firm.json` + firm_name, `team.json` + one member, `pricing_model.json`, `assets/templates/base_report_base.docx`). Returns `{ready: bool, missing: list[str], setup_json_rebuilt: bool}`. If setup.json missing/corrupt: rebuild silently. ← deps: SETUP-00 | AC: function returns `ready=True` on a correctly set up install; returns `ready=False, missing=["ANTHROPIC_API_KEY"]` when .env is empty; missing setup.json → rebuilt not lockout.
-
-- [x] **[SETUP-02]** Create `pages/00_Setup.py` — 5-step guided setup wizard in Streamlit. Step 1: API keys (ANTHROPIC required, TAVILY optional, test connection button). Step 2: Firm Profile (name required, logo optional). Step 3: Team (at least one member required). Step 4: Pricing model (required). Step 5: Review all + complete button that calls `config.reload()` then `st.switch_page("app.py")`. Progress indicator showing steps completed. ← deps: SETUP-01 | AC: clean install with empty firm_profile/ → setup page renders; completing all steps writes correct files; incomplete required step → blocked with exact error; TAVILY skip → allowed; app redirects to landing after completion.
-
-- [x] **[SETUP-03]** Update `streamlit_app/shared/session.py` bootstrap() — add readiness check at top: call `check_readiness()`, if `not ready` and current page is not `00_Setup.py` → `st.switch_page("pages/00_Setup.py")`. ← deps: SETUP-01, SETUP-02 | AC: fresh install redirects to setup page on any page load; completed install never redirects; deleted setup.json on working install → no redirect (readiness rebuilt from artifacts).
+### Sprint-SETUP — DONE
+SETUP-00 through SETUP-03 all completed and merged. See releases/completed-tasks.md.
 
 ---
 
-### Sprint-TEST — Minimum Test Surface (Session 024 — required before Maher live use)
+### Sprint-TEST — Minimum Test Surface (Session 024)
 
-**Security:** Tests must not use real API keys — mock all external calls. Test fixtures must not contain real client data.
-**Gate:** UNBLOCKED. Run after Phase B completes (schemas and core stable).
-
-- [x] **[TEST-01]** Create `tests/` directory + `tests/conftest.py` with shared fixtures (temp case dir, mock config, mock API clients). ← deps: none | AC: `pytest tests/` runs without import errors.
-
-- [x] **[TEST-02]** `tests/test_state_machine.py` — test all valid transitions, all invalid transitions (expect TransitionError), is_terminal() for all states, MAX_REVISION_ROUNDS enforcement. ← deps: TEST-01 | AC: 100% branch coverage of core/state_machine.py.
-
-- [x] **[TEST-03]** `tests/test_file_tools.py` — test case_dir() path traversal (expect ValueError on `../../etc`), write_artifact() atomic write (tmp→replace), write_state() + read_state() roundtrip, build_case_index() with 0/1/N cases, append_audit_event() append-only (verify file grows, never shrinks). ← deps: TEST-01 | AC: path traversal test explicitly tries `../` and confirms ValueError; atomic write verified by checking no .tmp file remains after success.
-
-- [x] **[TEST-04]** `tests/test_post_hooks.py` — test validate_schema() blocks on missing required fields, persist_artifact() writes to correct path, append_audit_event_hook() appends correct JSON structure, extract_citations() populates citations_index.json. ← deps: TEST-01 | AC: each hook tested in isolation with mock payload; blocking hooks raise HookVetoError on bad input.
+**Note:** TEST-01..04, TEST-06, TEST-07 DONE. TEST-05 and TEST-07b remain.
 
 - [ ] **[TEST-05]** `tests/test_project_schema.py` (P9-01-AC) — ProjectIntake slug validation (7-step algorithm), path traversal attempts, empty slug rejection, InputSession lifecycle states, ProjectState health enum. ← deps: TEST-01 | AC: `../../etc/passwd` as project_name raises ValueError; empty string raises ValueError; valid name produces correct slug.
-
-- [x] **[TEST-06]** `tests/test_output_generator.py` — generate_docx() produces a valid .docx file, template_path=None uses base template, named styles present in output. ← deps: TEST-01 | AC: generated file opens with python-docx without error; file size > 0; no .tmp file remains.
-
-- [x] **[TEST-07]** Workflow smoke tests — `tests/test_workflow_smoke.py`: run_engagement_scoping_workflow(), run_due_diligence_workflow(), run_frm_pipeline() each called with mock agents returning stub artifacts. Verify: state transitions fire, audit events written, final file written to correct path. ← deps: TEST-01 | AC: each workflow completes without exception; audit_log.jsonl contains expected events; final_report.en.md exists in temp case dir.
 
 ---
 
 ### Sprint-KL — Three-Layer Knowledge Architecture (Session 024)
 
 **BA:** BA-KL-01 — CONFIRMED 2026-04-19
-**Gate:** UNBLOCKED after Sprint-EMB (needs ChromaDB). Design only in Phase A; build Phase D onwards.
-
-- [x] **[KL-00]** Create `knowledge/manifest.json` — index of all knowledge files with doc_id, domain, version, effective_date, supersedes, authority_level. ← deps: none | AC: manifest.json validates against a KnowledgeManifestEntry schema; all existing knowledge/*.md files have entries.
-
-- [x] **[KL-01]** Create `tools/knowledge_retriever.py` — `KnowledgeRetriever` class: `retrieve(query, case_context) -> KnowledgeBundle`. Queries all three ChromaDB collections (kb_base, kb_user_sanitised, kb_engagement). Returns structured bundle with base_hits, user_hits, engagement_hits, and rules dict per BA-KL-01 retrieval contract. Falls back gracefully if any collection is empty or unavailable. ← deps: EMB-01, KL-00 | AC: returns valid KnowledgeBundle with all three arrays (empty arrays acceptable); BASE layer always returns results if kb_base is indexed; empty USER/ENGAGEMENT layers return empty arrays not errors.
+**Note:** KL-00 and KL-01 DONE (merged Phase D). KL-02 is next.
 
 - [ ] **[KL-02]** Engagement harvest pipeline — `tools/knowledge_harvester.py`: `harvest_case(case_id)` runs after OWNER_APPROVED. Extracts approved patterns to `cases/{id}/knowledge_export/approved_patterns.json`. Promotes to `firm_profile/knowledge/engagement/index.jsonl`. Never extracts client identifiers or raw evidence text. ← deps: KL-01 | AC: harvest_case() on approved case produces approved_patterns.json; file contains no client name, no case_id reference in content fields; audit event written.
 
@@ -1058,14 +680,9 @@ Priority: LOW. Gate: after P9-07A (Language Standard Settings) lands.
 ### Sprint-ACT — Activity Ledger (Session 024)
 
 **BA:** BA-ACT-01 — CONFIRMED 2026-04-19
-**Security:** logs/ is gitignored for *.jsonl. Log writes are fire-and-forget — never crash the app. No PII in detail fields. Access: open (Path A).
-**Gate:** UNBLOCKED. Build in Phase D (after Phase C schemas stable).
-
-- [x] **[ACT-00]** Create `logs/` directory with `logs/.gitkeep`. Add `logs/*.jsonl` to `.gitignore`. ← deps: none | AC: `logs/` present in repo; `.gitkeep` tracked; activity.jsonl gitignored.
-
-- [x] **[ACT-01]** Create `tools/activity_logger.py` — `ActivityLogger` class with `log(category, action, actor, engagement_id, case_id, detail, status)` method. Writes to `logs/activity.jsonl` append-only. Log rotation: when file exceeds 50MB rename to `logs/activity_{YYYYMMDD}.jsonl` and start new file. On write failure: emit `st.session_state["act_log_warn"] = True` and continue silently. Categories: SESSION, SETUP, ENGAGEMENT, PIPELINE, DOCUMENT, DELIVERABLE, KNOWLEDGE, TEMPLATE, SETTINGS, ERROR. ← deps: ACT-00 | AC: log() writes valid JSONL event (all fields present, ISO-8601 timestamp, uuid4 event_id); rotation triggers at 50MB; write failure does not raise; `logs/activity.jsonl` gitignored but logs/.gitkeep committed.
+**Note:** ACT-00 and ACT-01 DONE (merged Phase D). ACT-02 and ACT-03 are next.
 
 - [ ] **[ACT-02]** Wire ActivityLogger into bootstrap() and all pipeline on_progress callbacks — SESSION/PIPELINE events. Wire into 00_Setup.py — SETUP events. Wire into file_tools.py write_artifact() — DOCUMENT/DELIVERABLE events. Wire into settings pages — SETTINGS events. ← deps: ACT-01, SETUP-03 | AC: running a pipeline end-to-end produces ≥5 activity events in logs/activity.jsonl covering SESSION, PIPELINE, DELIVERABLE categories; settings change produces SETTINGS event with old_value + new_value fields.
-
 - [ ] **[ACT-03]** Create `pages/07_Activity_Log.py` — per UX-020. Date range picker + category multiselect + free-text search. Paginated 50 events per page. Export as CSV button. Sidebar warning if `st.session_state.get("act_log_warn")` is True. ← deps: ACT-01 | AC: page renders with empty log (shows "No activity recorded yet"); date filter correctly narrows events; category filter works independently and in combination with date; CSV export produces valid file with all visible events; corrupt log file shows error message, does not crash.
 
+---
