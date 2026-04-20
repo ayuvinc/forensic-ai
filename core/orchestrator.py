@@ -74,6 +74,9 @@ class Orchestrator:
         status = self._load_or_init_status(intake)
         context = {"case_id": self.case_id, "workflow": self.workflow}
 
+        # EMB-04: inject embedded context when vector index is available
+        self._maybe_inject_embedded_context(context, intake)
+
         # ── resume logic ─────────────────────────────────────────────────────
         if status == CaseStatus.INTAKE_CREATED:
             junior_output = self._run_junior(intake, context)
@@ -227,3 +230,34 @@ class Orchestrator:
             return {}
         data = json.loads(open(files[-1], encoding="utf-8").read())
         return data.get("payload", data)  # unwrap envelope if present
+
+    # ── EMB-04: Semantic context injection ────────────────────────────────────
+
+    def _maybe_inject_embedded_context(self, context: dict, intake: dict) -> None:
+        """If EmbeddingEngine is available, add embedded_context to the context dict.
+
+        Uses intake fields to build a relevance query so the most pertinent
+        document chunks surface for the agents. When unavailable, the key is
+        absent and agents fall back to DocumentManager full-document context.
+        """
+        try:
+            from tools.embedding_engine import EmbeddingEngine
+            engine = EmbeddingEngine(self.case_id)
+            if not engine.available:
+                return  # key intentionally absent — agents use DocumentManager
+            query = self._build_embedding_query(intake)
+            embedded = engine.get_context_for_query(query)
+            if embedded:
+                context["embedded_context"] = embedded
+        except Exception:
+            pass  # never block the pipeline on embedding failure
+
+    @staticmethod
+    def _build_embedding_query(intake: dict) -> str:
+        """Derive a relevance query from intake fields for the embedding search."""
+        parts = []
+        for key in ("engagement_scope", "client_name", "service_type", "case_type", "scope"):
+            val = intake.get(key)
+            if val and isinstance(val, str):
+                parts.append(val)
+        return " ".join(parts) if parts else "key findings risk indicators fraud"

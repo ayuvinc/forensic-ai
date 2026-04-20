@@ -84,6 +84,10 @@ class EmbeddingEngine:
 
     # ── Chunking ───────────────────────────────────────────────────────────────
 
+    def chunk_document(self, text: str) -> list[str]:
+        """Public alias for spec compliance. Returns overlapping char chunks."""
+        return self._chunk_text(text)
+
     def _chunk_text(self, text: str) -> list[str]:
         """Split text into overlapping chunks of _CHUNK_SIZE characters."""
         if not text:
@@ -96,6 +100,10 @@ class EmbeddingEngine:
         return chunks
 
     # ── Indexing ───────────────────────────────────────────────────────────────
+
+    def embed_and_index(self, doc_entry) -> None:
+        """Public spec-name alias for embed_document()."""
+        self.embed_document(doc_entry)
 
     def embed_document(self, doc_entry) -> None:
         """Chunk and embed a document into the case vector store.
@@ -148,6 +156,10 @@ class EmbeddingEngine:
             return 0
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
+
+    def search(self, query: str, n: int = 5) -> list[ChunkResult]:
+        """Spec-name alias for retrieve(). Returns top-n chunks for query."""
+        return self.retrieve(query, top_k=n)
 
     def retrieve(
         self, query: str, case_id: str | None = None, top_k: int = 5
