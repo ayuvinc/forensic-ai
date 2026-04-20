@@ -188,6 +188,9 @@ class DocumentManager:
         index.last_updated = datetime.now(timezone.utc)
         self._save_index(index)
 
+        # EMB-02: append entry to case_intake.md for AIC pipeline consumption
+        self._append_case_intake(entry)
+
         # P9-06: trigger interim context write if budget ≥ 75%
         try:
             if self.context_usage_pct() >= 75.0:
@@ -377,6 +380,34 @@ class DocumentManager:
         return sections
 
     # ── Text persistence ──────────────────────────────────────────────────────
+
+    def _append_case_intake(self, entry) -> None:
+        """Append one document entry to D_Working_Papers/case_intake.md.
+
+        Created on first call; subsequent calls append. Atomic write via .tmp.
+        Read by AIC-02 pre-final-run Sonnet pass.
+        """
+        wp_dir = case_dir(self.case_id) / "D_Working_Papers"
+        wp_dir.mkdir(parents=True, exist_ok=True)
+        intake_path = wp_dir / "case_intake.md"
+
+        summary_text = entry.summary or (
+            ", ".join(s.section_title for s in entry.sections[:5])
+            if entry.sections else "(no summary)"
+        )
+        line = (
+            f"\n## [{entry.doc_id}] {entry.filename}\n"
+            f"- Registered: {entry.indexed_at.strftime('%Y-%m-%d %H:%M UTC')}\n"
+            f"- Folder: {entry.folder}  |  Type: {entry.doc_type}  |  "
+            f"Size: {entry.size_bytes:,} bytes\n"
+            f"- Embedding: {entry.embedding_status or 'unknown'}\n"
+            f"- Summary: {summary_text[:600]}\n"
+        )
+
+        existing = intake_path.read_text(encoding="utf-8") if intake_path.exists() else "# Case Intake Log\n"
+        tmp = intake_path.with_suffix(".tmp")
+        tmp.write_text(existing + line, encoding="utf-8")
+        os.replace(tmp, intake_path)
 
     def _persist_text(self, doc_id: str, text: str) -> None:
         """Persist extracted text to disk for resume across sessions."""

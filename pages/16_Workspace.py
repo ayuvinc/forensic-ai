@@ -348,6 +348,43 @@ if mode == "Input Session":
 
     st.divider()
 
+    # EMB-03: Semantic Search
+    with st.expander("Semantic Search", expanded=False):
+        st.caption("Search across all ingested documents using semantic similarity.")
+        search_query = st.text_input(
+            "Search query",
+            placeholder="e.g. 'unusual transactions above threshold'",
+            key=f"sem_search_query_{slug}",
+        )
+        if st.button("Search", key=f"sem_search_btn_{slug}"):
+            if search_query.strip():
+                try:
+                    from tools.embedding_engine import EmbeddingEngine
+                    engine = EmbeddingEngine(slug)
+                    if not engine.available:
+                        st.warning(
+                            "Semantic search is unavailable — sentence-transformers or "
+                            "ChromaDB could not be loaded. Documents are still accessible "
+                            "via session notes and the Final Run pipeline."
+                        )
+                    else:
+                        results = engine.search(search_query.strip(), n=5)
+                        if not results:
+                            st.info("No matching chunks found. Try a different query or upload more documents.")
+                        else:
+                            st.markdown(f"**{len(results)} result(s) for:** _{search_query.strip()}_")
+                            for i, chunk in enumerate(results, 1):
+                                with st.container():
+                                    st.markdown(f"**Result {i}** — _{chunk.source_citation}_")
+                                    st.text(chunk.chunk_text[:600])
+                                    st.divider()
+                except Exception as exc:
+                    st.error(f"Search error: {exc}")
+            else:
+                st.warning("Enter a search query first.")
+
+    st.divider()
+
     # P9-05d: Context budget bar
     ctx = pm.get_context_summary(slug)
     budget_pct = ctx.get("context_budget_used_pct", 0.0)
