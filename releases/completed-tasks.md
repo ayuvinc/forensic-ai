@@ -263,3 +263,15 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] ACT-01 — tools/activity_logger.py — ActivityLogger append-only JSONL; 50MB rotation; fire-and-forget; module-level singleton; 10 event categories — QA_APPROVED
 
 ---
+
+## Phase E Completed Tasks — Archived Session 028 (2026-04-20, commit 0c127e9)
+
+- [x] WORK-02 — pages/12_Case_Tracker.py — "Generate Workpaper" button in case detail expander; status-gated routing (_TERMINAL download-only, INTAKE_CREATED disabled+tooltip, _ELIGIBLE active); _load_source_artifacts() searches E_Drafts/ then root; calls WorkpaperGenerator.generate() + st.download_button() — QA_APPROVED
+- [x] WORK-03 — streamlit_app/shared/done_zone.py — enable_workpaper: bool = False param; secondary "Generate Interim Workpaper" button with spinner; wired on FRM (pages/06_FRM.py) and Investigation (pages/02_Investigation.py) done stages — QA_APPROVED
+- [x] ACT-02 — session.py/pipeline.py/settings.py/file_tools.py — SESSION_START in bootstrap(); PIPELINE_START/COMPLETE/ERROR in run_in_status(); SETTINGS event with old/new values in Settings save; DOCUMENT event in write_artifact(); DELIVERABLE event in mark_deliverable_written() — QA_APPROVED
+- [x] ACT-03 — pages/15_Activity_Log.py — paginated log viewer (50/page, prev/next); date range + category multiselect + free-text filters; CSV export; act_log_warn sidebar banner; named 15_ (07 conflicts with 07_Proposal.py) — QA_APPROVED
+- [x] KL-02 — tools/knowledge_harvester.py — harvest_case(case_id): loads partner_approval + junior_output; _sanitise_patterns() strips _BLOCKED_FIELDS + PII regex; _promote_to_firm_index() appends hashed entry to firm_profile/knowledge/engagement/index.jsonl; writes cases/{id}/knowledge_export/approved_patterns.json atomically; KNOWLEDGE_HARVEST_COMPLETE audit event — QA_APPROVED
+- [x] P9-UI-02 — schemas/case.py + intake.py + pages/06_FRM.py + core/orchestrator.py — engagement_id: Optional[str] in CaseIntake; render_engagement_banner() info banner + pre-fill client_name; FRM pre-writes state.json with engagement_id before pipeline; orchestrator._set_status() carries forward engagement_id on each transition — QA_APPROVED
+- [x] TEST-05 — tests/test_project_schema.py — ProjectIntake slug validation, path traversal rejection, empty slug rejection, InputSession lifecycle, ProjectState health enum; 120 tests pass total — QA_APPROVED
+
+---
