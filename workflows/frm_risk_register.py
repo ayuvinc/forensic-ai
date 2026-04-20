@@ -95,6 +95,24 @@ def run_frm_pipeline(
         module_name = FRM_MODULES.get(module_num, f"Module {module_num}")
         on_progress(f"[Module {module_num}/{len(selected_modules)}] {module_name}...")
 
+        # FR-02: inject stakeholder context when engagement_id is set
+        stakeholder_context = ""
+        if getattr(intake, "engagement_id", None):
+            try:
+                from tools.project_manager import ProjectManager as _PM
+                stakeholder_context = _PM().get_stakeholder_context(intake.engagement_id)
+            except Exception:
+                pass
+
+        # FR-06: recommendation_depth from intake drives how detailed recommendations are
+        rec_depth = getattr(intake, "recommendation_depth", None) or "structured"
+        _DEPTH_INSTRUCTIONS = {
+            "structured":  "Recommendations must align with COSO/ACFE/ISO 37001 framework references. Each recommendation should cite the relevant control objective.",
+            "executive":   "Recommendations should be high-level (2–3 sentences max each). Avoid technical implementation detail — focus on strategic action and accountability.",
+            "detailed":    "Recommendations must include step-by-step implementation guidance, responsible parties, estimated timeline, and success metrics where applicable.",
+        }
+        depth_instruction = _DEPTH_INSTRUCTIONS.get(rec_depth, _DEPTH_INSTRUCTIONS["structured"])
+
         context = {
             "case_id": intake.case_id,
             "workflow": "frm_risk_register",
@@ -107,6 +125,9 @@ def run_frm_pipeline(
             "intake": intake.model_dump(),
             "generate_arabic": intake.language == "ar",
             "client_name": intake.client_name,
+            "recommendation_depth": rec_depth,                  # FR-06
+            "recommendation_instruction": depth_instruction,   # FR-06: injected into prompt
+            "stakeholder_context": stakeholder_context,        # FR-02
         }
 
         module_intake = intake.model_copy(update={

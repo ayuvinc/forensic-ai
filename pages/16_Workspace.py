@@ -23,6 +23,64 @@ from tools.project_manager import ProjectManager
 session = bootstrap(st)
 pm = ProjectManager()
 
+
+def _save_stakeholder(slug: str, entry: dict) -> None:
+    """Append stakeholder entry to D_Working_Papers/stakeholder_inputs.json.
+
+    FR-01: repeated saves append entries rather than overwriting.
+    Raises ValueError if 'name' key is missing or empty.
+    """
+    import json as _json
+    import os as _os
+    from datetime import datetime, timezone
+
+    if not entry.get("name", "").strip():
+        raise ValueError("Stakeholder name is required")
+
+    entry["saved_at"] = datetime.now(timezone.utc).isoformat()
+    wp_dir = CASES_DIR / slug / "D_Working_Papers"
+    wp_dir.mkdir(parents=True, exist_ok=True)
+    path = wp_dir / "stakeholder_inputs.json"
+    entries = []
+    if path.exists():
+        try:
+            entries = _json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
+            entries = []
+    entries.append(entry)
+    tmp = path.with_suffix(".tmp")
+    tmp.write_text(_json.dumps(entries, indent=2, default=str), encoding="utf-8")
+    _os.replace(tmp, path)
+
+
+def _draft_finding_for_lead(st, session, lead_description: str, slug: str) -> None:
+    """Use Haiku to draft a brief finding stub for a confirmed lead.
+
+    WF-01b: non-blocking best-effort. Failure is silently logged, not surfaced.
+    The draft is appended to D_Working_Papers/session_notes_YYYYMMDD.md.
+    """
+    try:
+        import anthropic
+        import config
+        from datetime import datetime, timezone
+
+        client = anthropic.Anthropic()
+        prompt = (
+            f"You are a forensic analyst. A lead has been confirmed: '{lead_description}'. "
+            "Draft a one-paragraph factual finding stub following ACFE format: "
+            "procedure performed → observation → implication. Keep it under 150 words."
+        )
+        response = client.messages.create(
+            model=config.HAIKU,
+            max_tokens=300,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        draft = response.content[0].text.strip()
+        pm.add_session_note(slug, f"**AI draft finding for confirmed lead:**\n\n{draft}")
+        st.info("AI draft finding added to session notes.")
+    except Exception:
+        pass  # best-effort — lead still registered even if Haiku fails
+
 # ── Workspace ─────────────────────────────────────────────────────────────────
 
 st.title("Engagement Workspace")
@@ -199,6 +257,94 @@ if mode == "Input Session":
             st.rerun()
         else:
             st.warning("Description is required.")
+
+    st.divider()
+
+    # WF-01b: Exhibit Register
+    with st.expander("Exhibit Register", expanded=False):
+        st.caption("Register physical or documentary exhibits for the case file.")
+        col_ex1, col_ex2, col_ex3 = st.columns([2, 4, 2])
+        with col_ex1:
+            ex_id = st.text_input("Exhibit ID", placeholder="E001", key=f"ex_id_{slug}")
+        with col_ex2:
+            ex_desc = st.text_input("Description", placeholder="Describe the exhibit...", key=f"ex_desc_{slug}")
+        with col_ex3:
+            ex_date = st.text_input("Date", placeholder="YYYY-MM-DD", key=f"ex_date_{slug}")
+        if st.button("Add Exhibit", key=f"add_exhibit_{slug}"):
+            if ex_id.strip() and ex_desc.strip():
+                pm.add_exhibit(slug, {"exhibit_id": ex_id.strip(), "description": ex_desc.strip(), "date": ex_date.strip()})
+                st.success(f"Exhibit {ex_id.strip()} registered.")
+                st.rerun()
+            else:
+                st.warning("Exhibit ID and description are required.")
+
+    st.divider()
+
+    # WF-01b: Leads Register
+    with st.expander("Investigative Leads", expanded=False):
+        st.caption("Track investigative leads. Confirmed leads trigger a draft finding via AI.")
+        col_l1, col_l2, col_l3 = st.columns([2, 4, 2])
+        with col_l1:
+            lead_id = st.text_input("Lead ID", placeholder="L001", key=f"lead_id_{slug}")
+        with col_l2:
+            lead_desc = st.text_input("Description", placeholder="Describe the lead...", key=f"lead_desc_{slug}")
+        with col_l3:
+            lead_status = st.selectbox("Status", ["open", "active", "confirmed", "closed"], key=f"lead_status_{slug}")
+        if st.button("Add Lead", key=f"add_lead_{slug}"):
+            if lead_id.strip() and lead_desc.strip():
+                pm.add_lead(slug, {"lead_id": lead_id.strip(), "description": lead_desc.strip(), "status": lead_status})
+                st.success(f"Lead {lead_id.strip()} added.")
+                if lead_status == "confirmed":
+                    # Haiku draft finding for confirmed leads
+                    _draft_finding_for_lead(st, session, lead_desc.strip(), slug)
+                st.rerun()
+            else:
+                st.warning("Lead ID and description are required.")
+
+        # Show open leads
+        open_leads = pm.get_open_leads(slug)
+        if open_leads:
+            st.caption(f"{len(open_leads)} open lead(s):")
+            for lead in open_leads:
+                st.markdown(f"- **{lead.get('lead_id', '—')}** [{lead.get('status','open')}]: {lead.get('description','')}")
+
+    st.divider()
+
+    # FR-01: Stakeholder Input form
+    with st.expander("Stakeholder Inputs (FRM)", expanded=False):
+        st.caption("Record stakeholder perspectives for injection into the FRM pipeline.")
+        col_s1, col_s2 = st.columns(2)
+        with col_s1:
+            s_name = st.text_input("Name", placeholder="Full name", key=f"s_name_{slug}")
+            s_concern = st.text_area("Key concern", height=60, placeholder="Main concern or risk area...", key=f"s_concern_{slug}")
+        with col_s2:
+            s_role = st.text_input("Role / Title", placeholder="e.g. CFO", key=f"s_role_{slug}")
+            s_risk_view = st.text_area("Risk view", height=60, placeholder="How do they view the risk level?", key=f"s_risk_{slug}")
+
+        if st.button("Save Stakeholder", key=f"save_stakeholder_{slug}"):
+            if s_name.strip():
+                _save_stakeholder(slug, {
+                    "name": s_name.strip(), "role": s_role.strip(),
+                    "key_concern": s_concern.strip(), "risk_view": s_risk_view.strip(),
+                })
+                st.success(f"Stakeholder '{s_name.strip()}' saved.")
+                st.rerun()
+            else:
+                st.error("Name is required.")
+
+        # FR-01: Interview notes uploader (separate from evidence upload)
+        st.caption("Interview notes (stored in D_Working_Papers/)")
+        interview_upload = st.file_uploader(
+            "Upload interview notes",
+            type=["pdf", "docx", "txt"],
+            key=f"interview_notes_{slug}",
+        )
+        if interview_upload:
+            wp_dir = (CASES_DIR / slug / "D_Working_Papers")
+            wp_dir.mkdir(parents=True, exist_ok=True)
+            dest = wp_dir / f"interview_{interview_upload.name}"
+            dest.write_bytes(interview_upload.getbuffer())
+            st.success(f"Interview notes uploaded: {interview_upload.name}")
 
     st.divider()
 

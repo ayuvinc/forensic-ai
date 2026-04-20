@@ -266,6 +266,14 @@ def frm_intake_form(st) -> Optional[tuple]:
             "Engagement scope / known concerns",
             placeholder=_DESCRIPTION_PLACEHOLDERS["frm_risk_register"],
         )
+        # FR-03: recommendation depth controls how detailed the pipeline's recommendations are
+        recommendation_depth = st.radio(
+            "Recommendation depth",
+            ["structured", "executive", "detailed"],
+            index=0,
+            horizontal=True,
+            help="structured = COSO/ACFE aligned; executive = high-level; detailed = step-by-step implementation",
+        )
         language  = st.selectbox("Report language", ["en", "ar"], index=0)
         submitted = st.form_submit_button("Run FRM Pipeline")
 
@@ -312,6 +320,7 @@ def frm_intake_form(st) -> Optional[tuple]:
         language=language,
         created_at=datetime.now(timezone.utc),
         engagement_id=engagement_id or None,
+        recommendation_depth=recommendation_depth,  # FR-03
     )
 
     return intake, selected_modules

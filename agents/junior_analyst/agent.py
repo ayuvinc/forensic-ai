@@ -58,12 +58,16 @@ class JuniorAnalyst:
             except Exception:
                 pass
 
-        revision_feedback = context.get("pm_feedback") or context.get("revision_feedback")
-        firm_name = context.get("firm_name", "GoodWork Forensic Consulting")
-        language_standard = context.get("language_standard", "acfe")
+        revision_feedback          = context.get("pm_feedback") or context.get("revision_feedback")
+        firm_name                  = context.get("firm_name", "GoodWork Forensic Consulting")
+        language_standard          = context.get("language_standard", "acfe")
+        recommendation_instruction = context.get("recommendation_instruction")  # FR-06
+        stakeholder_context        = context.get("stakeholder_context") or None  # FR-02
         system_prompt = prompts.build_system_prompt(
             self._workflow, intake_obj, doc_index, revision_feedback,
             firm_name=firm_name, language_standard=language_standard,
+            recommendation_instruction=recommendation_instruction,
+            stakeholder_context=stakeholder_context,
         )
         task_message = prompts.build_task_message(intake_obj)
 
