@@ -86,6 +86,18 @@ def bootstrap(st) -> dict:
     st.session_state.firm_name = firm_name
     st.session_state.research_mode = getattr(config, "RESEARCH_MODE", "knowledge_only")
 
+    # ACT-02: log session start
+    try:
+        from tools.activity_logger import logger as _act_logger
+        _act_logger.log(
+            category="SESSION",
+            action="session_start",
+            actor="system",
+            detail={"firm_name": firm_name, "research_mode": st.session_state.research_mode},
+        )
+    except Exception:
+        pass
+
     # Sidebar section guide — shown below auto-nav links
     _SIDEBAR_GUIDE = """
 <div style="margin-top:1.5rem;padding-top:0.75rem;border-top:1px solid #E0DEDD;">

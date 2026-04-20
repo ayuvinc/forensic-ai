@@ -21,6 +21,7 @@ def render_done_zone(
     workflow_label: str,
     session_state_keys: list[str],
     stage_key: str,
+    enable_workpaper: bool = False,
 ) -> None:
     """Render Zone C (done stage) with report preview, download, and reset.
 
@@ -32,6 +33,7 @@ def render_done_zone(
         workflow_label:      Human-readable workflow name, e.g. "Investigation".
         session_state_keys:  All session_state keys to clear on "Start Another".
         stage_key:           Session state key controlling the stage machine (e.g. "inv_stage").
+        enable_workpaper:    When True, renders a secondary "Generate Interim Workpaper" button (WORK-03).
     """
     st.success(f"{workflow_label} complete — Case ID: `{case_id}`")
 
@@ -64,6 +66,27 @@ def render_done_zone(
     with st.expander("Technical details", expanded=False):
         st.caption(f"Case folder: cases/{case_id}/")
         st.caption(f"Audit log: cases/{case_id}/audit_log.jsonl")
+
+    # Workpaper button — secondary, below primary download (WORK-03)
+    if enable_workpaper:
+        st.divider()
+        wp_key = f"wp_done_{case_id}"
+        if st.button("Generate Interim Workpaper", key=wp_key):
+            with st.spinner("Generating workpaper..."):
+                try:
+                    from workflows.workpaper import WorkpaperGenerator
+                    gen = WorkpaperGenerator()
+                    wp_path = gen.generate(case_id, {"document_count": 0})
+                    st.success(f"Workpaper created: {wp_path.name}")
+                    st.download_button(
+                        label=f"Download {wp_path.name}",
+                        data=wp_path.read_bytes(),
+                        file_name=wp_path.name,
+                        mime="text/markdown",
+                        key=f"wp_dl_done_{case_id}",
+                    )
+                except Exception as e:
+                    st.error(f"Workpaper generation failed: {e}")
 
     # Primary "Start Another" CTA in main content area (UX-010)
     if st.button(f"Start Another {workflow_label}", type="primary", key=f"restart_{case_id}"):

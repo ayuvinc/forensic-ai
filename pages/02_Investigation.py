@@ -159,21 +159,17 @@ elif st.session_state.inv_stage == "running":
 # ── STAGE: done ───────────────────────────────────────────────────────────────
 elif st.session_state.inv_stage == "done":
     intake = st.session_state.inv_intake
-    result = st.session_state.inv_result
-
-    if not result:
-        st.warning("No output was generated. Check the pipeline log and try again.")
-    else:
-        st.success(f"Investigation Report complete — Case ID: `{intake.case_id}`")
 
     from tools.file_tools import case_dir
-    report_path = case_dir(intake.case_id) / "final_report.en.md"
-    if report_path.exists():
-        st.download_button(
-            label="Download final_report.en.md",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=f"Investigation_{intake.client_name}_{intake.case_id}.md",
-            mime="text/markdown",
-        )
-    st.markdown(f"**Case ID:** `{intake.case_id}`")
-    st.markdown(f"**Location:** `cases/{intake.case_id}/`")
+    from streamlit_app.shared.done_zone import render_done_zone
+
+    render_done_zone(
+        st,
+        case_id=intake.case_id,
+        client_name=intake.client_name,
+        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        workflow_label="Investigation Report",
+        session_state_keys=["inv_stage", "inv_intake", "inv_params", "inv_result", "inv_dm", "inv_reg_results"],
+        stage_key="inv_stage",
+        enable_workpaper=True,
+    )

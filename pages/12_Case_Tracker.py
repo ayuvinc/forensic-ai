@@ -140,6 +140,105 @@ def _render_document_badges(case_id: str) -> None:
             st.markdown(f"**{filename}** — {badge}")
 
 
+def _render_workpaper_button(case_id: str, status: str, cdir) -> None:
+    """Render the Generate Workpaper button per WORK-02 spec.
+
+    Visible: JUNIOR_DRAFT_COMPLETE, PM_REVIEW_COMPLETE, PARTNER_REVIEW_COMPLETE, OWNER_READY
+    Disabled: INTAKE_CREATED
+    Not shown: terminal states (OWNER_APPROVED, DELIVERABLE_WRITTEN)
+    """
+    _TERMINAL = {"OWNER_APPROVED", "DELIVERABLE_WRITTEN", "OWNER_REJECTED"}
+    _ELIGIBLE = {"JUNIOR_DRAFT_COMPLETE", "PM_REVIEW_COMPLETE", "PARTNER_REVIEW_COMPLETE", "OWNER_READY"}
+
+    if status in _TERMINAL:
+        # Show existing workpapers only
+        wp_dir = cdir / "D_Working_Papers"
+        if wp_dir.exists():
+            wps = sorted(wp_dir.glob("interim_workpaper.v*.md"))
+            for wp in wps:
+                st.download_button(
+                    label=f"Download {wp.name}",
+                    data=wp.read_bytes(),
+                    file_name=wp.name,
+                    mime="text/markdown",
+                    key=f"wp_dl_{case_id}_{wp.name}",
+                )
+        return
+
+    if status == "INTAKE_CREATED":
+        st.button(
+            "Generate Workpaper",
+            disabled=True,
+            help="No draft material yet — run the pipeline first.",
+            key=f"wp_disabled_{case_id}",
+        )
+        return
+
+    if status not in _ELIGIBLE:
+        return
+
+    # Load source artifacts from E_Drafts/ (AF projects) or root
+    def _load_source_artifacts() -> dict:
+        """Collect available artifacts from the case folder."""
+        from tools.document_manager import DocumentManager
+
+        arts: dict = {}
+        search_dirs = [cdir / "E_Drafts", cdir]
+        for d in search_dirs:
+            if not d.exists():
+                continue
+            for pattern, key in [
+                ("junior_output.v*.json", "junior_findings"),
+                ("pm_review.v*.json",     "pm_review"),
+            ]:
+                files = sorted(d.glob(pattern))
+                if files:
+                    try:
+                        data = json.loads(files[-1].read_text(encoding="utf-8"))
+                        if key == "junior_findings":
+                            arts["junior_findings"] = data.get("findings", [])
+                            arts["open_questions"]  = data.get("open_questions", [])
+                        else:
+                            arts["pm_review"] = data
+                    except (json.JSONDecodeError, OSError):
+                        pass
+            if arts:
+                break
+
+        # Document registry
+        try:
+            dm = DocumentManager(case_id)
+            idx = dm.get_index()
+            arts["materials_reviewed"] = [
+                {"doc_id": d.doc_id, "filename": d.filename}
+                for d in idx.documents
+            ]
+            arts["document_count"] = len(idx.documents)
+        except Exception:
+            arts["materials_reviewed"] = []
+
+        return arts
+
+    key = f"wp_gen_{case_id}"
+    if st.button("Generate Workpaper", key=key, help="Generate interim ACFE workpaper from current draft material"):
+        with st.spinner("Generating workpaper..."):
+            try:
+                from workflows.workpaper import WorkpaperGenerator
+                gen = WorkpaperGenerator()
+                source_arts = _load_source_artifacts()
+                wp_path = gen.generate(case_id, source_arts)
+                st.success(f"Workpaper generated: {wp_path.name}")
+                st.download_button(
+                    label=f"Download {wp_path.name}",
+                    data=wp_path.read_bytes(),
+                    file_name=wp_path.name,
+                    mime="text/markdown",
+                    key=f"wp_dl_{case_id}_{wp_path.name}",
+                )
+            except Exception as e:
+                st.error(f"Workpaper generation failed: {e}")
+
+
 def _render_case_detail(case_id: str, status: str) -> None:
     """Render deliverables, document badges, audit log, and error guidance."""
     cdir = CASES_DIR / case_id
@@ -164,6 +263,10 @@ def _render_case_detail(case_id: str, status: str) -> None:
             )
     else:
         st.caption("No deliverables yet for this case.")
+
+    # Workpaper generation button (WORK-02)
+    st.divider()
+    _render_workpaper_button(case_id, status, cdir)
 
     # Embedding status badges per document (EMB-03)
     _render_document_badges(case_id)
