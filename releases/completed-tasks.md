@@ -296,3 +296,13 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] config.py — CEM_CONTEXT_CHARS=16000; CONTEXT_BUDGET_CHARS=400000 added
 
 ---
+
+## Phase G Completed Tasks — Session 029 (2026-04-20, commit 9f83126)
+
+- [x] P9-04c — tools/file_tools.py — artifact_path() and next_version() AF-aware: AF projects route to E_Drafts/; legacy unchanged. load_envelope() searches E_Drafts/ first with root fallback. write_final_report() writes to F_Final/ for AF projects. — QA_APPROVED
+- [x] P9-04d — tools/file_tools.py — write_final_report() migration: AF projects move root *.v*.json → E_Drafts/; legacy projects → interim/ (unchanged). — QA_APPROVED
+- [x] P9-05 — pages/16_Workspace.py — Input Session workspace: project header; A-F folder tree with per-folder upload; Input/Final Run mode radio; Input panel (evidence upload → C_Evidence/, session notes, key facts form, red flags form, context budget bar + 75% warning); Final Run panel (materials summary, AIC-02 gate, Run Pipeline button). Engagements page wired with Open Workspace → switch_page(16_Workspace.py). — QA_APPROVED
+- [x] P9-06 — tools/document_manager.py — get_total_chars(), context_usage_pct(), _trigger_interim_context_write() (Haiku, best-effort, non-blocking), get_context_for_agents() (returns interim_context.md when present + new docs since, else all excerpts). register_document() auto-checks ≥75% threshold. — QA_APPROVED
+- [x] RD-01 — tools/report_builder.py — BaseReportBuilder: add_cover_page(), add_toc(), add_section(), add_subsection(), set_header(), set_footer(), save() (atomic .tmp→os.replace). Template fallback to blank Document on missing/incompatible template. — QA_APPROVED
+
+---

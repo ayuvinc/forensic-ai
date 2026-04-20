@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-20 03:30:00 UTC — closeout by architect Session 028
-- Session summary: Session 028 — Phase E merged (7 tasks: WORK-02/03, ACT-02/03, KL-02, P9-UI-02, TEST-05). Key deliverables: Case Tracker workpaper button, done-zone workpaper trigger, ActivityLogger wired (SESSION/PIPELINE/DOCUMENT/DELIVERABLE/SETTINGS), Activity Log page (15_Activity_Log.py), KnowledgeHarvester with PII sanitisation, engagement_id threaded through CaseIntake + intake forms + orchestrator + FRM. Post-session (AK approved): W-02/TEST-07b (11 artifact tests), W-03 (chunk_count field + badge), W-06 (SETUP event in 00_Setup.py). 131 tests pass. Next: Phase F (CONV-01, CONV-02, Sprint-AIC).
+- Last updated: 2026-04-20 04:30:00 UTC — closeout by architect Session 029
+- Session summary: Session 029 — Phase F merged (CONV-01/02: EvidenceChat backend + shared panel; AIC-01/02/03: post-intake Q&A + pre-run review + PM context methods; P9-04a/b: AF_FOLDERS + is_af_project()) + Phase G merged (P9-04c/d: AF artifact routing E_Drafts/F_Final + migration; P9-05: pages/16_Workspace.py full Input Session workspace; P9-06: DocumentManager context accumulation 75% threshold → Haiku summary; RD-01: BaseReportBuilder template fallback + atomic save). 1 defect fixed (AIC-01 chat_message rendering). 131 tests pass. Next: Phase H (RD-02..06, P9-07A/B, P9-08).
 
 ## Use Case Note
 

@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-20T03:35:36Z — state transition by MCP server
+Last updated:   2026-04-20T04:10:01Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -308,7 +308,7 @@ Full specs archived in releases/completed-tasks.md.
 
 - [x] P9-04a Add `AF_FOLDERS` constant to `tools/file_tools.py` — DONE Phase F (4315d2a)
 - [x] P9-04b Add `is_af_project(case_id: str) -> bool` — DONE Phase F (4315d2a)
-- [ ] P9-04c For P9 projects: `write_artifact()` writes to `E_Drafts/` instead of root; `write_final_report()` writes to `F_Final/` instead of root. Legacy projects: unchanged behavior.
+- [x] P9-04c — DONE Phase G (9f83126)
 - [ ] P9-04d Post-run migration (existing P8-05a) updated: migrates root `*.v*.json` → `E_Drafts/` (not `interim/`) for AF projects; `interim/` used only for legacy projects.
 
 #### AC — P9-04
