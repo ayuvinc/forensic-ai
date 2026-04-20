@@ -1,3 +1,6 @@
+[server]
+address = "localhost"
+
 [theme]
 base                     = "light"
 primaryColor             = "#D50032"
