@@ -97,8 +97,10 @@ def render_intake_questions(
 
     for q in questions:
         qid = q["id"]
-        st.markdown(f"**{q['question']}**")
-        st.caption(f"Why this matters: {q['why_important']}")
+        # Render question in chat_message style per spec (AIC-01)
+        with st.chat_message("assistant"):
+            st.markdown(f"**{q['question']}**")
+            st.caption(f"Why this matters: {q['why_important']}")
         answer = st.text_area(
             "Your answer (leave blank to skip this question)",
             key=f"aic01_ans_{case_id}_{qid}",
