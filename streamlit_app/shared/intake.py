@@ -2,11 +2,16 @@
 
 Each helper returns a validated Pydantic object (or tuple) or None if the
 form has not been submitted yet. Pages call these before running any pipeline.
+
+Also exports template_selector() — a collapsed expander rendered between
+the intake form and the Run button so Maher can choose a report template
+per engagement without navigating to Settings (TPL-04, UX-019).
 """
 
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional
 import uuid
 
@@ -284,3 +289,92 @@ def dd_intake_form(st) -> Optional[tuple]:
     }
 
     return intake, dd_params
+
+
+# ── Template selector (TPL-04, UX-019) ────────────────────────────────────────
+
+def template_selector(st, workflow_type: str) -> Optional[Path]:
+    """Collapsed expander for per-engagement template selection.
+
+    Renders between the intake form and Run button.
+    Persists selection in st.session_state["report_template_path"] and
+    st.session_state["report_template_bytes"].
+
+    Returns the selected template Path, or None for plain Word output.
+    The Run button on the calling page should be disabled while option (b)
+    is selected but no file has been uploaded — checked via
+    template_selector_ready(st) helper.
+    """
+    from tools.template_manager import TemplateManager
+
+    tm = TemplateManager()
+    registry = tm.list_templates()
+    wf_entry = registry.get(workflow_type, {})
+    custom_name = wf_entry.get("custom")
+
+    # Resolve display name for saved custom template
+    custom_label = f"Use saved template: {custom_name}" if custom_name else None
+
+    options = []
+    if custom_label:
+        options.append(("saved", custom_label))
+    options.append(("upload", "Upload for this engagement only"))
+    options.append(("none",   "Plain Word output (no template)"))
+
+    # Default selection: saved if available, else none
+    default_idx = 0 if custom_label else (len(options) - 1)
+
+    with st.expander("Report template", expanded=False):
+        sel_key = f"tpl_sel_{workflow_type}"
+        selected = st.radio(
+            "Template source",
+            options=[o[0] for o in options],
+            format_func=lambda k: dict(options)[k],
+            index=default_idx,
+            key=sel_key,
+            label_visibility="collapsed",
+        )
+
+        uploaded_bytes: Optional[bytes] = None
+        if selected == "upload":
+            up = st.file_uploader(
+                "Upload .docx template",
+                type=["docx"],
+                key=f"tpl_file_{workflow_type}",
+            )
+            if up:
+                uploaded_bytes = up.read()
+                st.caption(f"Selected: `{up.name}` (one-time, this engagement only)")
+            else:
+                st.caption("No file uploaded — Run button will be disabled until a file is chosen or you select a different option.")
+
+        if selected == "saved" and custom_name:
+            st.caption(f"Template: `{custom_name}` (from Settings)")
+        elif selected == "none":
+            st.caption("Plain Word output — no branded template applied.")
+
+    # Persist to session state so calling page can read the choice at run time
+    if selected == "saved" and custom_name:
+        try:
+            resolved = tm.resolve(workflow_type)
+            st.session_state["report_template_path"]  = resolved
+            st.session_state["report_template_bytes"] = None
+        except Exception:
+            st.session_state["report_template_path"]  = None
+            st.session_state["report_template_bytes"] = None
+    elif selected == "upload":
+        st.session_state["report_template_path"]  = None
+        st.session_state["report_template_bytes"] = uploaded_bytes
+    else:
+        st.session_state["report_template_path"]  = None
+        st.session_state["report_template_bytes"] = None
+
+    return st.session_state.get("report_template_path")
+
+
+def template_selector_ready(st, workflow_type: str) -> bool:
+    """Return True unless 'upload' is selected but no file has been provided."""
+    sel_key = f"tpl_sel_{workflow_type}"
+    if st.session_state.get(sel_key) == "upload":
+        return bool(st.session_state.get("report_template_bytes"))
+    return True

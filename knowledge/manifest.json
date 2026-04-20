@@ -1,0 +1,156 @@
+[
+  {
+    "doc_id": "KF-FRM-01",
+    "path": "knowledge/frm/frm_framework.md",
+    "domain": "frm",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "FRM Framework — 8 modules, risk register structure, 3-layer knowledge arch",
+    "tags": ["frm", "risk_register", "coso", "iso37001", "acfe", "uae_regulators"]
+  },
+  {
+    "doc_id": "KF-FRM-02",
+    "path": "knowledge/frm/sources.md",
+    "domain": "frm",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "FRM Research Sources — regulatory, sanctions, company registry",
+    "tags": ["frm", "sources", "regulatory", "sanctions"]
+  },
+  {
+    "doc_id": "KF-INV-01",
+    "path": "knowledge/investigation/investigation_framework.md",
+    "domain": "investigation",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Investigation Framework — 7 types, 4 audiences, evidence, 3-agent pipeline",
+    "tags": ["investigation", "acfe", "evidence", "forensic", "report_structure"]
+  },
+  {
+    "doc_id": "KF-INV-02",
+    "path": "knowledge/investigation/sources.md",
+    "domain": "investigation",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Investigation Research Sources — by evidence type",
+    "tags": ["investigation", "sources"]
+  },
+  {
+    "doc_id": "KF-DD-01",
+    "path": "knowledge/due_diligence/framework.md",
+    "domain": "due_diligence",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Due Diligence Framework",
+    "tags": ["due_diligence", "onboarding", "investment", "aml"]
+  },
+  {
+    "doc_id": "KF-DD-02",
+    "path": "knowledge/due_diligence/sources.md",
+    "domain": "due_diligence",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Due Diligence Research Sources",
+    "tags": ["due_diligence", "sources"]
+  },
+  {
+    "doc_id": "KF-SAN-01",
+    "path": "knowledge/sanctions_screening/framework.md",
+    "domain": "sanctions_screening",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Sanctions Screening Framework",
+    "tags": ["sanctions", "ofac", "un", "eu", "dfsa", "adgm"]
+  },
+  {
+    "doc_id": "KF-SAN-02",
+    "path": "knowledge/sanctions_screening/sources.md",
+    "domain": "sanctions_screening",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Sanctions Screening Research Sources",
+    "tags": ["sanctions", "sources"]
+  },
+  {
+    "doc_id": "KF-TT-01",
+    "path": "knowledge/transaction_testing/framework.md",
+    "domain": "transaction_testing",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Transaction Testing Framework",
+    "tags": ["transaction_testing", "acfe", "data_analytics"]
+  },
+  {
+    "doc_id": "KF-TT-02",
+    "path": "knowledge/transaction_testing/sources.md",
+    "domain": "transaction_testing",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Transaction Testing Research Sources",
+    "tags": ["transaction_testing", "sources"]
+  },
+  {
+    "doc_id": "KF-PSOP-01",
+    "path": "knowledge/policy_sop/framework.md",
+    "domain": "policy_sop",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Policy / SOP Framework",
+    "tags": ["policy", "sop", "whistleblower", "compliance"]
+  },
+  {
+    "doc_id": "KF-PSOP-02",
+    "path": "knowledge/policy_sop/sources.md",
+    "domain": "policy_sop",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Policy / SOP Research Sources",
+    "tags": ["policy", "sop", "sources"]
+  },
+  {
+    "doc_id": "KF-TAX-01",
+    "path": "knowledge/engagement_taxonomy/framework.md",
+    "domain": "taxonomy",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Engagement Taxonomy Framework",
+    "tags": ["taxonomy", "engagement_types", "routing"]
+  },
+  {
+    "doc_id": "KF-TAX-02",
+    "path": "knowledge/engagement_taxonomy/sources.md",
+    "domain": "taxonomy",
+    "version": "1.0",
+    "effective_date": "2026-04-04",
+    "supersedes": null,
+    "authority_level": "internal",
+    "title": "Engagement Taxonomy Sources",
+    "tags": ["taxonomy", "sources"]
+  }
+]

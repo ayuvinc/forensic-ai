@@ -107,16 +107,52 @@ def _read_index_file() -> tuple[list[dict] | None, str | None]:
         return None, "Case index is corrupt. Delete cases/index.json and refresh to rebuild."
 
 
+def _embedding_badge(status: str, chunk_count: int | None = None) -> str:
+    """Return coloured label string for a document's embedding_status (EMB-03)."""
+    if status == "indexed":
+        suffix = f" — {chunk_count} chunk{'s' if chunk_count != 1 else ''}" if chunk_count else ""
+        return f"🟢 Indexed{suffix}"
+    if status == "pending":
+        return "🟡 Pending"
+    if status == "failed":
+        return "🔴 Failed"
+    return "⚪ Unavailable — embedding library not installed"
+
+
+def _render_document_badges(case_id: str) -> None:
+    """Load document_index.json and show embedding badge per document (EMB-03)."""
+    idx_path = CASES_DIR / case_id / "document_index.json"
+    if not idx_path.exists():
+        return
+    try:
+        data = json.loads(idx_path.read_text(encoding="utf-8"))
+        docs = data.get("documents", [])
+    except (json.JSONDecodeError, OSError):
+        return
+    if not docs:
+        return
+
+    with st.expander(f"Documents ({len(docs)})", expanded=False):
+        for doc in docs:
+            emb_status = doc.get("embedding_status", "unavailable")
+            filename   = doc.get("filename", doc.get("doc_id", "unknown"))
+            badge      = _embedding_badge(emb_status)
+            st.markdown(f"**{filename}** — {badge}")
+
+
 def _render_case_detail(case_id: str, status: str) -> None:
-    """Render deliverables, audit log presence, and error guidance for one case."""
+    """Render deliverables, document badges, audit log, and error guidance."""
     cdir = CASES_DIR / case_id
 
     if not cdir.exists():
         st.caption("Case folder not found on disk.")
         return
 
-    # Deliverable download buttons — one per final_report.*.md file
-    report_files = sorted(cdir.glob("final_report.*.md"))
+    # Deliverable download buttons — check F_Final/ (P9 projects) and root
+    report_files = sorted(
+        list((cdir / "F_Final").glob("final_report.*.md"))
+        + list(cdir.glob("final_report.*.md"))
+    )
     if report_files:
         for rf in report_files:
             st.download_button(
@@ -129,10 +165,13 @@ def _render_case_detail(case_id: str, status: str) -> None:
     else:
         st.caption("No deliverables yet for this case.")
 
+    # Embedding status badges per document (EMB-03)
+    _render_document_badges(case_id)
+
     # Audit log presence check — label only, not rendered inline
     audit_log = cdir / "audit_log.jsonl"
     st.caption(
-        f"Audit log: **{'present'}**  (`cases/{case_id}/audit_log.jsonl`)"
+        f"Audit log: **present**  (`cases/{case_id}/audit_log.jsonl`)"
         if audit_log.exists()
         else f"Audit log: not yet written  (`cases/{case_id}/audit_log.jsonl`)"
     )

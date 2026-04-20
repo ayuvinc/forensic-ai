@@ -1,13 +1,8 @@
-"""Settings — Streamlit page (UX-005).
+"""Settings — Streamlit page (TPL-03, UX-017, UX-018).
 
-Reads and writes firm_profile/firm.json.
-session.py._load_firm_name() reads this exact file for the firm name shown in the
-Streamlit sidebar header — saving here keeps the header in sync on next page load.
-
-Does NOT touch firm_profile/firm_profile.json (CLI setup_wizard) or
-firm_profile/pricing_model.json (CLI proposal flow) — those remain CLI-only.
+4-tab layout: Firm Profile | Pricing | Team & T&C | Report Templates.
+Completeness indicator (5 chips) rendered above tabs.
 """
-
 from __future__ import annotations
 
 import json
@@ -18,21 +13,27 @@ import streamlit as st
 
 from config import FIRM_PROFILE_DIR
 from streamlit_app.shared.session import bootstrap
+from tools.template_manager import TemplateManager
 
 session = bootstrap(st)
 
-_FIRM_JSON  = FIRM_PROFILE_DIR / "firm.json"
-_CURRENCIES     = ["AED", "USD", "SAR"]
+_FIRM_JSON      = FIRM_PROFILE_DIR / "firm.json"
+_CURRENCIES     = ["AED", "USD", "SAR", "EUR", "GBP"]
 _PRICING_MODELS = ["T&M", "Lump Sum", "Retainer"]
 
+_WORKFLOW_LABELS = {
+    "investigation_report": "Investigation Report",
+    "due_diligence":        "Due Diligence",
+    "frm_risk_register":    "FRM Risk Register",
+    "transaction_testing":  "Transaction Testing",
+    "sanctions_screening":  "Sanctions Screening",
+    "client_proposal":      "Client Proposal",
+}
+
+
+# ── I/O helpers ───────────────────────────────────────────────────────────────
 
 def _load_profile() -> tuple[dict, bool]:
-    """Read firm_profile/firm.json.
-
-    Returns (data, corrupt).
-    - data={}    when file is absent (normal first-run) or corrupt.
-    - corrupt=True only when file exists but is invalid JSON.
-    """
     if not _FIRM_JSON.exists():
         return {}, False
     try:
@@ -42,12 +43,6 @@ def _load_profile() -> tuple[dict, bool]:
 
 
 def _save_profile(data: dict) -> str | None:
-    """Atomically write firm_profile/firm.json.
-
-    Uses .tmp → os.replace() so a process kill mid-write leaves a .tmp file,
-    never a corrupt firm.json.
-    Returns None on success, error string on failure.
-    """
     try:
         FIRM_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = _FIRM_JSON.with_suffix(".tmp")
@@ -59,7 +54,6 @@ def _save_profile(data: dict) -> str | None:
 
 
 # ── Session state ─────────────────────────────────────────────────────────────
-# Tracks save outcome across Streamlit reruns triggered by button clicks.
 if "settings_error" not in st.session_state:
     st.session_state.settings_error = None
 if "settings_saved" not in st.session_state:
@@ -67,136 +61,274 @@ if "settings_saved" not in st.session_state:
 
 # ── Page header ───────────────────────────────────────────────────────────────
 st.title("Settings")
-st.caption("Firm profile — used on all reports, proposals, and deliverables.")
+st.caption("Firm profile, pricing, team credentials, and report templates.")
 
-# Load firm profile with spinner (UX-005 loading state)
 with st.spinner("Loading firm profile..."):
     profile, corrupt = _load_profile()
 
-# File-state banners — shown before the form so user knows what to expect
 if corrupt:
-    st.warning(
-        "Firm profile could not be loaded. Editing will overwrite the existing file."
-    )
+    st.warning("Firm profile could not be loaded. Editing will overwrite the existing file.")
 elif not _FIRM_JSON.exists():
     st.warning("Firm profile not yet set up. Fill in the fields below to create it.")
 
-# ── Success banner ────────────────────────────────────────────────────────────
-# Rendered before the form so it appears at the top of the page (UX-005 success state).
-# settings_saved is set to True after a successful save + st.rerun(), cleared here.
 if st.session_state.settings_saved:
     placeholder = st.empty()
-    placeholder.success("Firm profile saved.")
-    time.sleep(3)
+    placeholder.success("Settings saved.")
+    time.sleep(2)
     placeholder.empty()
     st.session_state.settings_saved = False
 
-# ── Profile completeness indicator (UX-F-07) ─────────────────────────────────
-_completeness_items = [
-    ("Firm Name",          bool(profile.get("firm_name", "").strip())),
-    ("Logo",               bool(profile.get("logo_path"))),
-    ("Currency",           bool(profile.get("currency"))),
-    ("Pricing Model",      bool(profile.get("pricing_model"))),
-    ("Terms & Conditions", bool(profile.get("terms_and_conditions", "").strip())),
+# ── Completeness chips (5 items, above tabs — UX-017) ─────────────────────────
+def _chip(label: str, ok: bool) -> str:
+    return f"{'🟢' if ok else '⚪'} {label}"
+
+_tm = TemplateManager()
+_tpl_registry = _tm.list_templates()
+_has_any_template = any(v.get("custom") or v.get("base") for v in _tpl_registry.values())
+
+_completeness = [
+    ("Firm Profile", bool(profile.get("firm_name", "").strip())),
+    ("Pricing",      bool(profile.get("pricing_model"))),
+    ("Team",         bool(profile.get("team_members"))),
+    ("T&C",          bool(profile.get("terms_and_conditions", "").strip())),
+    ("Templates",    _has_any_template),
 ]
-filled = sum(1 for _, ok in _completeness_items if ok)
-total  = len(_completeness_items)
-pct    = filled / total
+filled = sum(1 for _, ok in _completeness if ok)
+total  = len(_completeness)
 
-if pct == 1.0:
-    st.success(f"Profile complete ({filled}/{total})")
-elif pct >= 0.6:
-    st.warning(f"Profile {filled}/{total} complete — fill in remaining fields for best results")
-else:
-    st.error(f"Profile {filled}/{total} complete — proposals may be incomplete")
-
-with st.expander("Completeness checklist", expanded=False):
-    for label, ok in _completeness_items:
-        st.write(f"{'✓' if ok else '○'} {label}")
-
-st.divider()
-
-# ── Form fields ───────────────────────────────────────────────────────────────
-
-firm_name = st.text_input(
-    "Firm Name *",
-    value=profile.get("firm_name", ""),
-    placeholder="e.g. GoodWork Forensic Consulting",
-)
-
-logo_path = st.text_input(
-    "Logo Path",
-    value=profile.get("logo_path") or "",
-    placeholder="assets/logo.png",
-    help="Path to your logo file relative to the repo root (e.g. assets/logo.png).",
-)
-
-saved_currency = profile.get("currency", "AED")
-currency = st.selectbox(
-    "Default Currency",
-    options=_CURRENCIES,
-    index=_CURRENCIES.index(saved_currency) if saved_currency in _CURRENCIES else 0,
-)
-
-saved_pricing = profile.get("pricing_model", "T&M")
-pricing_model = st.selectbox(
-    "Pricing Model",
-    options=_PRICING_MODELS,
-    index=_PRICING_MODELS.index(saved_pricing) if saved_pricing in _PRICING_MODELS else 0,
-)
-
-# T&M rate fields — conditionally rendered; hidden for Lump Sum and Retainer (UX-005)
-day_rate  = ""
-hour_rate = ""
-if pricing_model == "T&M":
-    day_rate = st.text_input(
-        "T&M Day Rate",
-        value=profile.get("day_rate", ""),
-        placeholder="e.g. 5000",
-    )
-    hour_rate = st.text_input(
-        "T&M Hour Rate",
-        value=profile.get("hour_rate", ""),
-        placeholder="e.g. 750",
-    )
-
-terms_and_conditions = st.text_area(
-    "Standard Terms & Conditions",
-    value=profile.get("terms_and_conditions", ""),
-    height=150,
-    placeholder="Paste your standard T&C text here — included in all proposals.",
-    help="Injected into the T&C section of every client proposal.",
-)
-
-st.divider()
-
-# ── Save button — disabled when Firm Name is empty (UX-005) ──────────────────
-if st.button("Save", type="primary", disabled=not firm_name.strip(), key="save_btn"):
-    data: dict = {
-        "firm_name":           firm_name.strip(),
-        "logo_path":           logo_path.strip() or None,
-        "currency":            currency,
-        "pricing_model":       pricing_model,
-        "terms_and_conditions": terms_and_conditions.strip(),
-    }
-    if pricing_model == "T&M":
-        data["day_rate"]  = day_rate.strip()
-        data["hour_rate"] = hour_rate.strip()
-
-    err = _save_profile(data)
-
-    if err:
-        st.session_state.settings_error = err
+badge_cols = st.columns(total + 1)
+with badge_cols[0]:
+    if filled == total:
+        st.success(f"{filled}/{total} complete")
+    elif filled >= 3:
+        st.warning(f"{filled}/{total} complete")
     else:
-        st.session_state.settings_error = None
-        st.session_state.settings_saved = True
-        # Reload page so form shows saved values and success banner fires (UX-005)
-        st.rerun()
+        st.error(f"{filled}/{total} complete")
+for i, (label, ok) in enumerate(_completeness):
+    with badge_cols[i + 1]:
+        st.markdown(_chip(label, ok))
 
-# ── Error banner — persists until user retries ────────────────────────────────
+st.divider()
+
+# ── 4-tab layout (UX-018) ─────────────────────────────────────────────────────
+tab_profile, tab_pricing, tab_team, tab_templates = st.tabs(
+    ["Firm Profile", "Pricing", "Team & T&C", "Report Templates"]
+)
+
+
+# ── TAB 1: Firm Profile ───────────────────────────────────────────────────────
+with tab_profile:
+    firm_name = st.text_input(
+        "Firm Name *",
+        value=profile.get("firm_name", ""),
+        placeholder="e.g. GoodWork Forensic Consulting",
+    )
+    logo_path = st.text_input(
+        "Logo Path",
+        value=profile.get("logo_path") or "",
+        placeholder="assets/logo.png",
+        help="Path to logo file relative to repo root.",
+    )
+    default_lang = st.selectbox(
+        "Default Language Standard",
+        options=["acfe", "expert_witness", "regulatory", "board_pack"],
+        format_func=lambda k: {
+            "acfe":           "ACFE Internal Review",
+            "expert_witness": "Expert Witness",
+            "regulatory":     "Regulatory Submission",
+            "board_pack":     "Board Pack",
+        }[k],
+        index=["acfe", "expert_witness", "regulatory", "board_pack"].index(
+            profile.get("default_language_standard", "acfe")
+        ),
+    )
+    if st.button("Save Firm Profile", type="primary", disabled=not firm_name.strip(), key="save_profile"):
+        data = {**profile}
+        data["firm_name"] = firm_name.strip()
+        data["logo_path"] = logo_path.strip() or None
+        data["default_language_standard"] = default_lang
+        err = _save_profile(data)
+        if err:
+            st.session_state.settings_error = err
+        else:
+            st.session_state.settings_saved = True
+            st.rerun()
+
+
+# ── TAB 2: Pricing ────────────────────────────────────────────────────────────
+with tab_pricing:
+    saved_currency = profile.get("currency", "AED")
+    currency = st.selectbox(
+        "Default Currency",
+        _CURRENCIES,
+        index=_CURRENCIES.index(saved_currency) if saved_currency in _CURRENCIES else 0,
+    )
+    saved_pricing = profile.get("pricing_model", "T&M")
+    pricing_model = st.selectbox(
+        "Pricing Model",
+        _PRICING_MODELS,
+        index=_PRICING_MODELS.index(saved_pricing) if saved_pricing in _PRICING_MODELS else 0,
+    )
+    day_rate = hour_rate = ""
+    if pricing_model == "T&M":
+        day_rate  = st.text_input("T&M Day Rate",  value=profile.get("day_rate", ""),  placeholder="5000")
+        hour_rate = st.text_input("T&M Hour Rate", value=profile.get("hour_rate", ""), placeholder="750")
+
+    if st.button("Save Pricing", type="primary", key="save_pricing"):
+        data = {**profile}
+        data["currency"]      = currency
+        data["pricing_model"] = pricing_model
+        if pricing_model == "T&M":
+            data["day_rate"]  = day_rate.strip()
+            data["hour_rate"] = hour_rate.strip()
+        err = _save_profile(data)
+        if err:
+            st.session_state.settings_error = err
+        else:
+            st.session_state.settings_saved = True
+            st.rerun()
+
+
+# ── TAB 3: Team & T&C ────────────────────────────────────────────────────────
+with tab_team:
+    terms_and_conditions = st.text_area(
+        "Standard Terms & Conditions",
+        value=profile.get("terms_and_conditions", ""),
+        height=300,
+        placeholder="Paste your standard T&C text here — included in all proposals.",
+        help="Injected into the T&C section of every client proposal.",
+    )
+    st.caption("Team member management coming in Sprint-SETUP.")
+
+    if st.button("Save T&C", type="primary", key="save_tc"):
+        data = {**profile}
+        data["terms_and_conditions"] = terms_and_conditions.strip()
+        err = _save_profile(data)
+        if err:
+            st.session_state.settings_error = err
+        else:
+            st.session_state.settings_saved = True
+            st.rerun()
+
+
+# ── TAB 4: Report Templates ───────────────────────────────────────────────────
+with tab_templates:
+    st.caption("Upload custom .docx templates per workflow. Templates must include GW_ named styles.")
+
+    registry = _tm.list_templates()
+
+    for wf_id, wf_label in _WORKFLOW_LABELS.items():
+        wf_entry = registry.get(wf_id, {})
+        custom_name = wf_entry.get("custom")
+        base_name   = wf_entry.get("base")
+        current     = custom_name or base_name or "base_report_base.docx (default)"
+
+        col_label, col_upload, col_preview, col_reset = st.columns([2, 2, 1, 1])
+
+        with col_label:
+            st.markdown(f"**{wf_label}**")
+            st.caption(f"Current: `{current}`")
+
+        with col_upload:
+            uploaded = st.file_uploader(
+                f"Upload for {wf_label}",
+                type=["docx"],
+                key=f"tpl_upload_{wf_id}",
+                label_visibility="collapsed",
+            )
+            if uploaded:
+                file_bytes = uploaded.read()
+                # Validate before saving
+                import tempfile
+                from pathlib import Path as _Path
+                with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_f:
+                    tmp_f.write(file_bytes)
+                    tmp_path = _Path(tmp_f.name)
+                result = _tm.validate_docx(tmp_path)
+                try:
+                    tmp_path.unlink(missing_ok=True)
+                except Exception:
+                    pass
+
+                if not result.valid:
+                    st.error(f"Invalid file: {result.error}")
+                elif result.has_critical_missing:
+                    st.error(
+                        f"Missing critical styles: {', '.join(result.missing_styles)}. "
+                        "Template not saved. GW_Heading1 and GW_Body are required."
+                    )
+                elif result.missing_styles:
+                    # Partial — warn but allow
+                    st.warning(
+                        f"Missing non-critical styles: {', '.join(result.missing_styles)}. "
+                        "Saved with fallback to default styles."
+                    )
+                    _tm.update_custom(wf_id, file_bytes)
+                    st.success(f"Template saved for {wf_label}.")
+                    st.rerun()
+                else:
+                    _tm.update_custom(wf_id, file_bytes)
+                    st.success(f"Template saved for {wf_label}.")
+                    st.rerun()
+
+        with col_preview:
+            if (custom_name or base_name):
+                if st.button("Preview", key=f"tpl_prev_{wf_id}"):
+                    try:
+                        from tools.template_manager import TEMPLATES_DIR
+                        tpath = TEMPLATES_DIR / (custom_name or base_name)
+                        if tpath.exists():
+                            vr = _tm.validate_docx(tpath)
+                            present = [s for s in ["GW_Title","GW_Heading1","GW_Heading2",
+                                                   "GW_Body","GW_TableHeader","GW_Caption",
+                                                   "GW_Disclaimer"] if s not in vr.missing_styles]
+                            missing = vr.missing_styles
+                            with st.popover(f"Styles in {custom_name or base_name}"):
+                                st.markdown("**Present styles:**")
+                                for s in present:
+                                    st.markdown(f"  ✓ `{s}`")
+                                if missing:
+                                    st.markdown("**Missing styles:**")
+                                    for s in missing:
+                                        st.markdown(f"  ✗ `{s}`")
+                    except Exception as exc:
+                        st.error(str(exc))
+
+        with col_reset:
+            if custom_name:
+                if st.button("Reset", key=f"tpl_reset_{wf_id}"):
+                    st.session_state[f"tpl_confirm_reset_{wf_id}"] = True
+
+        # Confirm reset
+        if st.session_state.get(f"tpl_confirm_reset_{wf_id}"):
+            st.warning(f"Reset {wf_label} to base template?")
+            c1, c2 = st.columns(2)
+            with c1:
+                if st.button("Confirm Reset", key=f"tpl_do_reset_{wf_id}", type="primary"):
+                    from tools.template_manager import TEMPLATES_DIR
+                    import shutil
+                    custom_path = TEMPLATES_DIR / custom_name
+                    try:
+                        custom_path.unlink(missing_ok=True)
+                    except Exception:
+                        pass
+                    # Remove from registry
+                    reg = _tm.list_templates()
+                    if wf_id in reg:
+                        reg[wf_id].pop("custom", None)
+                        _tm._save_registry(reg)
+                    st.session_state.pop(f"tpl_confirm_reset_{wf_id}", None)
+                    st.rerun()
+            with c2:
+                if st.button("Cancel", key=f"tpl_cancel_reset_{wf_id}"):
+                    st.session_state.pop(f"tpl_confirm_reset_{wf_id}", None)
+                    st.rerun()
+
+        st.divider()
+
+
+# ── Error banner ──────────────────────────────────────────────────────────────
 if st.session_state.settings_error:
     st.error(f"Save failed: {st.session_state.settings_error}")
-    if st.button("Try Again", key="retry_save"):
-        # Clear the error; the button click itself triggers a Streamlit rerun.
-        # Widget values are preserved by Streamlit's internal state — user input is not lost.
+    if st.button("Dismiss", key="dismiss_err"):
         st.session_state.settings_error = None

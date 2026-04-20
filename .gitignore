@@ -46,8 +46,8 @@ Thumbs.db
 .codex-prep-required
 .session-state-transition
 
-# MCP server logs (runtime-generated, not committed)
-logs/
+# Activity log events (runtime-generated, not committed; .gitkeep tracked)
+logs/*.jsonl
 
 # Session lock files (session-open/session-close fallback path)
 tasks/.session-transition-lock
