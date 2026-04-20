@@ -62,6 +62,14 @@ DOC_EXCERPT_CHARS     = 8_000
 DOC_SECTION_MAX_CHARS = 60_000
 SMALL_DOC_THRESHOLD   = 20_000   # chars — full read permitted below this
 
+# ── Conversational Evidence Mode (CEM) ────────────────────────────────────────
+# Max chars of document context injected per EvidenceChat turn (CONV-01).
+# Oldest turns are dropped first when the conversation history approaches this cap.
+CEM_CONTEXT_CHARS = 16_000
+
+# ── Context accumulation budget (P9-06) ──────────────────────────────────────
+CONTEXT_BUDGET_CHARS = 400_000  # ≈ 100k tokens, conservative for 200k window
+
 # ── Jurisdiction registry — loaded from taxonomy JSON ─────────────────────────
 def _load_jurisdiction_registry() -> dict[str, dict]:
     import json

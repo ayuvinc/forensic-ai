@@ -197,6 +197,59 @@ class ProjectManager:
             state.interim_context_written = True
             self._write_state(slug, state)
 
+    # ── AIC context injection (AIC-03) ───────────────────────────────────────
+
+    def get_intake_qa_context(self, slug: str) -> str:
+        """Return intake Q&A as a formatted string for agent context injection.
+
+        Returns empty string if intake_qa.json does not exist.
+        """
+        import json as _json
+        qa_path = self._case_dir(slug) / "D_Working_Papers" / "intake_qa.json"
+        if not qa_path.exists():
+            return ""
+        try:
+            data = _json.loads(qa_path.read_text(encoding="utf-8"))
+            qa_pairs = data.get("qa", [])
+            if not qa_pairs:
+                return ""
+            lines = ["## Intake Follow-Up Q&A"]
+            for item in qa_pairs:
+                q = item.get("question", "")
+                a = item.get("answer", "").strip()
+                if q:
+                    lines.append(f"Q: {q}")
+                    lines.append(f"A: {a if a else '(not answered)'}")
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
+    def get_prefinalrun_context(self, slug: str) -> str:
+        """Return pre-final-run review results as a formatted string for agent context.
+
+        Returns empty string if prefinalrun_review.json does not exist.
+        """
+        import json as _json
+        review_path = self._case_dir(slug) / "D_Working_Papers" / "prefinalrun_review.json"
+        if not review_path.exists():
+            return ""
+        try:
+            data = _json.loads(review_path.read_text(encoding="utf-8"))
+            cards = data.get("cards", [])
+            if not cards:
+                return ""
+            lines = ["## Pre-Run Review Concerns"]
+            for card in cards:
+                ack = card.get("acknowledgement", "unacknowledged")
+                sev = card.get("severity", "medium").upper()
+                lines.append(
+                    f"[{sev}] {card.get('title','')}: {card.get('detail','')} "
+                    f"(Acknowledgement: {ack})"
+                )
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
     # ── Collision detection ───────────────────────────────────────────────────
 
     def detect_slug_collision(self, slug: str) -> bool:
