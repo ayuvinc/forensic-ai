@@ -7,7 +7,7 @@ Tier: Standard
 - Active task: none
 - Active persona: none
 - Last updated: 2026-04-20 03:30:00 UTC — closeout by architect Session 028
-- Session summary: Session 028 — Phase E merged (7 tasks: WORK-02/03, ACT-02/03, KL-02, P9-UI-02, TEST-05). Key deliverables: Case Tracker workpaper button, done-zone workpaper trigger, ActivityLogger wired (SESSION/PIPELINE/DOCUMENT/DELIVERABLE/SETTINGS), Activity Log page (15_Activity_Log.py), KnowledgeHarvester with PII sanitisation, engagement_id threaded through CaseIntake + intake forms + orchestrator + FRM. 120 tests pass. Next: Phase F (CONV-01, CONV-02, Sprint-AIC).
+- Session summary: Session 028 — Phase E merged (7 tasks: WORK-02/03, ACT-02/03, KL-02, P9-UI-02, TEST-05). Key deliverables: Case Tracker workpaper button, done-zone workpaper trigger, ActivityLogger wired (SESSION/PIPELINE/DOCUMENT/DELIVERABLE/SETTINGS), Activity Log page (15_Activity_Log.py), KnowledgeHarvester with PII sanitisation, engagement_id threaded through CaseIntake + intake forms + orchestrator + FRM. Post-session (AK approved): W-02/TEST-07b (11 artifact tests), W-03 (chunk_count field + badge), W-06 (SETUP event in 00_Setup.py). 131 tests pass. Next: Phase F (CONV-01, CONV-02, Sprint-AIC).
 
 ## Use Case Note
 
