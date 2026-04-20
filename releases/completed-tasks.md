@@ -362,3 +362,28 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] FR-06: `workflows/frm_risk_register.py` + `agents/junior_analyst/prompts.py` — depth-aware recommendation instruction injected into junior system prompt; `_DEPTH_INSTRUCTIONS` dict maps "structured"→COSO/ACFE aligned, "executive"→high-level 2-3 sentences, "detailed"→step-by-step with timeline
 
 27/27 AC assertions PASS. 131 tests PASS. QA_APPROVED (qa-run-030-sprint-wf-fr-20260420T143800Z).
+
+---
+
+## Sprint-EMB — Semantic Embeddings Layer (Session 033 — merged eee13f2)
+
+- [x] EMB-01: `tools/embedding_engine.py` — `EmbeddingEngine(case_id)` with `embed_document()`, `retrieve()`, `get_context_for_query()`, `chunk_document()`, `embed_and_index()`, `search()`, `chunk_count()`; two-layer fallback (ImportError + model download failure); ChromaDB PersistentClient per case; `available` property; overlapping char chunking (800 chars, 80 overlap)
+- [x] EMB-02: `tools/document_manager.py:register_document()` — calls `engine.embed_document(entry)` after index write when engine available; `_append_case_intake()` writes doc metadata to `D_Working_Papers/case_intake.md`
+- [x] EMB-03: `pages/16_Workspace.py` — Semantic Search expander: query input → `engine.search(query, n=5)` → renders source_citation + 600-char chunk text; unavailable warning when engine.available=False
+- [x] EMB-04: `core/orchestrator.py:_maybe_inject_embedded_context()` — builds relevance query from intake fields; injects `embedded_context` key into agent context dict when engine available
+
+20/20 AC assertions PASS. 131 tests PASS. QA_APPROVED (qa-run-033-sprint-emb-20260420).
+
+---
+
+## Sprint-FE — Frontend Impact Tasks (Session 033 — merged a526bab)
+
+- [x] FE-01: `ai_questions` stage added to all 10 workflow pages (01_Scope, 02, 04, 05, 06, 07, 08, 09, 10, 11); `render_intake_questions()` shows one question at a time (chat style); Skip persists remaining as `[SKIPPED]` to `case_intake.md`; aic.py `_save_intake_qa()` writes Q:/A: format to `D_Working_Papers/case_intake.md`
+- [x] FE-02: `pages/14_Settings.py` Report Templates tab replaced with `render_template_selector()` calls for 6 workflow types (frm_risk_register, investigation_report, due_diligence, transaction_testing, sanctions_screening, client_proposal); saves to `firm_profile/firm.json["templates"][workflow_type]`
+- [x] FE-03: `pages/06_FRM.py` done stage builds xlsx via `FRMExcelBuilder().build(finalized, path)`; `st.download_button("Download Risk Register (.xlsx)")` conditional on `_xlsx_path.exists()`
+- [x] FE-04: `pages/10_Sanctions.py` — `per_hit_review` stage between running and done; disposition selectbox (True Match / False Positive / Requires Investigation / Escalate); default pre-loaded from `sanctions_disposition_policy.json`; Confirm writes `D_Working_Papers/sanctions_dispositions.json` atomically
+- [x] FE-05: `pages/09_Due_Diligence.py` — `st.number_input(min=1)` for subject count, `st.radio(Unrelated/Related)` for relationship, `st.file_uploader(.docx)` for template; routing: `subject_count==1 AND Unrelated` → `per_subject`, else → `consolidated`
+- [x] FE-06: `pages/16_Workspace.py` — conditional panels: DD Subjects (`dd_subjects.json`) when `service_type=="Due Diligence"`; Screening Targets (`sanctions_targets.json`) when `service_type=="Sanctions Screening"`; Transaction Populations (`tt_populations.json`) when `service_type=="Transaction Testing"`; unrecognised types fall through silently
+- [x] FE-07: `pages/12_Case_Tracker.py` — Previous Versions section in `_render_case_detail()`; lists files in `Previous_Versions/` with per-file `st.download_button`; section absent when folder does not exist
+
+20/20 AC assertions PASS. 131 tests PASS. QA_APPROVED (qa-run-033-sprint-fe-20260420).

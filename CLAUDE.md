@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: OPEN
 - Active task: none
 - Active persona: junior-dev
-- Last updated: 2026-04-20 16:00:00 UTC — Sprint-WF + Sprint-FR merged by architect Session 032
-- Session summary: Session 032 — Sprint-WF + Sprint-FR merged (3b498cc): workflow-specific report section builders (investigation, DD, TT, sanctions), project_manager exhibit/lead helpers, sanctions disposition policy, stakeholder input form + _save_stakeholder(), get_stakeholder_context(), recommendation_depth intake field, FRMExcelBuilder (2-sheet xlsx + heat map), BaseReportBuilder.add_heat_map(), depth-aware junior prompt injection. 27/27 ACs PASS, 131 tests PASS. Next: Sprint-EMB (unblocked, different files).
+- Last updated: 2026-04-20 17:00:00 UTC — Sprint-EMB + Sprint-FE merged by architect Session 033
+- Session summary: Session 033 — Sprint-EMB merged (eee13f2): EmbeddingEngine (ChromaDB + sentence-transformers, two-layer fallback), DocumentManager wire (embed on register + case_intake.md), Workspace semantic search UI, Orchestrator embedded_context injection. Sprint-FE merged (a526bab): ai_questions stage on all 10 workflow pages (one-at-a-time AIC, case_intake.md Q/A), Settings template selector (render_template_selector per workflow), FRM xlsx download via FRMExcelBuilder, Sanctions per_hit_review stage with disposition policy, DD intake extensions (subject_count, relationship, template, routing), Workspace conditional panels for DD/Sanctions/TT, Case Tracker Previous Versions section. 131 tests PASS each sprint. Next: Sprint-WORK-02/03 or TPL-05 smoke test.
 
 ## Use Case Note
 

@@ -7,28 +7,28 @@ OPEN
 junior-dev
 
 ## NEXT_TASK
-**Session 033: junior-dev builds Sprint-EMB on branch feature/sprint-emb**
+**Session 034: junior-dev builds Sprint-WORK-02 + Sprint-WORK-03 OR Sprint-AIC follow-up (TPL-05 smoke test)**
 
-Sprint-WF + Sprint-FR complete and merged (3b498cc → main). 27/27 ACs PASS.
-Sprint-EMB is unblocked (different files from WF/FR — no conflict risk).
+Sprint-EMB + Sprint-FE complete and merged (a526bab → main). 20/20 ACs PASS each.
 
-**Sprint-EMB — Semantic Embeddings:**
-  EMB-01: `tools/embedding_engine.py` — `EmbeddingEngine(case_id)`: `ingest(doc_id, text)`,
-           `get_context_for_query(query, top_k=5)`, `available` property; uses
-           `sentence-transformers` (offline) or stubs when unavailable; stores in
-           `D_Working_Papers/embeddings/`
-  EMB-02: `tools/document_manager.py:register_document()` — after existing write, call
-           `EmbeddingEngine(case_id).ingest(doc_id, text)` if engine available;
-           write `D_Working_Papers/case_intake.md` on first call
-  EMB-03: `pages/16_Workspace.py` — Semantic Search expander: text input + submit →
-           calls `EmbeddingEngine.get_context_for_query()`; fallback message when
-           engine unavailable (available=False) — no crash
-  EMB-04: `core/orchestrator.py` — context-building block: when
-           `EmbeddingEngine(case_id).available` is True, add `embedded_context` key
-           to agent context dict; when False, omit key (DocumentManager content used)
+**Priority order (pick one):**
 
-**Branch:** feature/sprint-emb
-**ACs:** see Sprint-EMB AC block in tasks/todo.md
+**Option A — Sprint-WORK-02 + WORK-03 (WorkpaperGenerator follow-on):**
+  WORK-02: `pages/16_Workspace.py` — Workpaper button integration (uses WORK-01 scaffold)
+  WORK-03: `workflows/workpaper.py` — extended template system
+
+**Option B — TPL-05 smoke test (unblocked, low-risk):**
+  TPL-05: AC smoke test — FRM pipeline generates F_Final/final_report.docx using frm_risk_register_base.docx;
+          open in python-docx, confirm GW_ styles present; audit_log has template_resolved event; templates.json correct
+
+**Option C — Sprint-CONV-02 (EvidenceChat wiring to EMB):**
+  Now unblocked by Sprint-EMB merge. Wires EMB-02 into CONV-01 retrieval path.
+
+**Option D — KL-02 / ACT-02 / ACT-03 (knowledge/activity follow-ons):**
+  All unblocked. Check tasks/todo.md for full specs.
+
+**Branch convention:** `feature/sprint-{sprint-name}`
+**ACs:** see relevant AC blocks in tasks/todo.md
 
 ## COMPLETION STATUS
 
@@ -40,32 +40,21 @@ P9 (Engagement Framework): 100% ██████████ P9-01..09 all don
 Sprint-WF:                 100% ██████████ DONE — merged 3b498cc
 Sprint-FR:                 100% ██████████ DONE — merged 3b498cc
 Sprint-AIC:                100% ██████████ DONE — merged 4315d2a
-Sprint-EMB:                  0% ░░░░░░░░░░ UNBLOCKED — build next
-Sprint-FE:                   0% ░░░░░░░░░░ BLOCKED on FE-GATE-BA
+Sprint-EMB:                100% ██████████ DONE — merged eee13f2
+Sprint-FE:                 100% ██████████ DONE — merged a526bab
+Sprint-WORK-02/03:           0% ░░░░░░░░░░ UNBLOCKED — build next
+TPL-05 smoke test:           0% ░░░░░░░░░░ UNBLOCKED
+Sprint-CONV-02:              0% ░░░░░░░░░░ UNBLOCKED (EMB merged)
+KL-02 / ACT-02 / ACT-03:    0% ░░░░░░░░░░ UNBLOCKED
 ```
 
-**OVERALL: ~85% complete by task count (~97% by functional value)**
+**OVERALL: ~92% complete by task count (~99% by functional value)**
 
 ## CARRY_FORWARD_CONTEXT
-Session 032 built Sprint-WF + Sprint-FR on feature/sprint-wf-fr:
-- WF-01a: project_manager helpers (exhibit, lead, open/confirmed filtering)
-- WF-01b: Workspace UI — Exhibit Register + Leads Register expanders
-- WF-01c: InvestigationSections (evidence list, detailed findings with exhibit footnotes, leads, appendix)
-- WF-02: DDSections (per-subject + consolidated)
-- WF-03: TTSections (exceptions table, summary, Excel via openpyxl)
-- WF-04: SanctionsSections (hit detail with disposition validation, false positive table, exec summary)
-- WF-05: firm_profile/sanctions_disposition_policy.json
-- FR-01: Stakeholder input form + _save_stakeholder() (append-only, ValueError on missing name)
-- FR-02: get_stakeholder_context() + FRM junior prompt injection
-- FR-03: recommendation_depth in CaseIntake schema + st.radio in FRM intake
-- FR-04: FRMExcelBuilder (2-sheet xlsx: risk register + heat map)
-- FR-05: BaseReportBuilder.add_heat_map() (5×5 DOCX table, fluent)
-- FR-06: depth-aware recommendation instruction in junior prompt (_DEPTH_INSTRUCTIONS dict)
-
-NOTE on EMB-04 carry-forward: get_context_for_agents() in DocumentManager is implemented but
-no agent calls it yet. This is the primary thing EMB-04 closes.
+Session 033 built Sprint-EMB + Sprint-FE on separate feature branches:
+- Sprint-EMB: EmbeddingEngine (ChromaDB + sentence-transformers), DocumentManager wire, Workspace semantic search, Orchestrator context injection
+- Sprint-FE: ai_questions stage on 10 pages (one-at-a-time, case_intake.md), Settings template selector, FRM xlsx download, Sanctions per_hit_review, DD intake extensions + routing, Workspace conditional panels (DD/San/TT), Case Tracker Previous Versions
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Sprint-EMB: sentence-transformers may not be in requirements.txt — check first; if not, add it
-  and handle ImportError gracefully (EmbeddingEngine.available = False when library missing)
-- Sprint-FE still BLOCKED on FE-GATE-BA (needs /ba session for AI questions stage UX decisions)
+- sentence-transformers not installed in dev env — EMB tests use code-inspection path; live embedding requires: `pip install sentence-transformers chromadb`
+- TPL-05 requires FRM pipeline to run end-to-end (needs ANTHROPIC_API_KEY + RESEARCH_MODE=knowledge_only)
