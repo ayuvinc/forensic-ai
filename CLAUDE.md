@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-06 21:00:00 +0530 — closeout by session-close
-- Session summary: Session 010 — planning only. BA (BA-002..BA-011): FRM guided-exercise redesign confirmed, historical knowledge library designed, DD/Sanctions/TT intake questionnaires confirmed, engagement scoping workflow (problem-first) designed, workflow chaining rules confirmed. Architect (Sprint-10A..10H): 35+ tasks across 8 sprints, critical path defined. Real GoodWork materials researched (CE Creates DD reports, proposals). docs/problem-definition.md and docs/scope-brief.md populated. Next: Sprint-10A schemas + Sprint-10B knowledge files.
+- Last updated: 2026-04-20 03:30:00 UTC — closeout by architect Session 028
+- Session summary: Session 028 — Phase E merged (7 tasks: WORK-02/03, ACT-02/03, KL-02, P9-UI-02, TEST-05). Key deliverables: Case Tracker workpaper button, done-zone workpaper trigger, ActivityLogger wired (SESSION/PIPELINE/DOCUMENT/DELIVERABLE/SETTINGS), Activity Log page (15_Activity_Log.py), KnowledgeHarvester with PII sanitisation, engagement_id threaded through CaseIntake + intake forms + orchestrator + FRM. 120 tests pass. Next: Phase F (CONV-01, CONV-02, Sprint-AIC).
 
 ## Use Case Note
 
