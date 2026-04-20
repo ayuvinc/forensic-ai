@@ -42,12 +42,30 @@ def _load_profile() -> tuple[dict, bool]:
         return {}, True
 
 
-def _save_profile(data: dict) -> str | None:
+def _save_profile(data: dict, changed_keys: list[str] | None = None) -> str | None:
+    # Read existing before overwriting so we can log old_value vs new_value (ACT-02)
+    old_data, _ = _load_profile()
     try:
         FIRM_PROFILE_DIR.mkdir(parents=True, exist_ok=True)
         tmp = _FIRM_JSON.with_suffix(".tmp")
         tmp.write_text(json.dumps(data, indent=2), encoding="utf-8")
         os.replace(tmp, _FIRM_JSON)
+        # ACT-02: log settings change with before/after values for changed keys
+        try:
+            from tools.activity_logger import logger as _act_logger
+            keys = changed_keys or list(data.keys())
+            _act_logger.log(
+                category="SETTINGS",
+                action="settings_saved",
+                actor="consultant",
+                detail={
+                    "changed_keys": keys,
+                    "old_value": {k: old_data.get(k) for k in keys},
+                    "new_value": {k: data.get(k) for k in keys},
+                },
+            )
+        except Exception:
+            pass
         return None
     except Exception as exc:
         return str(exc)

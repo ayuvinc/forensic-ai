@@ -184,6 +184,12 @@ class Orchestrator:
         }
         if extra:
             state.update(extra)
+        # Carry forward engagement_id so it is not lost on subsequent state transitions.
+        # The initial write receives it via extra=intake dict; later writes must preserve it.
+        if not state.get("engagement_id"):
+            existing = read_state(self.case_id)
+            if existing and existing.get("engagement_id"):
+                state["engagement_id"] = existing["engagement_id"]
         write_state(self.case_id, state)
         append_audit_event(self.case_id, {
             "event":    "status_change",

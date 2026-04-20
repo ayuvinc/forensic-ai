@@ -110,6 +110,22 @@ elif st.session_state.frm_stage == "confirm":
 
         st.session_state.frm_dm = dm
         st.session_state.frm_reg_results = reg_results
+
+        # P9-UI-02: write initial state.json with engagement_id before pipeline runs
+        # so mark_deliverable_written() preserves it when it reads and rewrites state
+        engagement_id = st.session_state.get("active_project") or ""
+        if engagement_id:
+            from tools.file_tools import write_state
+            from datetime import datetime, timezone
+            write_state(intake.case_id, {
+                "case_id":       intake.case_id,
+                "workflow":      "frm_risk_register",
+                "status":        "intake_created",
+                "last_updated":  datetime.now(timezone.utc).isoformat(),
+                "client_name":   intake.client_name,
+                "engagement_id": engagement_id,
+            })
+
         st.session_state.frm_stage = "running"
         st.rerun()
 
@@ -296,4 +312,5 @@ elif st.session_state.frm_stage == "done":
         workflow_label="FRM Risk Register",
         session_state_keys=["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed", "frm_dm", "frm_reg_results"],
         stage_key="frm_stage",
+        enable_workpaper=True,
     )

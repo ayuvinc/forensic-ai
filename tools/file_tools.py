@@ -69,6 +69,20 @@ def write_artifact(case_id: str, agent: str, artifact_type: str, data: Any, vers
 
     tmp.write_text(payload, encoding="utf-8")
     os.replace(tmp, target)
+
+    # ACT-02: log pipeline artifact write as DOCUMENT event
+    try:
+        from tools.activity_logger import logger as _act_logger
+        _act_logger.log(
+            category="DOCUMENT",
+            action="artifact_written",
+            actor=agent,
+            case_id=case_id,
+            detail={"artifact_type": artifact_type, "version": version},
+        )
+    except Exception:
+        pass
+
     return target
 
 
@@ -264,6 +278,19 @@ def mark_deliverable_written(case_id: str, workflow: str) -> None:
     state["last_updated"] = datetime.now(timezone.utc).isoformat()
     write_state(case_id, state)
     append_audit_event(case_id, {"event": "deliverable_written", "workflow": workflow})
+
+    # ACT-02: log final deliverable write
+    try:
+        from tools.activity_logger import logger as _act_logger
+        _act_logger.log(
+            category="DELIVERABLE",
+            action="deliverable_written",
+            actor="system",
+            case_id=case_id,
+            detail={"workflow": workflow},
+        )
+    except Exception:
+        pass
 
 
 def write_final_report(case_id: str, content: str, language: str = "en") -> Path:

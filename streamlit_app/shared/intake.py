@@ -10,10 +10,50 @@ per engagement without navigating to Settings (TPL-04, UX-019).
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 import uuid
+
+
+# ── Engagement context helper (P9-UI-02) ─────────────────────────────────────
+
+def _load_active_project_meta(st) -> Optional[dict]:
+    """Return index entry for the active engagement, or None if not set."""
+    slug = st.session_state.get("active_project")
+    if not slug:
+        return None
+    try:
+        from config import CASES_DIR
+        index_path = CASES_DIR / "index.json"
+        if not index_path.exists():
+            return None
+        entries = json.loads(index_path.read_text(encoding="utf-8"))
+        for e in entries:
+            if e.get("case_id") == slug or e.get("engagement_id") == slug:
+                return e
+    except Exception:
+        pass
+    return None
+
+
+def render_engagement_banner(st) -> Optional[dict]:
+    """Show a "Continuing engagement" info banner if active_project is set.
+
+    Returns the project metadata dict, or None if no active project.
+    Call this at the TOP of any intake form that should respect active engagements.
+    """
+    meta = _load_active_project_meta(st)
+    if meta:
+        project_name = meta.get("project_name") or meta.get("case_id", "")
+        client_name  = meta.get("client_name", "")
+        st.info(
+            f"**Continuing engagement:** {project_name}  \n"
+            f"**Client:** {client_name}  \n"
+            "Client name and language standard are pre-filled from this engagement."
+        )
+    return meta
 
 
 # ── Label maps ─────────────────────────────────────────────────────────────────
@@ -53,16 +93,35 @@ def generic_intake_form(st, workflow_id: str, title: str):
     Covers common fields shared across all workflows.
     Returns None until the user submits.
     submit_label is derived from workflow_id (e.g. "Run Investigation").
+
+    P9-UI-02: when st.session_state.active_project is set, shows engagement
+    banner, pre-fills client_name, and locks the field (read-only).
     """
     from schemas.case import CaseIntake
 
     st.subheader(title)
 
+    # P9-UI-02: engagement context
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    prefill_client = project_meta.get("client_name", "") if project_meta else ""
+
     submit_label = _SUBMIT_LABELS.get(workflow_id, "Start")
     placeholder  = _DESCRIPTION_PLACEHOLDERS.get(workflow_id, "Describe the engagement scope")
 
     with st.form(key=f"intake_{workflow_id}"):
-        client_name           = st.text_input("Client name")
+        # P9-UI-02: lock client_name when coming from an active engagement
+        if project_meta:
+            st.text_input(
+                "Client name",
+                value=prefill_client,
+                disabled=True,
+                key=f"client_locked_{workflow_id}",
+            )
+            client_name = prefill_client
+        else:
+            client_name = st.text_input("Client name")
+
         industry              = st.text_input("Industry / sector")
         primary_jurisdiction  = st.text_input("Primary jurisdiction", value="UAE")
         description           = st.text_area("Engagement description / scope", placeholder=placeholder)
@@ -96,6 +155,7 @@ def generic_intake_form(st, workflow_id: str, title: str):
         workflow=workflow_id,
         language=language,
         created_at=datetime.now(timezone.utc),
+        engagement_id=engagement_id or None,
     )
 
 
@@ -114,6 +174,11 @@ def frm_intake_form(st) -> Optional[tuple]:
     _DEPENDENT_ON_2 = {3, 4, 7}
 
     st.subheader("FRM Risk Register — Intake")
+
+    # P9-UI-02: engagement context
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    prefill_client = project_meta.get("client_name", "") if project_meta else ""
 
     # ── Module selector (outside form for reactive on_change) ─────────────────
     module_options = {f"Module {k}: {v}": k for k, v in FRM_MODULES.items()}
@@ -144,7 +209,17 @@ def frm_intake_form(st) -> Optional[tuple]:
 
     # ── Remaining fields in a standard form ───────────────────────────────────
     with st.form(key="frm_intake_fields"):
-        client_name          = st.text_input("Client name")
+        # P9-UI-02: lock client_name when coming from an active engagement
+        if project_meta:
+            st.text_input(
+                "Client name",
+                value=prefill_client,
+                disabled=True,
+                key="frm_client_locked",
+            )
+            client_name = prefill_client
+        else:
+            client_name = st.text_input("Client name")
         industry             = st.text_input("Industry / sector")
         primary_jurisdiction = st.text_input("Primary jurisdiction", value="UAE")
         employee_count       = st.text_input("Approximate employee count", value="")
@@ -193,6 +268,7 @@ def frm_intake_form(st) -> Optional[tuple]:
         workflow="frm_risk_register",
         language=language,
         created_at=datetime.now(timezone.utc),
+        engagement_id=engagement_id or None,
     )
 
     return intake, selected_modules
@@ -210,9 +286,23 @@ def dd_intake_form(st) -> Optional[tuple]:
 
     st.subheader("Due Diligence — Intake")
 
+    # P9-UI-02: engagement context
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    prefill_client = project_meta.get("client_name", "") if project_meta else ""
+
     with st.form(key="dd_intake_form"):
         # Common fields
-        client_name          = st.text_input("Client name")
+        if project_meta:
+            st.text_input(
+                "Client name",
+                value=prefill_client,
+                disabled=True,
+                key="dd_client_locked",
+            )
+            client_name = prefill_client
+        else:
+            client_name = st.text_input("Client name")
         industry             = st.text_input("Industry / sector")
         primary_jurisdiction = st.text_input("Primary jurisdiction", value="UAE")
 
@@ -275,6 +365,7 @@ def dd_intake_form(st) -> Optional[tuple]:
         workflow="due_diligence",
         language=language,
         created_at=datetime.now(timezone.utc),
+        engagement_id=engagement_id or None,
     )
 
     dd_params = {
