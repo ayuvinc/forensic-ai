@@ -275,3 +275,11 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] TEST-05 — tests/test_project_schema.py — ProjectIntake slug validation, path traversal rejection, empty slug rejection, InputSession lifecycle, ProjectState health enum; 120 tests pass total — QA_APPROVED
 
 ---
+
+## Post-Session Warning Fixes — AK Approved (2026-04-20, commit b71952b)
+
+- [x] W-02/TEST-07b — tests/test_file_tools_artifacts.py — 11 tests: write_final_report() file creation, language param, no tmp, interim/ migration, permanent files preserved; mark_deliverable_written() state value, audit event, workflow field, last_updated refresh. 131 total tests pass — RESOLVED
+- [x] W-03 — schemas/documents.py: chunk_count: Optional[int] added to DocumentEntry; tools/embedding_engine.py: chunk_count(doc_id) method queries ChromaDB; tools/document_manager.py: sets entry.chunk_count after successful embed; pages/12_Case_Tracker.py: passes chunk_count to _embedding_badge() — badge now shows "🟢 Indexed — N chunks" — RESOLVED
+- [x] W-06 — pages/00_Setup.py: ActivityLogger SETUP/setup_completed event logged on "Launch GoodWork →" click; fire-and-forget, non-blocking — RESOLVED
+
+---

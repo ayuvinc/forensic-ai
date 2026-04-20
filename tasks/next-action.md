@@ -9,7 +9,7 @@ junior-dev
 ## NEXT_TASK
 **Session 029: junior-dev builds Phase F (CONV-01, CONV-02, Sprint-AIC)**
 
-Phase E complete and merged (0c127e9 → main). 120 tests pass (no regression).
+Phase E complete and merged (0c127e9 → main). W-02/W-03/W-06 resolved post-session (b71952b → main). 131 tests pass (no regression).
 Phase F is fully unblocked. Build tasks below.
 
 **Phase F — primary tasks:**
@@ -49,7 +49,7 @@ Phase E (WORK-02/03/ACT-02/03/KL-02/P9-UI-02/TEST-05): 100% ██████�
 Sprint-EMB:                     100%  ██████████ DONE — EMB-00/01/02/03 all done
 Sprint-TPL:                      67%  ██████░░░░ TPL-01/02/03/04 done; TPL-05 open non-blocking
 Sprint-UX-FIXES:                 86%  █████████░ UX-F-01/02/03/04/05/06/07 done; UX-D-05 open non-blocking
-Sprint-TEST:                     71%  ███████░░░ TEST-01/02/03/04/05/06/07 done; TEST-07b open non-blocking
+Sprint-TEST:                     86%  █████████░ TEST-01/02/03/04/05/06/07/07b done; TEST-07b resolved
 Sprint-P9:                      100%  ██████████ P9-01/P9-02 done
 Sprint-WORK:                    100%  ██████████ WORK-01/02/03 all DONE
 Sprint-CONV:                      0%  ░░░░░░░░░░ Phase F (CONV-01/02 next)
@@ -78,11 +78,13 @@ QA gaps fixed during Phase E:
 
 QA warnings carried forward (non-blocking):
 - W-01: Case Tracker "Draft" vs "Draft Ready" label — cosmetic
-- W-02: TEST-07 return-type only; file artifact assertions deferred to TEST-07b
-- W-03: EMB-03 chunk_count not in badge (DocumentEntry schema lacks chunk_count)
 - W-04: P9-02 (ProjectManager) was unlisted dep — no task ID; documented
 - W-05: ACT-03 page named 15_ not 07_ (R-018 pre-existing conflict)
-- W-06: SETUP events (00_Setup.py) deferred — not built in Phase E
+
+Resolved post-session (AK approved, merged b71952b):
+- W-02/TEST-07b: 11 artifact tests in test_file_tools_artifacts.py — RESOLVED
+- W-03: chunk_count field on DocumentEntry + EmbeddingEngine.chunk_count() + badge — RESOLVED
+- W-06: SETUP event wired in 00_Setup.py on launch — RESOLVED
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
 - No blockers for Phase F tasks

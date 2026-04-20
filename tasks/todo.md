@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
 Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-20T02:46:49Z — state transition by MCP server
+Last updated:   2026-04-20T03:22:23Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -662,7 +662,7 @@ SETUP-00 through SETUP-03 all completed and merged. See releases/completed-tasks
 
 ### Sprint-TEST — Minimum Test Surface (Session 024)
 
-**Note:** TEST-01..04, TEST-06, TEST-07 DONE. TEST-05 and TEST-07b remain.
+**Note:** TEST-01..04, TEST-05, TEST-06, TEST-07, TEST-07b all DONE.
 
 - [x] **[TEST-05]** `tests/test_project_schema.py` (P9-01-AC) — ProjectIntake slug validation (7-step algorithm), path traversal attempts, empty slug rejection, InputSession lifecycle states, ProjectState health enum. ← deps: TEST-01 | AC: `../../etc/passwd` as project_name raises ValueError; empty string raises ValueError; valid name produces correct slug.
 
