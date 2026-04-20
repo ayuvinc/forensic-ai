@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: junior-dev
+Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-20T03:22:23Z — state transition by MCP server
+Last updated:   2026-04-20T03:35:36Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -306,8 +306,8 @@ Full specs archived in releases/completed-tasks.md.
 **BA:** BA-P9-02
 **Note:** `ProjectManager.create_af_structure()` handles creation. This task ensures `file_tools.py` route functions (case_dir, write_artifact, etc.) respect A-F layout for NEW projects.
 
-- [ ] P9-04a Add `AF_FOLDERS = ("A_Engagement_Management", "B_Planning", "C_Evidence", "D_Working_Papers", "E_Drafts", "F_Final")` constant to `tools/file_tools.py`
-- [ ] P9-04b Add `is_af_project(case_id: str) -> bool` — returns True if `cases/{case_id}/E_Drafts/` exists (distinguishes P9 named projects from legacy UUID cases)
+- [x] P9-04a Add `AF_FOLDERS` constant to `tools/file_tools.py` — DONE Phase F (4315d2a)
+- [x] P9-04b Add `is_af_project(case_id: str) -> bool` — DONE Phase F (4315d2a)
 - [ ] P9-04c For P9 projects: `write_artifact()` writes to `E_Drafts/` instead of root; `write_final_report()` writes to `F_Final/` instead of root. Legacy projects: unchanged behavior.
 - [ ] P9-04d Post-run migration (existing P8-05a) updated: migrates root `*.v*.json` → `E_Drafts/` (not `interim/`) for AF projects; `interim/` used only for legacy projects.
 
@@ -483,9 +483,9 @@ AIC-02 (pre-final-run pass) ── AIC-03
 AIC-03 (inject into pipeline) ← AIC-01 + AIC-02
 ```
 
-- [ ] AIC-01 Post-intake Haiku pass: after intake form submit, ask up to 3 follow-up questions conversationally (st.chat_message style); answers to `D_Working_Papers/intake_qa.json`; "Skip for now" button available
-- [ ] AIC-02 Pre-final-run Sonnet pass: reviews all accumulated materials; renders 3–5 warning cards; each card: "Resolve" or "Proceed anyway"; results to `D_Working_Papers/prefinalrun_review.json`; pipeline Run button locked until all cards acknowledged
-- [ ] AIC-03 `ProjectManager.get_intake_qa_context()` + `get_prefinalrun_context()` — inject into agent context dict
+- [x] AIC-01 Post-intake Haiku pass — DONE Phase F (4315d2a)
+- [x] AIC-02 Pre-final-run Sonnet pass — DONE Phase F (4315d2a)
+- [x] AIC-03 `ProjectManager.get_intake_qa_context()` + `get_prefinalrun_context()` — DONE Phase F (4315d2a)
 
 ---
 
@@ -500,7 +500,7 @@ RD-02 ──── RD-03
 RD-04 ──── independent (called by RD-03)
 ```
 
-- [ ] RD-00 Add `openpyxl>=3.1.0` to `requirements.txt` (also needed for Sprint-FR and Sprint-WF)
+- [x] RD-00 Add `openpyxl>=3.1.0` to `requirements.txt` — DONE (already present before Phase F)
 - [ ] RD-01 `tools/report_builder.py` — `BaseReportBuilder(template_path=None)`: add_cover_page(), add_toc(), add_section(), add_subsection(), set_header(), set_footer(), save(). Style fallback if template styles incompatible.
 - [ ] RD-02 `streamlit_app/shared/template_selector.py` — `render_template_selector(workflow_type)`: check firm.json; if no template → offer "Use my template" / "Build one"; save to `firm_profile/templates/{wf}.docx`; update firm.json
 - [ ] RD-03 Update `tools/file_tools.py:write_final_report()` — use BaseReportBuilder; load template via firm.json; apply section_overrides; call _version_existing_report() first
@@ -623,9 +623,9 @@ CONV-01 (EvidenceChat backend) ─── CONV-02
 CONV-02 ← CONV-01 + EMB-02-REF
 ```
 
-- [ ] **[CONV-01]** Create `workflows/evidence_chat.py` — `EvidenceChat` class: `chat(case_id: str, message: str, selected_doc_ids: list[str], conversation_history: list[dict]) -> str`. Single Sonnet turn. System prompt: "You are reviewing the documents registered for this forensic engagement. You can only present findings and observations directly supported by the registered documents. For each observation, state the source document and quote the relevant passage. You may explain forensic concepts and fraud patterns as background context. You must not present inferences as conclusions. All observations are preliminary." Context injection per turn (capped at `config.CEM_CONTEXT_CHARS` = 16,000 chars): (1) DocumentIndex summary of all registered docs; (2) key_facts.json and red_flags.json content; (3) `EmbeddingEngine.retrieve(message, case_id, top_k=5)` chunks if embedding available, else `DocumentManager.find_relevant_docs()` excerpt; (4) conversation history (oldest turns dropped first when cap approached). Document-scoped mode: if `selected_doc_ids` is non-empty, retrieval filtered to those doc_ids only. Saves full conversation turn to `D_Working_Papers/evidence_chat_{YYYYMMDD_HHMMSS}.md` on each session_end call (append-only; new CEM session = new file). Auto-save to `evidence_chat_{timestamp}_recovered.md` on mid-session app close. ← deps: EMB-02-REF | AC: `chat(case_id, "What does the bank statement show?", [], [])` returns a non-empty string; system prompt injection confirmed via code inspection; context cap of 16000 chars enforced (verify by unit test with large doc); conversation save creates file in D_Working_Papers/.
+- [x] **[CONV-01]** Create `workflows/evidence_chat.py` — DONE Phase F (4315d2a) — `EvidenceChat` class: `chat(case_id: str, message: str, selected_doc_ids: list[str], conversation_history: list[dict]) -> str`. Single Sonnet turn. System prompt: "You are reviewing the documents registered for this forensic engagement. You can only present findings and observations directly supported by the registered documents. For each observation, state the source document and quote the relevant passage. You may explain forensic concepts and fraud patterns as background context. You must not present inferences as conclusions. All observations are preliminary." Context injection per turn (capped at `config.CEM_CONTEXT_CHARS` = 16,000 chars): (1) DocumentIndex summary of all registered docs; (2) key_facts.json and red_flags.json content; (3) `EmbeddingEngine.retrieve(message, case_id, top_k=5)` chunks if embedding available, else `DocumentManager.find_relevant_docs()` excerpt; (4) conversation history (oldest turns dropped first when cap approached). Document-scoped mode: if `selected_doc_ids` is non-empty, retrieval filtered to those doc_ids only. Saves full conversation turn to `D_Working_Papers/evidence_chat_{YYYYMMDD_HHMMSS}.md` on each session_end call (append-only; new CEM session = new file). Auto-save to `evidence_chat_{timestamp}_recovered.md` on mid-session app close. ← deps: EMB-02-REF | AC: `chat(case_id, "What does the bank statement show?", [], [])` returns a non-empty string; system prompt injection confirmed via code inspection; context cap of 16000 chars enforced (verify by unit test with large doc); conversation save creates file in D_Working_Papers/.
 
-- [ ] **[CONV-02]** Create `pages/14_Evidence_Chat.py` (or tab within Investigation per UX-D-07 decision — build as standalone page, refactor to tab if AK decides option B post-build). Two-panel layout per UX-014: Left panel (1/3 width) — document selector loaded from `DocumentManager` index for active case (`st.session_state.active_project` or case_id picker if no active project); each document has a checkbox "Include in context"; shows embedding status badge per EMB-03-REF. Right panel (2/3 width) — chat interface: `st.chat_input("Ask about the evidence...")` + `st.chat_message()` rendering (user and assistant). Per assistant response: three action buttons below the message — "Save as Lead" (appends to leads_register.json + audit event), "Save as Key Fact" (appends to key_facts.json), "Save as Red Flag" (severity selectbox appears before saving). "Flag Response" button appends `FLAGGED` annotation to conversation transcript. Persistent banner at top of right panel: `st.warning("Evidence Exploration Mode — outputs are not reviewed deliverables. Use the Investigation pipeline for reviewed reports.")`. Conversation persists across sessions via `cases/{id}/evidence_chat.jsonl` (new file per session). History trimming banner shown when >50 turns: `st.info("Older turns have been trimmed from context. Full transcript saved to Working Papers.")`. "End Conversation" button closes session and triggers conversation save. ← deps: CONV-01, EMB-02-REF | AC: page loads without error when no active case; chat input sends message and renders response; "Save as Lead" button appends to leads_register.json (verify file exists and has entry); "NOT FOR CLIENT REVIEW" equivalent warning banner present; conversation saved to evidence_chat_{timestamp}.md on "End Conversation" click.
+- [x] **[CONV-02]** Built as `streamlit_app/shared/evidence_chat_panel.py` per AK locked design decision — DONE Phase F (4315d2a) (or tab within Investigation per UX-D-07 decision — build as standalone page, refactor to tab if AK decides option B post-build). Two-panel layout per UX-014: Left panel (1/3 width) — document selector loaded from `DocumentManager` index for active case (`st.session_state.active_project` or case_id picker if no active project); each document has a checkbox "Include in context"; shows embedding status badge per EMB-03-REF. Right panel (2/3 width) — chat interface: `st.chat_input("Ask about the evidence...")` + `st.chat_message()` rendering (user and assistant). Per assistant response: three action buttons below the message — "Save as Lead" (appends to leads_register.json + audit event), "Save as Key Fact" (appends to key_facts.json), "Save as Red Flag" (severity selectbox appears before saving). "Flag Response" button appends `FLAGGED` annotation to conversation transcript. Persistent banner at top of right panel: `st.warning("Evidence Exploration Mode — outputs are not reviewed deliverables. Use the Investigation pipeline for reviewed reports.")`. Conversation persists across sessions via `cases/{id}/evidence_chat.jsonl` (new file per session). History trimming banner shown when >50 turns: `st.info("Older turns have been trimmed from context. Full transcript saved to Working Papers.")`. "End Conversation" button closes session and triggers conversation save. ← deps: CONV-01, EMB-02-REF | AC: page loads without error when no active case; chat input sends message and renders response; "Save as Lead" button appends to leads_register.json (verify file exists and has entry); "NOT FOR CLIENT REVIEW" equivalent warning banner present; conversation saved to evidence_chat_{timestamp}.md on "End Conversation" click.
 
 ---
 

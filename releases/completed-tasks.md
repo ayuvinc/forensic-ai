@@ -283,3 +283,16 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] W-06 — pages/00_Setup.py: ActivityLogger SETUP/setup_completed event logged on "Launch GoodWork →" click; fire-and-forget, non-blocking — RESOLVED
 
 ---
+
+## Phase F Completed Tasks — Session 029 (2026-04-20, commit 4315d2a)
+
+- [x] CONV-01 — workflows/evidence_chat.py — EvidenceChat class: chat() single Sonnet turn; CEM_CONTEXT_CHARS=16000 cap enforced via _trim_history(); EmbeddingEngine.retrieve() with DocumentManager.find_relevant_docs() fallback; context from DocumentIndex + key_facts.json + red_flags.json; session_end() flushes transcript to D_Working_Papers/evidence_chat_{ts}.md; session_end_recovered() for mid-session app close — QA_APPROVED
+- [x] CONV-02 — streamlit_app/shared/evidence_chat_panel.py — persistent collapsible panel (shared component, not standalone page per AK locked decision); two-panel layout st.columns([1,2]); doc selector with embedding status badges; st.chat_input + st.chat_message rendering; Save as Lead/Key Fact/Red Flag action buttons per turn; "Evidence Exploration Mode" warning banner; End Conversation triggers session_end(); leads_register.json append; audit events on save actions — QA_APPROVED
+- [x] AIC-01 — streamlit_app/shared/aic.py render_intake_questions() — Haiku generates up to 3 follow-up questions post-intake; displayed via st.chat_message("assistant") per spec; st.text_area answers; "Save & Continue" persists to D_Working_Papers/intake_qa.json; "Skip for now" button; state machine in session_state — QA_APPROVED
+- [x] AIC-02 — streamlit_app/shared/aic.py render_prefinalrun_review() — Sonnet generates 3-5 warning cards from accumulated materials; Resolve/Proceed anyway per card; Run button gated until all cards acknowledged; results to D_Working_Papers/prefinalrun_review.json; severity-styled cards using brand CSS classes — QA_APPROVED
+- [x] AIC-03 — tools/project_manager.py — ProjectManager.get_intake_qa_context(slug) + get_prefinalrun_context(slug): read D_Working_Papers/ JSON files; return formatted strings with section headers for agent context injection; return "" when files absent — QA_APPROVED
+- [x] P9-04a — tools/file_tools.py — AF_FOLDERS tuple: 6 A-F folder names constant — QA_APPROVED
+- [x] P9-04b — tools/file_tools.py — is_af_project(case_id) -> bool: True when cases/{id}/E_Drafts/ exists; False for legacy UUID cases — QA_APPROVED
+- [x] config.py — CEM_CONTEXT_CHARS=16000; CONTEXT_BUDGET_CHARS=400000 added
+
+---
