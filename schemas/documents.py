@@ -63,6 +63,8 @@ class DocumentEntry(BaseModel):
     indexed_at: datetime
     is_duplicate: bool = False
     duplicate_of: Optional[str] = None  # doc_id of original
+    embedding_status: Literal["indexed", "pending", "failed", "unavailable"] = "unavailable"
+    chunk_count: Optional[int] = None      # populated after embedding; None if not embedded
 
 
 class DocumentIndex(BaseModel):

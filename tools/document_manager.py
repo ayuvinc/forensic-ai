@@ -164,6 +164,26 @@ class DocumentManager:
         else:
             entry.sections = self._generate_section_index(text, fpath.name)
 
+        # Semantic embedding (EMB-02-REF) — synchronous, best-effort, non-blocking
+        try:
+            from tools.embedding_engine import EmbeddingEngine
+            engine = EmbeddingEngine(self.case_id)
+            if engine.available:
+                engine.embed_document({
+                    "doc_id": entry.doc_id,
+                    "filename": entry.filename,
+                    "content": text,
+                })
+                entry.embedding_status = "indexed"
+                try:
+                    entry.chunk_count = engine.chunk_count(entry.doc_id)
+                except Exception:
+                    pass
+            else:
+                entry.embedding_status = "unavailable"
+        except Exception:
+            entry.embedding_status = "failed"
+
         index.documents.append(entry)
         index.last_updated = datetime.now(timezone.utc)
         self._save_index(index)

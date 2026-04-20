@@ -134,9 +134,10 @@ def _render_document_badges(case_id: str) -> None:
 
     with st.expander(f"Documents ({len(docs)})", expanded=False):
         for doc in docs:
-            emb_status = doc.get("embedding_status", "unavailable")
-            filename   = doc.get("filename", doc.get("doc_id", "unknown"))
-            badge      = _embedding_badge(emb_status)
+            emb_status  = doc.get("embedding_status", "unavailable")
+            filename    = doc.get("filename", doc.get("doc_id", "unknown"))
+            chunk_count = doc.get("chunk_count")
+            badge       = _embedding_badge(emb_status, chunk_count)
             st.markdown(f"**{filename}** — {badge}")
 
 

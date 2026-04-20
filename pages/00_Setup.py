@@ -399,6 +399,16 @@ elif current_step == 5:
             if st.button("Launch GoodWork →", key="step5_complete", type="primary"):
                 import config
                 config.reload()
+                try:
+                    from tools.activity_logger import logger as _act_logger
+                    _act_logger.log(
+                        category="SETUP",
+                        action="setup_completed",
+                        actor="consultant",
+                        detail={"steps_completed": 5},
+                    )
+                except Exception:
+                    pass
                 # Clear setup-specific session state
                 for key in ["setup_step", "setup_team", "setup_test_result", "setup_error"]:
                     st.session_state.pop(key, None)

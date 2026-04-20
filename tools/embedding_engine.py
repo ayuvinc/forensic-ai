@@ -137,6 +137,16 @@ class EmbeddingEngine:
             metadatas=metadatas,
         )
 
+    def chunk_count(self, doc_id: str) -> int:
+        """Return number of chunks stored for doc_id. Returns 0 if unavailable."""
+        if not self.available or self._collection is None:
+            return 0
+        try:
+            results = self._collection.get(where={"doc_id": doc_id}, include=[])
+            return len(results.get("ids", []))
+        except Exception:
+            return 0
+
     # ── Retrieval ──────────────────────────────────────────────────────────────
 
     def retrieve(
