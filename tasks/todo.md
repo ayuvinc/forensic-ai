@@ -501,58 +501,7 @@ RD-04 ──── independent (called by RD-03)
 
 ---
 
-### Sprint-WF — Workflow-Specific Report Sections (Session 022 — GATED on RD-01)
-
-**BA:** BA-R-05, BA-R-06, BA-R-07, BA-R-08
-
-- [x] WF-01a `tools/project_manager.py` helpers: add_exhibit(), add_lead(), update_lead(), get_open_leads(), get_confirmed_leads()
-- [x] WF-01b Investigation Input Session UI additions: Exhibit Register expander + Leads Register expander with Status selectbox; confirmed lead → Haiku draft finding generation
-- [x] WF-01c `tools/report_sections/investigation.py` — `InvestigationSections`: build_evidence_list(), build_detailed_findings() with Exhibit N footnotes, build_open_leads_section(), build_exhibits_appendix()
-- [x] WF-02 `tools/report_sections/due_diligence.py` — `DDSections`: per-subject and consolidated formats; DD intake subject count + relationship fields; template upload option
-- [x] WF-03 `tools/report_sections/transaction_testing.py` — `TTSections`: build_exceptions_table(), build_summary_page() for parent report embedding, build_excel_exceptions() via openpyxl
-- [x] WF-04 `tools/report_sections/sanctions.py` — `SanctionsSections`: build_hit_detail(), build_false_positive_table(), build_exec_summary(); disposition from firm policy + per-hit override
-- [x] WF-05 `firm_profile/sanctions_disposition_policy.json` — default policy file; editable via Settings page
-
-#### AC — Sprint-WF
-- [ ] WF-01a: `ProjectManager` has `add_exhibit()`, `add_lead()`, `update_lead()`, `get_open_leads()`, `get_confirmed_leads()` methods — code inspection of `tools/project_manager.py`
-- [ ] WF-01a: `add_exhibit(slug, exhibit)` appends to `D_Working_Papers/exhibits.json`; `add_lead(slug, lead)` appends to `D_Working_Papers/leads_register.json`; `get_open_leads(slug)` returns only entries where `status != "confirmed"` — code inspection
-- [ ] WF-01a: `update_lead(slug, lead_id, updates)` with a non-existent `lead_id` raises `KeyError` or returns without modifying the file — negative case
-- [ ] WF-01c: `tools/report_sections/investigation.py` exists and `InvestigationSections` class has `build_evidence_list()`, `build_detailed_findings()`, `build_open_leads_section()`, `build_exhibits_appendix()` methods — code inspection
-- [ ] WF-01c: `build_detailed_findings(findings, exhibits)` output string contains "Exhibit" followed by a number when exhibits are provided — behavioural assertion (call with a stub finding and one exhibit entry)
-- [ ] WF-02: `tools/report_sections/due_diligence.py` exists; `DDSections` has methods for per-subject and consolidated format; calling either method with `subjects=[]` returns a non-empty section header string rather than crashing — negative case
-- [ ] WF-03: `TTSections.build_excel_exceptions(exceptions, output_path)` writes a `.xlsx` file to `output_path`; the file is readable via `openpyxl.load_workbook()` without error — behavioural assertion (no API call required)
-- [ ] WF-04: `SanctionsSections.build_hit_detail(hit, disposition)` raises `ValueError` when `disposition` is not a recognised value (True Match / False Positive / Requires Investigation / Escalate) — negative case
-- [ ] WF-05: `firm_profile/sanctions_disposition_policy.json` exists after sprint; file is valid JSON and contains a `default_disposition` key — code inspection
-
----
-
-### Sprint-FR — FRM Enhanced Deliverable (Session 022 — GATED on RD-01 + P9-05)
-
-**BA:** BA-R-04, BA-R-09
-
-```
-FR-01 ─── FR-02
-FR-03 ─── FR-06
-FR-04 ─── FR-06, RD-06
-FR-05 ← RD-01 ─── RD-06
-FR-06 ← FR-02 + FR-03 + FR-04 + FR-05
-```
-
-- [x] FR-01 Stakeholder Input form in Input Session workspace: Name/Role/Key Concern/Risk View form; Save → `D_Working_Papers/stakeholder_inputs.json`; separate file uploader for interview notes
-- [x] FR-02 `ProjectManager.get_stakeholder_context(slug)`; inject into FRM junior system prompt; stakeholders in DOCX Appendix
-- [x] FR-03 `recommendation_depth` field in FRM intake schema + `st.radio` in FRM intake form; default "structured"; passed to pipeline
-- [x] FR-04 `tools/frm_excel_builder.py` — `FRMExcelBuilder`: Sheet 1 Risk Register table + Sheet 2 Heat Map (5×5 ARGB colour-coded); atomic write
-- [x] FR-05 `BaseReportBuilder.add_heat_map(risk_items)` — 5×5 colour-coded DOCX table via python-docx cell shading
-- [x] FR-06 Depth-aware recommendation generation: junior system prompt includes depth instruction; RiskItem.recommendation schema adapts per depth; DOCX builder routes to correct renderer
-
-#### AC — Sprint-FR
-- [x] FR-01: Stakeholder Input form save writes `D_Working_Papers/stakeholder_inputs.json`; repeated saves append entries rather than overwriting — behavioural assertion (call save twice, verify file has two entries)
-- [x] FR-01: Saving a stakeholder entry with a missing `name` field raises a validation error before any file write — negative case
-- [x] FR-02: `ProjectManager.get_stakeholder_context(slug)` returns an empty string when `stakeholder_inputs.json` does not exist — negative case (no crash)
-- [x] FR-03: `recommendation_depth` field is present in the FRM intake schema; valid values are `"structured"` (default), `"executive"`, and `"detailed"` — code inspection of the schema and `st.radio` options
-- [x] FR-04: `tools/frm_excel_builder.py` exists; `FRMExcelBuilder` class has a `build(risk_items, output_path)` method; calling it with an empty `risk_items=[]` list produces a valid `.xlsx` file with at least a header row — behavioural assertion (no API call required)
-- [x] FR-05: `BaseReportBuilder.add_heat_map(risk_items)` exists in `tools/report_builder.py` — code inspection; calling it with a list of 25 stub risk items (all combinations of likelihood 1-5, impact 1-5) returns `self` (fluent interface) without raising an exception
-
+~~Sprint-WF + Sprint-FR archived — see releases/completed-tasks.md (commit 3b498cc)~~
 
 ---
 

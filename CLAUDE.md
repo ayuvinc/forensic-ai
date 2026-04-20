@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: OPEN
 - Active task: none
 - Active persona: junior-dev
-- Last updated: 2026-04-20 15:00:00 UTC — Phase I P9-09 merged by architect Session 031
-- Session summary: Session 031 — Phase I P9-09 merged (c8ee66f): all three intake forms use project slug as case_id when active_project set; get_project_dm() + get_project_language_standard() helpers in intake.py; get_final_report_path() in file_tools.py routes done zones to F_Final/ for AF projects; Investigation/FRM pages get project DM fallback; Case Tracker "View Project" button (P9-09d); /status-update skill added. 5 ACs verified QA_APPROVED (1 partial: interim_context injection deferred to EMB-04). Next: Sprint-WF + Sprint-FR (both unblocked).
+- Last updated: 2026-04-20 16:00:00 UTC — Sprint-WF + Sprint-FR merged by architect Session 032
+- Session summary: Session 032 — Sprint-WF + Sprint-FR merged (3b498cc): workflow-specific report section builders (investigation, DD, TT, sanctions), project_manager exhibit/lead helpers, sanctions disposition policy, stakeholder input form + _save_stakeholder(), get_stakeholder_context(), recommendation_depth intake field, FRMExcelBuilder (2-sheet xlsx + heat map), BaseReportBuilder.add_heat_map(), depth-aware junior prompt injection. 27/27 ACs PASS, 131 tests PASS. Next: Sprint-EMB (unblocked, different files).
 
 ## Use Case Note
 

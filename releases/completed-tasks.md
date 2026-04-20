@@ -339,3 +339,26 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] status-update skill: `.claude/commands/status-update.md` — `/status-update` slash command for comprehensive project status table
 
 5 ACs verified, 4 full PASS, 1 partial (P9-09b interim_context injection depth). 131 tests pass. No regressions.
+
+---
+
+## Sprint-WF + Sprint-FR — Workflow Sections + FRM Enhanced Deliverable (2026-04-20 — Session 032, commit 3b498cc)
+
+### Sprint-WF — Workflow-Specific Report Sections
+- [x] WF-01a: `tools/project_manager.py` — `add_exhibit()`, `add_lead()`, `update_lead()`, `get_open_leads()`, `get_confirmed_leads()` helpers; append-only JSON pattern; atomic writes
+- [x] WF-01b: `pages/16_Workspace.py` — Exhibit Register expander + Leads Register expander (status selectbox: open/confirmed/closed); confirmed lead → `_draft_finding_for_lead()` Haiku best-effort draft
+- [x] WF-01c: `tools/report_sections/investigation.py` — `InvestigationSections`: `build_evidence_list()`, `build_detailed_findings()` with "Exhibit N" footnotes, `build_open_leads_section()`, `build_exhibits_appendix()`
+- [x] WF-02: `tools/report_sections/due_diligence.py` — `DDSections`: `build_per_subject_section()` + `build_consolidated_section()`; both return non-empty header on `subjects=[]`
+- [x] WF-03: `tools/report_sections/transaction_testing.py` — `TTSections`: `build_exceptions_table()`, `build_summary_page()`, `build_excel_exceptions()` via openpyxl; atomic `.tmp.xlsx` write
+- [x] WF-04: `tools/report_sections/sanctions.py` — `SanctionsSections`: `build_hit_detail()` (raises `ValueError` on invalid disposition), `build_false_positive_table()`, `build_exec_summary()`; `VALID_DISPOSITIONS` frozenset enforced
+- [x] WF-05: `firm_profile/sanctions_disposition_policy.json` — default policy (`default_disposition`, `auto_clear_below_score`, `escalate_above_score`); editable via Settings page
+
+### Sprint-FR — FRM Enhanced Deliverable
+- [x] FR-01: `pages/16_Workspace.py` — Stakeholder Input form (Name/Role/Key Concern/Risk View) + interview notes uploader; `_save_stakeholder()` append-only to `D_Working_Papers/stakeholder_inputs.json`; raises `ValueError` on missing name
+- [x] FR-02: `tools/project_manager.py:get_stakeholder_context(slug)` — returns formatted stakeholder context string; returns `""` when file absent; injected into FRM junior system prompt via `workflows/frm_risk_register.py` + `agents/junior_analyst/prompts.py`
+- [x] FR-03: `schemas/case.py:CaseIntake.recommendation_depth` — Optional[str], default None; `streamlit_app/shared/intake.py:frm_intake_form()` — `st.radio(["structured","executive","detailed"])` default "structured"; passed through pipeline
+- [x] FR-04: `tools/frm_excel_builder.py:FRMExcelBuilder.build(risk_items, output_path)` — Sheet 1: Risk Register (red header #D50032, rating colour-coded); Sheet 2: 5×5 ARGB heat map (green/amber/red/dark-red zones); atomic `.tmp.xlsx` write
+- [x] FR-05: `tools/report_builder.py:BaseReportBuilder.add_heat_map(risk_items)` — 6×6 DOCX table (header row + 5×5 data); OxmlElement cell shading; returns `self` for fluent chaining
+- [x] FR-06: `workflows/frm_risk_register.py` + `agents/junior_analyst/prompts.py` — depth-aware recommendation instruction injected into junior system prompt; `_DEPTH_INSTRUCTIONS` dict maps "structured"→COSO/ACFE aligned, "executive"→high-level 2-3 sentences, "detailed"→step-by-step with timeline
+
+27/27 AC assertions PASS. 131 tests PASS. QA_APPROVED (qa-run-030-sprint-wf-fr-20260420T143800Z).
