@@ -231,117 +231,22 @@ with tab_team:
 
 # ── TAB 4: Report Templates ───────────────────────────────────────────────────
 with tab_templates:
-    st.caption("Upload custom .docx templates per workflow. Templates must include GW_ named styles.")
+    from streamlit_app.shared.template_selector import render_template_selector
 
-    registry = _tm.list_templates()
+    st.caption("Select a template for each workflow. Uploaded templates are saved to firm_profile/templates/.")
 
-    for wf_id, wf_label in _WORKFLOW_LABELS.items():
-        wf_entry = registry.get(wf_id, {})
-        custom_name = wf_entry.get("custom")
-        base_name   = wf_entry.get("base")
-        current     = custom_name or base_name or "base_report_base.docx (default)"
+    _SELECTOR_WORKFLOWS = [
+        ("frm_risk_register",   "FRM Risk Register"),
+        ("investigation_report","Investigation Report"),
+        ("due_diligence",       "Due Diligence"),
+        ("transaction_testing", "Transaction Testing"),
+        ("sanctions_screening", "Sanctions Screening"),
+        ("client_proposal",     "Client Proposal"),
+    ]
 
-        col_label, col_upload, col_preview, col_reset = st.columns([2, 2, 1, 1])
-
-        with col_label:
-            st.markdown(f"**{wf_label}**")
-            st.caption(f"Current: `{current}`")
-
-        with col_upload:
-            uploaded = st.file_uploader(
-                f"Upload for {wf_label}",
-                type=["docx"],
-                key=f"tpl_upload_{wf_id}",
-                label_visibility="collapsed",
-            )
-            if uploaded:
-                file_bytes = uploaded.read()
-                # Validate before saving
-                import tempfile
-                from pathlib import Path as _Path
-                with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_f:
-                    tmp_f.write(file_bytes)
-                    tmp_path = _Path(tmp_f.name)
-                result = _tm.validate_docx(tmp_path)
-                try:
-                    tmp_path.unlink(missing_ok=True)
-                except Exception:
-                    pass
-
-                if not result.valid:
-                    st.error(f"Invalid file: {result.error}")
-                elif result.has_critical_missing:
-                    st.error(
-                        f"Missing critical styles: {', '.join(result.missing_styles)}. "
-                        "Template not saved. GW_Heading1 and GW_Body are required."
-                    )
-                elif result.missing_styles:
-                    # Partial — warn but allow
-                    st.warning(
-                        f"Missing non-critical styles: {', '.join(result.missing_styles)}. "
-                        "Saved with fallback to default styles."
-                    )
-                    _tm.update_custom(wf_id, file_bytes)
-                    st.success(f"Template saved for {wf_label}.")
-                    st.rerun()
-                else:
-                    _tm.update_custom(wf_id, file_bytes)
-                    st.success(f"Template saved for {wf_label}.")
-                    st.rerun()
-
-        with col_preview:
-            if (custom_name or base_name):
-                if st.button("Preview", key=f"tpl_prev_{wf_id}"):
-                    try:
-                        from tools.template_manager import TEMPLATES_DIR
-                        tpath = TEMPLATES_DIR / (custom_name or base_name)
-                        if tpath.exists():
-                            vr = _tm.validate_docx(tpath)
-                            present = [s for s in ["GW_Title","GW_Heading1","GW_Heading2",
-                                                   "GW_Body","GW_TableHeader","GW_Caption",
-                                                   "GW_Disclaimer"] if s not in vr.missing_styles]
-                            missing = vr.missing_styles
-                            with st.popover(f"Styles in {custom_name or base_name}"):
-                                st.markdown("**Present styles:**")
-                                for s in present:
-                                    st.markdown(f"  ✓ `{s}`")
-                                if missing:
-                                    st.markdown("**Missing styles:**")
-                                    for s in missing:
-                                        st.markdown(f"  ✗ `{s}`")
-                    except Exception as exc:
-                        st.error(str(exc))
-
-        with col_reset:
-            if custom_name:
-                if st.button("Reset", key=f"tpl_reset_{wf_id}"):
-                    st.session_state[f"tpl_confirm_reset_{wf_id}"] = True
-
-        # Confirm reset
-        if st.session_state.get(f"tpl_confirm_reset_{wf_id}"):
-            st.warning(f"Reset {wf_label} to base template?")
-            c1, c2 = st.columns(2)
-            with c1:
-                if st.button("Confirm Reset", key=f"tpl_do_reset_{wf_id}", type="primary"):
-                    from tools.template_manager import TEMPLATES_DIR
-                    import shutil
-                    custom_path = TEMPLATES_DIR / custom_name
-                    try:
-                        custom_path.unlink(missing_ok=True)
-                    except Exception:
-                        pass
-                    # Remove from registry
-                    reg = _tm.list_templates()
-                    if wf_id in reg:
-                        reg[wf_id].pop("custom", None)
-                        _tm._save_registry(reg)
-                    st.session_state.pop(f"tpl_confirm_reset_{wf_id}", None)
-                    st.rerun()
-            with c2:
-                if st.button("Cancel", key=f"tpl_cancel_reset_{wf_id}"):
-                    st.session_state.pop(f"tpl_confirm_reset_{wf_id}", None)
-                    st.rerun()
-
+    for wf_id, wf_label in _SELECTOR_WORKFLOWS:
+        st.markdown(f"**{wf_label}**")
+        render_template_selector(wf_id)
         st.divider()
 
 

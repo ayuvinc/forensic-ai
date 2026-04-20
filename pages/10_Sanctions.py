@@ -42,6 +42,10 @@ if st.session_state.san_stage != "intake":
     if st.sidebar.button("Start New Case"):
         for k in ["san_stage", "san_intake", "san_params", "san_result", "sanctions_acknowledged"]:
             st.session_state.pop(k, None)
+        # Clear dispositions keyed by case_id
+        for key in list(st.session_state.keys()):
+            if key.startswith("san_dispositions_"):
+                st.session_state.pop(key, None)
         st.rerun()
 
 # ── STAGE: intake ─────────────────────────────────────────────────────────────
@@ -92,8 +96,17 @@ if st.session_state.san_stage == "intake":
                     "output_format": output_format,
                     "specific_concerns": "",
                 }
-                st.session_state.san_stage = "running"
+                st.session_state.san_stage = "ai_questions"
                 st.rerun()
+
+# ── STAGE: ai_questions ───────────────────────────────────────────────────────
+elif st.session_state.san_stage == "ai_questions":
+    intake = st.session_state.san_intake
+    from streamlit_app.shared.aic import render_intake_questions
+    intake_summary = f"Client: {intake.client_name}. {intake.description}"
+    if render_intake_questions(st, intake.case_id, intake_summary):
+        st.session_state.san_stage = "running"
+        st.rerun()
 
 # ── STAGE: running ────────────────────────────────────────────────────────────
 elif st.session_state.san_stage == "running":
@@ -124,13 +137,77 @@ elif st.session_state.san_stage == "running":
             headless_params=params,
         )
         st.session_state.san_result = result
-        st.session_state.san_stage = "done"
+        st.session_state.san_stage = "per_hit_review"
         st.rerun()
     except Exception as e:
         st.error(f"Pipeline failed: {e}")
         if st.button("Start Over"):
             st.session_state.san_stage = "intake"
             st.rerun()
+
+# ── STAGE: per_hit_review ─────────────────────────────────────────────────────
+elif st.session_state.san_stage == "per_hit_review":
+    import json as _json
+    from pathlib import Path as _Path
+
+    intake = st.session_state.san_intake
+    params = st.session_state.san_params
+
+    st.markdown("### Per-Hit Disposition Review")
+    st.caption("Review each screened entity and assign a disposition before finalising.")
+
+    # Load default disposition from firm sanctions policy if available
+    _policy_path = _Path("firm_profile/sanctions_disposition_policy.json")
+    _default_disposition = "Requires Investigation"
+    if _policy_path.exists():
+        try:
+            _policy = _json.loads(_policy_path.read_text(encoding="utf-8"))
+            _default_disposition = _policy.get("default_disposition", "Requires Investigation")
+        except Exception:
+            pass
+
+    _disposition_options = ["True Match", "False Positive", "Requires Investigation", "Escalate"]
+    _disp_key = f"san_dispositions_{intake.case_id}"
+    if _disp_key not in st.session_state:
+        st.session_state[_disp_key] = {}
+
+    # One expander per screened entity (subject_name from params)
+    subject_name = params.get("subject_name", "Unknown Subject")
+    with st.expander(f"Screened Entity: {subject_name}", expanded=True):
+        default_idx = _disposition_options.index(_default_disposition) if _default_disposition in _disposition_options else 2
+        disposition = st.selectbox(
+            "Disposition",
+            _disposition_options,
+            index=default_idx,
+            key=f"san_disp_{intake.case_id}_subject",
+        )
+        notes = st.text_area(
+            "Reviewer notes (optional)",
+            key=f"san_disp_notes_{intake.case_id}_subject",
+            height=80,
+        )
+        st.session_state[_disp_key][subject_name] = {"disposition": disposition, "notes": notes}
+
+    if st.button("Confirm all dispositions", type="primary", key=f"san_confirm_disp_{intake.case_id}"):
+        # Persist dispositions to D_Working_Papers/
+        import os as _os
+        from tools.file_tools import case_dir as _case_dir
+        from datetime import datetime, timezone
+        _wp = _case_dir(intake.case_id) / "D_Working_Papers"
+        _wp.mkdir(parents=True, exist_ok=True)
+        _disp_path = _wp / "sanctions_dispositions.json"
+        _record = {
+            "saved_at": datetime.now(timezone.utc).isoformat(),
+            "dispositions": [
+                {"entity": k, **v}
+                for k, v in st.session_state[_disp_key].items()
+            ],
+        }
+        _tmp = _disp_path.with_suffix(".tmp")
+        _tmp.write_text(_json.dumps(_record, indent=2), encoding="utf-8")
+        _os.replace(_tmp, _disp_path)
+        st.session_state.san_stage = "done"
+        st.rerun()
 
 # ── STAGE: done ───────────────────────────────────────────────────────────────
 elif st.session_state.san_stage == "done":

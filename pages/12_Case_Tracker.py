@@ -280,6 +280,22 @@ def _render_case_detail(case_id: str, status: str) -> None:
         else f"Audit log: not yet written  (`cases/{case_id}/audit_log.jsonl`)"
     )
 
+    # FE-07: Previous Versions section
+    prev_versions_dir = cdir / "Previous_Versions"
+    if prev_versions_dir.exists():
+        version_files = sorted(prev_versions_dir.iterdir(), key=lambda f: f.stat().st_mtime, reverse=True)
+        if version_files:
+            st.divider()
+            st.caption("**Previous Versions**")
+            for vf in version_files:
+                if vf.is_file():
+                    st.download_button(
+                        label=vf.name,
+                        data=vf.read_bytes(),
+                        file_name=vf.name,
+                        key=f"prev_ver_{case_id}_{vf.name}",
+                    )
+
     # PIPELINE_ERROR guidance — human-readable, no raw traceback (UX-004)
     if status == "PIPELINE_ERROR":
         st.warning(_PIPELINE_ERROR_GUIDANCE)
