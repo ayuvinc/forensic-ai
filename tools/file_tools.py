@@ -10,6 +10,17 @@ from config import CASES_DIR
 # Write-through index for Case Tracker — O(1) read instead of O(n) dir scan
 _INDEX_PATH = CASES_DIR / "index.json"
 
+# ── A-F folder structure (P9-04a) ────────────────────────────────────────────
+# Present in all Phase 9 named projects; absent in legacy UUID cases.
+AF_FOLDERS = (
+    "A_Engagement_Management",
+    "B_Planning",
+    "C_Evidence",
+    "D_Working_Papers",
+    "E_Drafts",
+    "F_Final",
+)
+
 
 def case_dir(case_id: str) -> Path:
     """Return (and create) the directory for a given case.
@@ -26,6 +37,15 @@ def case_dir(case_id: str) -> Path:
         )
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def is_af_project(case_id: str) -> bool:
+    """Return True if this case uses the A-F folder structure (Phase 9 named project).
+
+    Detection: E_Drafts/ exists inside the case folder.
+    Legacy UUID cases (Phase 8 and earlier) never have this folder.
+    """
+    return (CASES_DIR / case_id / "E_Drafts").exists()
 
 
 def artifact_path(case_id: str, agent: str, artifact_type: str, version: int) -> Path:
