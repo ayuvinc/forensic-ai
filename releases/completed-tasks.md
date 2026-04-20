@@ -234,3 +234,32 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] Sprint-10J (TAX-01..06) — Taxonomy JSON files (industries, frm_modules, jurisdictions, routing_table), prompt_with_options UI helper, wire into intake flows — DONE
 
 ---
+
+## Phase C Completed Tasks — Archived Session 026 (2026-04-20, commit c6a0599)
+
+- [x] EMB-02-REF — pages/12_Case_Tracker.py + schemas/documents.py — `embedding_status` field on DocumentEntry; badge rendering in Case Tracker detail expander — QA_APPROVED
+- [x] TPL-02 — tools/template_manager.py — TemplateManager: resolve/validate/update_custom; path-traversal blocked; GW_ style validation; ValidationResult with has_critical_missing — QA_APPROVED
+- [x] UX-F-03 — streamlit_app/shared/pipeline.py — run_in_status() severity (CRITICAL/WARNING/INFO) wired to st.error/st.warning/st.info — QA_APPROVED
+- [x] UX-F-04 — streamlit_app/shared/session.py + bootstrap() — active_project plumbed through session — QA_APPROVED
+- [x] UX-F-05 — pages/12_Case_Tracker.py — on_select="rerun" dataframe row-click + selectbox fallback — QA_APPROVED
+- [x] UX-F-07 — pages/14_Settings.py — completeness indicator chips moved to top of Settings page — QA_APPROVED
+- [x] TEST-04 — tests/test_template_manager.py — 12 tests; ValidationResult, path-traversal, GW_ style checks — QA_APPROVED
+- [x] TEST-06 — tests/test_case_tracker_page.py — 8 tests; badge rendering, row-click, fallback — QA_APPROVED
+- [x] TEST-07 — tests/test_pipeline_severity.py — 6 tests; severity-to-widget mapping — QA_APPROVED
+
+---
+
+## Phase D Completed Tasks — Archived Session 027 (2026-04-20, commit dfe9d65)
+
+- [x] EMB-03-REF — pages/12_Case_Tracker.py — document embedding badges (🟢/🟡/🔴/⚪) from document_index.json; badge expander in case detail; F_Final/ search for P9 report files — QA_APPROVED
+- [x] TPL-03 — pages/14_Settings.py — 4-tab layout (Firm Profile/Pricing/Team & T&C/Report Templates); 5 completeness chips above tabs; per-workflow template upload/preview/reset; critical GW_ style gate — QA_APPROVED
+- [x] TPL-04 — streamlit_app/shared/intake.py — template_selector() collapsed expander (saved/upload/plain); session state persistence; template_selector_ready() gate helper — QA_APPROVED
+- [x] WORK-01 — workflows/workpaper.py — WorkpaperGenerator; 9-section ACFE workpaper; single Sonnet call; PRELIMINARY watermark; versioned D_Working_Papers/interim_workpaper.vN.md; atomic write; WORKPAPER_GENERATED audit event — QA_APPROVED
+- [x] P9-UI-01 — pages/01_Engagements.py — two-panel named engagement home; New Engagement wizard with slug preview + collision detection; A-F folder tree expander; Run Workflow button sets active_project + st.switch_page() — QA_APPROVED
+- [x] P9-02 — tools/project_manager.py — ProjectManager A-F lifecycle; all-or-nothing folder creation with rollback; InputSession; session notes/key facts/red flags append; interim context write; context summary; atomic JSON writes — QA_APPROVED (unlisted dep, built inline)
+- [x] KL-00 — knowledge/manifest.json — 14-entry manifest covering all knowledge/*.md; fields: doc_id, path, domain, version, effective_date, authority_level, title, tags — QA_APPROVED
+- [x] KL-01 — tools/knowledge_retriever.py — KnowledgeRetriever 3-layer ChromaDB lookup (kb_base/kb_user_sanitised/kb_engagement); KnowledgeBundle.as_context_block(); graceful fallback when chromadb unavailable — QA_APPROVED
+- [x] ACT-00 — logs/.gitkeep + .gitignore — logs/ directory tracked; logs/*.jsonl gitignored — QA_APPROVED
+- [x] ACT-01 — tools/activity_logger.py — ActivityLogger append-only JSONL; 50MB rotation; fire-and-forget; module-level singleton; 10 event categories — QA_APPROVED
+
+---
