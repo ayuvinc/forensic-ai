@@ -437,11 +437,11 @@ Full specs archived in releases/completed-tasks.md.
 **BA:** BA-P9-01, BA-P9-03
 **Note:** Large task — must be decomposed into sub-tasks per page at build time.
 
-- [ ] P9-09a When `st.session_state.active_project` is set: pre-fill intake form fields from project context (client_name, service_type, language_standard); lock fields that were set at project creation
-- [ ] P9-09b When active_project set: `DocumentManager` initialized from `ProjectManager.get_context_for_agents()` instead of fresh intake; accumulated context passed to pipeline
-- [ ] P9-09c Post-pipeline: artifacts written to project's E_Drafts/ (via P9-04); final report written to F_Final/; Case Tracker reads from project's F_Final/
-- [ ] P9-09d Case Tracker (pages/9_Case_Tracker.py): for P9 projects, "View Project" link routes to Engagements page with active_project set
-- [ ] P9-09e If no active_project set (user navigates directly to a workflow page): existing behavior unchanged — standalone case with UUID, root-level folder, no A-F structure (backward compat)
+- [x] P9-09a When `st.session_state.active_project` is set: pre-fill intake form fields from project context (client_name, service_type, language_standard); lock fields that were set at project creation
+- [x] P9-09b When active_project set: `DocumentManager` initialized from `ProjectManager.get_context_for_agents()` instead of fresh intake; accumulated context passed to pipeline
+- [x] P9-09c Post-pipeline: artifacts written to project's E_Drafts/ (via P9-04); final report written to F_Final/; Case Tracker reads from project's F_Final/
+- [x] P9-09d Case Tracker (pages/9_Case_Tracker.py): for P9 projects, "View Project" link routes to Engagements page with active_project set
+- [x] P9-09e If no active_project set (user navigates directly to a workflow page): existing behavior unchanged — standalone case with UUID, root-level folder, no A-F structure (backward compat)
 
 #### AC — P9-09
 - [ ] With `active_project` set: intake form shows pre-filled client_name from project; field is read-only
