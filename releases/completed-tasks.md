@@ -306,3 +306,23 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] RD-01 — tools/report_builder.py — BaseReportBuilder: add_cover_page(), add_toc(), add_section(), add_subsection(), set_header(), set_footer(), save() (atomic .tmp→os.replace). Template fallback to blank Document on missing/incompatible template. — QA_APPROVED
 
 ---
+
+---
+
+## Phase H — RD-02..06, P9-07A/B, P9-08 (2026-04-20 — Session 030, commit dff5671)
+
+- [x] RD-02: `streamlit_app/shared/template_selector.py` — `render_template_selector(workflow_type)`, `_save_template()`, `_clear_template()`; saves to firm.json["templates"][workflow_type]
+- [x] RD-03: `tools/file_tools.py:write_final_report()` — uses BaseReportBuilder instead of OutputGenerator; accepts `workflow` and `section_overrides` params; calls _version_existing_report() before write
+- [x] RD-04: `tools/file_tools.py:_version_existing_report(case_id)` — moves final_report.* to Previous_Versions/final_report.v{N}.*; AF-aware path resolution
+- [x] RD-05: `workflows/investigation_report.py` — 13-section section_overrides dict passed to write_final_report(); AI review wired after orch.run(), before write
+- [x] RD-06: `workflows/frm_risk_register.py` — 7-section section_overrides; run_frm_finalize() accepts optional context param; AI review wired
+- [x] P9-07Ac: `streamlit_app/shared/session.py:bootstrap()` — loads default_language_standard from firm.json into session_state
+- [x] P9-07Ba: `agents/shared/language_standards.py` — LANGUAGE_STANDARD_BLOCKS dict (4 keys: acfe/expert_witness/regulatory/board_pack) + get_language_block()
+- [x] P9-07Bb/Bc: All three agent prompts (junior/pm/partner) accept language_standard param; __call__() passes context.get("language_standard","acfe")
+- [x] P9-08a: `agents/reviewer/review_agent.py` — ReviewAgent.__call__(draft, context) → list[ReviewAnnotation]
+- [x] P9-08b: `schemas/artifacts.py:ReviewAnnotation` — Pydantic model with finding_id, support_level, evidence_cited, logic_gaps, rewritten_text
+- [x] P9-08c: ReviewAgent logic — citations=[] → auto-unsupported (no API call); Haiku single-turn for rest; persists to D_Working_Papers/ai_review_{YYYYMMDD}.json
+- [x] P9-08d: ReviewAgent wired in investigation_report.py + frm_risk_register.py (after orch.run(), before write_final_report())
+- [x] P9-08e: `pages/06_FRM.py:_render_ai_review_badges()` — 🟢/🟡/🔴 expandable badges per risk item in done stage
+
+20 ACs verified QA_APPROVED. No regressions.

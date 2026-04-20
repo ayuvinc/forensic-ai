@@ -1,111 +1,82 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
 junior-dev
 
 ## NEXT_TASK
-**Session 030: junior-dev builds Phase H (RD-02..06, P9-07A/B, P9-08)**
+**Session 030 continued (or Session 031): junior-dev builds Phase I (P9-09 + Sprint-WF/FR)**
 
-Phase G complete and merged (9f83126 → main). 131 tests pass (no regression).
-Phase H is unblocked. RD-01 (BaseReportBuilder) now available — unblocks RD-02..06.
+Phase H complete and merged (dff5671 → main). 20 ACs QA_APPROVED.
+Phase I is unblocked.
 
-**Phase H — primary tasks:**
+**Phase I — primary tasks:**
 
-  RD-02: New file `streamlit_app/shared/template_selector.py` — `render_template_selector(workflow_type: str)`.
-    Checks `firm_profile/firm.json["templates"][workflow_type]`. If no template set:
-    renders two buttons: "Use my template" (st.file_uploader for .docx) / "Use default".
-    On upload: saves to `firm_profile/templates/{workflow_type}.docx`; updates firm.json["templates"].
-    Returns the resolved template path (str | None).
+  P9-09: Wire all workflow pages to project context.
+    Files: pages/02_Investigation.py, pages/06_FRM.py, pages/07_Proposal.py,
+           pages/04_Policy_SOP.py, pages/05_Training.py, pages/08_PPT_Pack.py,
+           pages/00_Scope.py, pages/09_Due_Diligence.py, pages/10_Sanctions.py,
+           pages/11_Transaction_Testing.py
+    Deps: P9-03A, P9-04, P9-05, P9-06, P9-07B, P9-08 — all DONE.
+    BA: BA-P9-01, BA-P9-03.
 
-  RD-03: Update `tools/file_tools.py:write_final_report()` — call BaseReportBuilder to produce the
-    .docx output instead of OutputGenerator. Load template via firm.json["templates"][workflow] if set.
-    Apply section_overrides dict (passed as new param). Call _version_existing_report() before writing.
-    Keep existing markdown (.md) write unchanged.
+    P9-09a: When st.session_state.active_project is set: pre-fill intake fields from
+      project context (client_name, service_type, language_standard); lock fields
+      set at project creation.
+    P9-09b: When active_project set: DocumentManager initialized from
+      ProjectManager.get_context_for_agents() instead of fresh intake; accumulated
+      context passed to pipeline.
+    P9-09c: Post-pipeline: artifacts → E_Drafts/; final report → F_Final/ (via P9-04).
+      Case Tracker reads from F_Final/.
+    P9-09d: Case Tracker (pages/09_Case_Tracker.py): P9 projects → "View Project"
+      link routes to Engagements page with active_project set.
+    P9-09e: No active_project → existing behavior unchanged (backward compat).
 
-  RD-04: New function `tools/file_tools.py:_version_existing_report(case_id: str)` — if
-    `final_report.*.md` or `final_report.*.docx` exist in the write destination (F_Final/ for AF,
-    root for legacy): move them to `Previous_Versions/final_report.v{N}.*`; create `Previous_Versions/`
-    if missing. Called by RD-03 before each write. Return highest version number used.
+  Sprint-WF (now unblocked — RD-01 + P9-05 done):
+    WF-01..05 — workflow-level improvements; see Sprint-WF block in todo.md.
 
-  RD-05: Investigation section overrides — in `workflows/investigation_report.py`, after pipeline
-    completes, build a section_overrides dict with the 13-section structure (per BA-R-05) and pass
-    to write_final_report(). No new files — modify existing workflow.
+  Sprint-FR (now unblocked — RD-01 + P9-05 done):
+    FR-01..06 — report/finalize improvements; see Sprint-FR block in todo.md.
 
-  RD-06: FRM section overrides — in `workflows/frm_risk_register.py`, after pipeline completes,
-    build section_overrides with Risk Register Table + summary sections and pass to write_final_report().
-    No new files — modify existing workflow.
-
-  P9-07A: Add "Default Language Standard" selectbox to `pages/14_Settings.py`:
-    - 4 options: "ACFE Internal Review" / "Expert Witness" / "Regulatory Submission" / "Board Pack"
-    - Key values: "acfe" / "expert_witness" / "regulatory" / "board_pack"
-    - Save writes `firm_profile/firm.json["default_language_standard"]`; existing fields preserved.
-    - Bootstrap (streamlit_app/shared/session.py) loads value into st.session_state.default_language_standard.
-
-  P9-07B: New file `agents/shared/language_standards.py` — `LANGUAGE_STANDARD_BLOCKS: dict[str, str]`.
-    4 entries per spec (acfe / expert_witness / regulatory / board_pack).
-    Update `agents/junior_analyst/prompts.py`, `agents/project_manager/prompts.py`,
-    `agents/partner/prompts.py`: build_system_prompt() accepts `language_standard: str = "acfe"`;
-    appends the relevant block. All three __call__() methods pass context.get("language_standard","acfe").
-
-  P9-08: New dir `agents/reviewer/` + `review_agent.py`:
-    - ReviewAnnotation schema in schemas/artifacts.py: finding_id, support_level (supported/partially_supported/unsupported), evidence_cited list, logic_gaps list, rewritten_text Optional[str].
-    - ReviewAgent.__call__(draft, context) → list[ReviewAnnotation]: iterates findings; classifies support level; finding with citations=[] auto-classified "unsupported" without model call; rewrites per language_standard.
-    - Wire into orchestrator: after Partner approval, before final report write.
-    - Streamlit: in FRM done stage, add support_level badge (green/amber/red) per risk item.
-    - Stored to D_Working_Papers/ai_review_{YYYYMMDD}.json.
-
-**Phase H — acceptance criteria highlights:**
-  RD-02: render_template_selector() returns resolved path; saves to firm.json on upload; no crash if firm.json missing templates key
-  RD-03: write_final_report() calls BaseReportBuilder; _version_existing_report() called before write; section_overrides param accepted
-  RD-04: existing final_report.* moved to Previous_Versions/v{N} before each write; Previous_Versions/ created if absent
-  RD-05: Investigation pipeline final output uses 13-section structure (code inspection)
-  RD-06: FRM pipeline final output uses section_overrides (code inspection)
-  P9-07A: Settings page has selectbox with 4 options; save updates firm.json without clobbering existing fields; bootstrap sets session_state.default_language_standard
-  P9-07B: LANGUAGE_STANDARD_BLOCKS has 4 keys; build_system_prompt("expert_witness") includes "court-ready"; missing language_standard defaults to "acfe" (no KeyError)
-  P9-08: ReviewAnnotation importable from schemas.artifacts; support_level="invalid" raises ValidationError; finding with citations=[] → "unsupported" without API call; D_Working_Papers/ai_review_{date}.json written; badges visible in FRM done stage
+**Phase I — acceptance criteria highlights:**
+  P9-09a: intake form shows pre-filled client_name from project; field is read-only
+  P9-09b: pipeline receives interim_context.md content (if exists) via DocumentManager
+  P9-09c: final report for AF project lands in cases/{slug}/F_Final/final_report.en.md
+  P9-09d: Case Tracker "View Project" button present for P9 projects; absent for legacy
+  P9-09e: all pages function identically when no active_project (no regression)
 
 **Gates:**
-  RD-02: No gates.
-  RD-03: Depends on RD-01 (done) + RD-04 (same session).
-  RD-04: No gates — helper function, no deps.
-  RD-05/06: Depends on RD-03.
-  P9-07A/B: No gates.
-  P9-08: Depends on P9-07B (language_standard in context).
+  P9-09: all P9 deps done (confirmed). Large task — decompose at build time per page.
+  Sprint-WF/FR: unblocked — schedule after P9-09 or interleave.
 
 ## COMPLETION STATUS
 
 ```
 Phase 1-8 + Sprints A-G: 100% ██████████ DONE — all merged
-Phase G (P9-04c/d, P9-05, P9-06, RD-01): 100% ██████████ DONE — merged 9f83126
-Sprint-RD:                50%  █████░░░░░ RD-00/01 done; RD-02..06 next (Phase H)
-P9 (Engagement Framework): 60%  ██████░░░░ P9-01..06 done; P9-07/08/09 open
-Sprint-WF:                  0%  ░░░░░░░░░░ GATED on RD-01 ← now unblocked
-Sprint-FR:                  0%  ░░░░░░░░░░ GATED on RD-01 + P9-05 ← both done
+Phase H (RD-02..06, P9-07A/B, P9-08): 100% ██████████ DONE — merged dff5671
+Sprint-RD:                100% ██████████ RD-00..06 all done
+P9 (Engagement Framework): 80%  ████████░░ P9-01..08 done; P9-09 open
+Sprint-WF:                  0%  ░░░░░░░░░░ UNBLOCKED — next after P9-09
+Sprint-FR:                  0%  ░░░░░░░░░░ UNBLOCKED — next after P9-09
 Sprint-FE:                  0%  ░░░░░░░░░░ BLOCKED on FE-GATE-BA
 ```
 
-**OVERALL: ~70% complete by task count (~88% by functional value)**
+**OVERALL: ~75% complete by task count (~92% by functional value)**
 
 ## CARRY_FORWARD_CONTEXT
-Session 029 built Phase F + Phase G (12 tasks total):
-
-Phase F (merged 4315d2a):
-- CONV-01/02: EvidenceChat backend + shared panel
-- AIC-01/02/03: post-intake Q&A + pre-run review + ProjectManager context methods
-- P9-04a/b: AF_FOLDERS + is_af_project()
-
-Phase G (merged 9f83126):
-- P9-04c/d: AF artifact routing (E_Drafts, F_Final) + migration path
-- P9-05: pages/16_Workspace.py — full Input Session workspace
-- P9-06: DocumentManager context accumulation (75% threshold → Haiku summary)
-- RD-01: BaseReportBuilder with template fallback + atomic save
-
-131 tests pass throughout. 1 defect fixed (Phase F AIC-01 chat_message rendering).
+Session 030 built Phase H (8 tasks):
+- RD-02: template_selector.py — firm template upload/resolve
+- RD-03: write_final_report() → BaseReportBuilder + section_overrides + versioning
+- RD-04: _version_existing_report() → Previous_Versions/v{N}
+- RD-05: investigation 13-section structure
+- RD-06: FRM 7-section structure
+- P9-07A: bootstrap loads default_language_standard
+- P9-07B: LANGUAGE_STANDARD_BLOCKS + all 3 agent prompts
+- P9-08: ReviewAgent + ReviewAnnotation + FRM done-stage badges
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Sprint-WF (WF-01..05) and Sprint-FR (FR-01..06) now unblocked by RD-01 — can run in Phase H or H+1
+- P9-09 is large — must decompose per workflow page at build time
 - Sprint-FE still BLOCKED on FE-GATE-BA (needs /ba session — UX decisions for AI questions stage placement)
-- P9-09 (wire all workflow pages) should follow P9-07B and P9-08 — schedule for Phase I
+- Sprint-WF and Sprint-FR both unblocked; can run after P9-09 or in parallel

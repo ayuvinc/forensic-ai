@@ -63,8 +63,7 @@ Sprint-KL-01 ← EMB-01 + KL-00 ────────── KL-02
 ```
 
 Completed tasks archived in: releases/completed-tasks.md
-Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09, Sprint-10A..B, Sprint-10E/H/F/I/J/K, Sprint-10L-Phase-A, BUG-10, Phase 8 automated tasks (P8-01/03/04/07/08/09/10/11, ARCH-INS-01/02) — all DONE, see releases/completed-tasks.md.
-**Merge pending:** feature/P8-phase8-streamlit → main (P8-14 superseded; merge now).
+Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09, Sprint-10A..B, Sprint-10E/H/F/I/J/K, Sprint-10L-Phase-A, BUG-10, Phase 8 automated tasks (P8-01/03/04/07/08/09/10/11, ARCH-INS-01/02), Phase H (RD-02..06, P9-07A/B, P9-08) — all DONE, see releases/completed-tasks.md.
 
 ---
 
@@ -379,9 +378,9 @@ Full specs archived in releases/completed-tasks.md.
 - [x] P9-07Ac Load at bootstrap: `st.session_state.default_language_standard` — DONE Phase H
 
 #### AC — P9-07A
-- [ ] Settings page has "Default Language Standard" selectbox with exactly 4 options (matching BA-P9-05 labels)
-- [ ] Saving updates `firm.json["default_language_standard"]`; existing firm.json fields unchanged
-- [ ] Bootstrap loads default and exposes it in `st.session_state`
+- [x] Settings page has "Default Language Standard" selectbox with exactly 4 options (matching BA-P9-05 labels)
+- [x] Saving updates `firm.json["default_language_standard"]`; existing firm.json fields unchanged
+- [x] Bootstrap loads default and exposes it in `st.session_state`
 
 ---
 
@@ -395,10 +394,10 @@ Full specs archived in releases/completed-tasks.md.
 - [x] P9-07Bc All three agents' `__call__()` pass `context.get("language_standard", "acfe")` — DONE Phase H
 
 #### AC — P9-07B
-- [ ] `build_system_prompt(language_standard="expert_witness")` includes "court-ready" and "Past tense only" in the returned string — code inspection
-- [ ] `build_system_prompt(language_standard="acfe")` includes "qualified language" — code inspection
-- [ ] `context.get("language_standard", "acfe")` pattern used in all three agent `__call__()` methods
-- [ ] Missing `language_standard` in context → defaults to "acfe" (no KeyError)
+- [x] `build_system_prompt(language_standard="expert_witness")` includes "court-ready" and "Past tense only" in the returned string — code inspection
+- [x] `build_system_prompt(language_standard="acfe")` includes "qualified language" — code inspection
+- [x] `context.get("language_standard", "acfe")` pattern used in all three agent `__call__()` methods
+- [x] Missing `language_standard` in context → defaults to "acfe" (no KeyError)
 
 ---
 
@@ -415,12 +414,12 @@ Full specs archived in releases/completed-tasks.md.
 - [x] P9-08e FRM done stage badges (green/amber/red with evidence_cited + logic_gaps popover) — DONE Phase H
 
 #### AC — P9-08
-- [ ] `ReviewAnnotation` importable from `schemas.artifacts`; `support_level="invalid"` raises ValidationError
-- [ ] ReviewAgent produces exactly one annotation per finding — same count as `draft["findings"]`
-- [ ] Finding with `citations=[]` → automatically classified as `"unsupported"` (no model call needed; code inspection)
-- [ ] `ai_review_{date}.json` written to `D_Working_Papers/` inside case folder — not to root
-- [ ] Review badges visible in FRM review stage (P8-06c): green/amber/red per risk item
-- [ ] AI Review Mode can be disabled: `context.get("ai_review_enabled", True)` — when False, ReviewAgent not called; badges absent
+- [x] `ReviewAnnotation` importable from `schemas.artifacts`; `support_level="invalid"` raises ValidationError
+- [x] ReviewAgent produces exactly one annotation per finding — same count as `draft["findings"]`
+- [x] Finding with `citations=[]` → automatically classified as `"unsupported"` (no model call needed; code inspection)
+- [x] `ai_review_{date}.json` written to `D_Working_Papers/` inside case folder — not to root
+- [x] Review badges visible in FRM review stage (P8-06c): green/amber/red per risk item
+- [x] AI Review Mode can be disabled: `context.get("ai_review_enabled", True)` — when False, ReviewAgent not called; badges absent
 
 ---
 
