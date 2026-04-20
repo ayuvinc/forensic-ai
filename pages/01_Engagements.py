@@ -181,6 +181,14 @@ def _render_detail(slug: str, named_entries: list) -> None:
     else:
         st.caption("No workflows run yet for this engagement.")
 
+    # Open Workspace (P9-05)
+    if st.button("Open Workspace", key=f"open_ws_{slug}"):
+        st.session_state["active_project"] = slug
+        try:
+            st.switch_page("pages/16_Workspace.py")
+        except Exception:
+            st.info("Navigate to **Workspace** in the sidebar (engagement is now active).")
+
     # Run New Workflow
     st.divider()
     st.markdown("**Run a workflow for this engagement:**")
