@@ -10,7 +10,7 @@ import config
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
-from tools.file_tools import case_dir
+from tools.file_tools import case_dir, get_final_report_path
 
 session = bootstrap(st)
 
@@ -145,7 +145,7 @@ elif st.session_state.san_stage == "done":
     if knowledge_only:
         st.warning("Reminder: This output was generated in Knowledge Only mode and is NOT a live sanctions clearance.")
 
-    report_path = case_dir(intake.case_id) / "final_report.en.md"
+    report_path = get_final_report_path(intake.case_id)
     if report_path.exists():
         st.download_button(
             label="Download screening report (.md)",

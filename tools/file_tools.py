@@ -48,6 +48,17 @@ def is_af_project(case_id: str) -> bool:
     return (CASES_DIR / case_id / "E_Drafts").exists()
 
 
+def get_final_report_path(case_id: str, language: str = "en") -> Path:
+    """Return the correct path for the final report (.md), accounting for AF vs legacy structure.
+
+    P9-09c: AF projects store reports in F_Final/; legacy projects store in case root.
+    Use this instead of case_dir(case_id) / "final_report.en.md" in all done stages.
+    """
+    if is_af_project(case_id):
+        return CASES_DIR / case_id / "F_Final" / f"final_report.{language}.md"
+    return CASES_DIR / case_id / f"final_report.{language}.md"
+
+
 def artifact_path(case_id: str, agent: str, artifact_type: str, version: int) -> Path:
     """Return the canonical path for a versioned artifact.
 

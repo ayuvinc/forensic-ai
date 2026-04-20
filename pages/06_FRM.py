@@ -165,6 +165,11 @@ elif st.session_state.frm_stage == "confirm":
                 except Exception as e:  # RG-4: per-file isolation
                     reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
 
+        # P9-09b: fall back to project DM when no files uploaded but engagement active
+        if dm is None:
+            from streamlit_app.shared.intake import get_project_dm
+            dm = get_project_dm(st)
+
         st.session_state.frm_dm = dm
         st.session_state.frm_reg_results = reg_results
 
@@ -370,14 +375,14 @@ elif st.session_state.frm_stage == "done":
     # P9-08e: AI review badges — one per risk item showing support level
     _render_ai_review_badges(st, intake.case_id, finalized)
 
-    from tools.file_tools import case_dir
+    from tools.file_tools import case_dir, get_final_report_path
     from streamlit_app.shared.done_zone import render_done_zone
 
     render_done_zone(
         st,
         case_id=intake.case_id,
         client_name=intake.client_name,
-        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        report_path=get_final_report_path(intake.case_id),
         workflow_label="FRM Risk Register",
         session_state_keys=["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed", "frm_dm", "frm_reg_results"],
         stage_key="frm_stage",

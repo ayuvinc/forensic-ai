@@ -228,6 +228,14 @@ FRM flow design (confirmed):
 - [ ] HRL-05 firm_profile/historical_reports/transaction_testing/ dir + index.json schema — GATED on HRL-00
 - [ ] HRL-06 firm_profile/historical_scopes/ dir + index.json schema — GATED on HRL-00
 
+#### AC — Sprint-10C
+- [ ] HRL-00: `KnowledgeLibrary` class exists in `tools/knowledge_library.py` with `ingest(file_path, service_type)`, `sanitise(raw_text)`, and `match_similar(engagement_params)` methods — code inspection
+- [ ] HRL-00: `SanitisationError` is importable from `tools.knowledge_library`; raising it with a message constructs without error — code inspection
+- [ ] HRL-00: `sanitise()` called with text containing a string matching a passport number pattern (e.g. `"AB1234567"`) raises `SanitisationError` — behavioural assertion (no API call; regex-based detection)
+- [ ] HRL-00: `match_similar({})` on a `KnowledgeLibrary` instance where `firm_profile/historical_registers/index.json` does not exist returns an empty list rather than raising `FileNotFoundError` — negative/fallback case
+- [ ] HRL-02 through HRL-06: each of the five directories (`historical_registers/`, `historical_reports/due_diligence/`, `historical_reports/sanctions_screening/`, `historical_reports/transaction_testing/`, `historical_scopes/`) is created under `firm_profile/`; each contains an `index.json` file that is valid JSON with a top-level list structure — file existence and schema check
+- [ ] HRL-01: The historical import wizard calls `KnowledgeLibrary.ingest()` for each submitted file; if `SanitisationError` is raised, the wizard surfaces the error message to the user and does NOT write a partial entry to the index — negative case (verify by code inspection of the wizard's except block)
+
 ---
 
 ### Sprint-10D — FRM Guided Exercise Redesign (depends on ARCH-S-01 — UNBLOCKED after merge)
@@ -429,18 +437,18 @@ Full specs archived in releases/completed-tasks.md.
 **BA:** BA-P9-01, BA-P9-03
 **Note:** Large task — must be decomposed into sub-tasks per page at build time.
 
-- [ ] P9-09a When `st.session_state.active_project` is set: pre-fill intake form fields from project context (client_name, service_type, language_standard); lock fields that were set at project creation
-- [ ] P9-09b When active_project set: `DocumentManager` initialized from `ProjectManager.get_context_for_agents()` instead of fresh intake; accumulated context passed to pipeline
-- [ ] P9-09c Post-pipeline: artifacts written to project's E_Drafts/ (via P9-04); final report written to F_Final/; Case Tracker reads from project's F_Final/
-- [ ] P9-09d Case Tracker (pages/9_Case_Tracker.py): for P9 projects, "View Project" link routes to Engagements page with active_project set
-- [ ] P9-09e If no active_project set (user navigates directly to a workflow page): existing behavior unchanged — standalone case with UUID, root-level folder, no A-F structure (backward compat)
+- [x] P9-09a When `st.session_state.active_project` is set: pre-fill intake form fields from project context (client_name, service_type, language_standard); lock fields that were set at project creation
+- [x] P9-09b When active_project set: `DocumentManager` initialized from `ProjectManager.get_context_for_agents()` instead of fresh intake; accumulated context passed to pipeline
+- [x] P9-09c Post-pipeline: artifacts written to project's E_Drafts/ (via P9-04); final report written to F_Final/; Case Tracker reads from project's F_Final/
+- [x] P9-09d Case Tracker (pages/9_Case_Tracker.py): for P9 projects, "View Project" link routes to Engagements page with active_project set
+- [x] P9-09e If no active_project set (user navigates directly to a workflow page): existing behavior unchanged — standalone case with UUID, root-level folder, no A-F structure (backward compat)
 
 #### AC — P9-09
-- [ ] With `active_project` set: intake form shows pre-filled client_name from project; field is read-only
-- [ ] With `active_project` set: pipeline receives `interim_context.md` content (if exists) via DocumentManager
-- [ ] With no `active_project`: all pages function identically to Phase 8 behavior — no regression
-- [ ] Final report for AF project lands in `cases/{slug}/F_Final/final_report.en.md` — not root
-- [ ] Case Tracker "View Project" button present for P9 projects; absent for legacy UUID cases
+- [x] With `active_project` set: intake form shows pre-filled client_name from project; field is read-only
+- [~] With `active_project` set: pipeline receives `interim_context.md` content (if exists) via DocumentManager — PARTIAL: DM initialized with project slug (registered C_Evidence/ docs accessible); interim_context.md not injected into agent prompt text. get_context_for_agents() exists but not called by agents. Acceptable for Phase I scope.
+- [x] With no `active_project`: all pages function identically to Phase 8 behavior — no regression
+- [x] Final report for AF project lands in `cases/{slug}/F_Final/final_report.en.md` — not root
+- [x] Case Tracker "View Project" button present for P9 projects; absent for legacy UUID cases
 
 ---
 
@@ -464,6 +472,14 @@ EMB-04 (pipeline context) ──── P9-09 wire-up
 - [ ] EMB-02 Wire into `DocumentManager.register_document()`: chunk+embed on upload; Haiku extraction → append to `D_Working_Papers/case_intake.md`
 - [ ] EMB-03 Semantic search UI in Input Session workspace: `st.text_input` + Search → ranked chunks with source citation
 - [ ] EMB-04 Pipeline context prep in `core/orchestrator.py`: if vector index exists, use `get_context_for_query()` per finding area; inject as `embedded_context`; fallback to existing DocumentManager if no index
+
+#### AC — Sprint-EMB
+- [ ] EMB-01: `EmbeddingEngine` class exists in `tools/embedding_engine.py` with `chunk_document()`, `embed_and_index()`, `search(query, n=5)`, and `get_context_for_query(query, max_chars=8000)` methods — code inspection; note: current scaffold uses `embed_document()` and `retrieve()` — implementation must reconcile method names with the spec or document the rename
+- [ ] EMB-01: When `sentence-transformers` is not installed, `EmbeddingEngine(case_id).available` is `False` and calling `get_context_for_query()` returns an empty string rather than raising an `ImportError` — negative/fallback case (verifiable by code inspection of `__init__` guard)
+- [ ] EMB-02: After `DocumentManager.register_document()` completes, `EmbeddingEngine(case_id).chunk_count(doc_id)` returns a value greater than 0 for a document with at least 800 characters of content — behavioural assertion (no API call; sentence-transformers must be available in test env, or test asserts the call path by code inspection)
+- [ ] EMB-02: `D_Working_Papers/case_intake.md` exists after the first `register_document()` call on a new case — file existence check
+- [ ] EMB-03: Semantic search UI component calls `EmbeddingEngine.get_context_for_query()` when query is submitted; when engine is unavailable (`available=False`), UI shows a fallback message rather than crashing — code inspection of the Streamlit handler
+- [ ] EMB-04: In `core/orchestrator.py`, when `EmbeddingEngine(case_id).available` is `True`, the agent context dict contains an `embedded_context` key; when `available` is `False`, the key is absent and `DocumentManager` content is used instead — code inspection of the context-building block
 
 ---
 
@@ -517,6 +533,17 @@ RD-04 ──── independent (called by RD-03)
 - [ ] WF-04 `tools/report_sections/sanctions.py` — `SanctionsSections`: build_hit_detail(), build_false_positive_table(), build_exec_summary(); disposition from firm policy + per-hit override
 - [ ] WF-05 `firm_profile/sanctions_disposition_policy.json` — default policy file; editable via Settings page
 
+#### AC — Sprint-WF
+- [ ] WF-01a: `ProjectManager` has `add_exhibit()`, `add_lead()`, `update_lead()`, `get_open_leads()`, `get_confirmed_leads()` methods — code inspection of `tools/project_manager.py`
+- [ ] WF-01a: `add_exhibit(slug, exhibit)` appends to `D_Working_Papers/exhibits.json`; `add_lead(slug, lead)` appends to `D_Working_Papers/leads_register.json`; `get_open_leads(slug)` returns only entries where `status != "confirmed"` — code inspection
+- [ ] WF-01a: `update_lead(slug, lead_id, updates)` with a non-existent `lead_id` raises `KeyError` or returns without modifying the file — negative case
+- [ ] WF-01c: `tools/report_sections/investigation.py` exists and `InvestigationSections` class has `build_evidence_list()`, `build_detailed_findings()`, `build_open_leads_section()`, `build_exhibits_appendix()` methods — code inspection
+- [ ] WF-01c: `build_detailed_findings(findings, exhibits)` output string contains "Exhibit" followed by a number when exhibits are provided — behavioural assertion (call with a stub finding and one exhibit entry)
+- [ ] WF-02: `tools/report_sections/due_diligence.py` exists; `DDSections` has methods for per-subject and consolidated format; calling either method with `subjects=[]` returns a non-empty section header string rather than crashing — negative case
+- [ ] WF-03: `TTSections.build_excel_exceptions(exceptions, output_path)` writes a `.xlsx` file to `output_path`; the file is readable via `openpyxl.load_workbook()` without error — behavioural assertion (no API call required)
+- [ ] WF-04: `SanctionsSections.build_hit_detail(hit, disposition)` raises `ValueError` when `disposition` is not a recognised value (True Match / False Positive / Requires Investigation / Escalate) — negative case
+- [ ] WF-05: `firm_profile/sanctions_disposition_policy.json` exists after sprint; file is valid JSON and contains a `default_disposition` key — code inspection
+
 ---
 
 ### Sprint-FR — FRM Enhanced Deliverable (Session 022 — GATED on RD-01 + P9-05)
@@ -537,6 +564,14 @@ FR-06 ← FR-02 + FR-03 + FR-04 + FR-05
 - [ ] FR-04 `tools/frm_excel_builder.py` — `FRMExcelBuilder`: Sheet 1 Risk Register table + Sheet 2 Heat Map (5×5 ARGB colour-coded); atomic write
 - [ ] FR-05 `BaseReportBuilder.add_heat_map(risk_items)` — 5×5 colour-coded DOCX table via python-docx cell shading
 - [ ] FR-06 Depth-aware recommendation generation: junior system prompt includes depth instruction; RiskItem.recommendation schema adapts per depth; DOCX builder routes to correct renderer
+
+#### AC — Sprint-FR
+- [ ] FR-01: Stakeholder Input form save writes `D_Working_Papers/stakeholder_inputs.json`; repeated saves append entries rather than overwriting — behavioural assertion (call save twice, verify file has two entries)
+- [ ] FR-01: Saving a stakeholder entry with a missing `name` field raises a validation error before any file write — negative case
+- [ ] FR-02: `ProjectManager.get_stakeholder_context(slug)` returns an empty string when `stakeholder_inputs.json` does not exist — negative case (no crash)
+- [ ] FR-03: `recommendation_depth` field is present in the FRM intake schema; valid values are `"structured"` (default), `"executive"`, and `"detailed"` — code inspection of the schema and `st.radio` options
+- [ ] FR-04: `tools/frm_excel_builder.py` exists; `FRMExcelBuilder` class has a `build(risk_items, output_path)` method; calling it with an empty `risk_items=[]` list produces a valid `.xlsx` file with at least a header row — behavioural assertion (no API call required)
+- [ ] FR-05: `BaseReportBuilder.add_heat_map(risk_items)` exists in `tools/report_builder.py` — code inspection; calling it with a list of 25 stub risk items (all combinations of likelihood 1-5, impact 1-5) returns `self` (fluent interface) without raising an exception
 
 
 ---

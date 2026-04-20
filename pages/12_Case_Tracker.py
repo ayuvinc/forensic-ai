@@ -363,4 +363,15 @@ if selected:
     with st.expander(f"Case: {selected}", expanded=True):
         if engagement_id:
             st.caption(f"Engagement ID: {engagement_id}")
+
+        # P9-09d: "View Project" button for cases linked to a P9 engagement
+        if engagement_id:
+            if st.button(
+                "View Project",
+                key=f"view_project_{selected}",
+                help=f"Open Engagements page for project: {engagement_id}",
+            ):
+                st.session_state.active_project = engagement_id
+                st.switch_page("pages/01_Engagements.py")
+
         _render_case_detail(selected, status)

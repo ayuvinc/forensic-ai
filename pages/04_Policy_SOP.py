@@ -7,7 +7,7 @@ import streamlit as st
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status
-from tools.file_tools import case_dir
+from tools.file_tools import case_dir, get_final_report_path
 
 session = bootstrap(st)
 
@@ -113,7 +113,7 @@ elif st.session_state.ps_stage == "done":
     else:
         st.success(f"Document complete — Case ID: `{intake.case_id}`")
 
-    report_path = case_dir(intake.case_id) / "final_report.en.md"
+    report_path = get_final_report_path(intake.case_id)
     if report_path.exists():
         st.download_button(
             label="Download document (.md)",
