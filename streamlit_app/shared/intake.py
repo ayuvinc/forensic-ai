@@ -38,6 +38,40 @@ def _load_active_project_meta(st) -> Optional[dict]:
     return None
 
 
+def get_project_language_standard(st) -> str:
+    """Return the language_standard for the active project, or 'acfe' if not set.
+
+    Reads from the index entry (fastest path). Falls back to session_state
+    default if the project entry does not carry a language_standard field.
+    """
+    meta = _load_active_project_meta(st)
+    if meta:
+        lang_std = meta.get("language_standard", "")
+        if lang_std:
+            return lang_std
+    return st.session_state.get("default_language_standard", "acfe")
+
+
+def get_project_dm(st):
+    """Return a DocumentManager pre-loaded for the active project, or None.
+
+    When active_project is set (P9-09b): the DM is initialised with the
+    project slug so it reads from the accumulated C_Evidence/ folder and
+    picks up any existing interim_context.md via get_context_for_agents().
+
+    Returns None when no active_project is set (standalone case — no change
+    to existing behaviour).
+    """
+    slug = st.session_state.get("active_project")
+    if not slug:
+        return None
+    try:
+        from tools.document_manager import DocumentManager
+        return DocumentManager(slug)
+    except Exception:
+        return None
+
+
 def render_engagement_banner(st) -> Optional[dict]:
     """Show a "Continuing engagement" info banner if active_project is set.
 
@@ -141,10 +175,15 @@ def generic_intake_form(st, workflow_id: str, title: str):
         st.error(f"Required: {', '.join(missing)}")
         return None
 
-    case_id = (
-        f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
-        f"-{uuid.uuid4().hex[:6].upper()}"
-    )
+    # P9-09a/c: when continuing an active engagement, use the project slug as
+    # case_id so all artifacts land in the correct A-F project folder.
+    if engagement_id:
+        case_id = engagement_id
+    else:
+        case_id = (
+            f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
+            f"-{uuid.uuid4().hex[:6].upper()}"
+        )
 
     return CaseIntake(
         case_id=case_id,
@@ -250,10 +289,14 @@ def frm_intake_form(st) -> Optional[tuple]:
         st.error(f"Required: {', '.join(missing)}")
         return None
 
-    case_id = (
-        f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
-        f"-{uuid.uuid4().hex[:6].upper()}"
-    )
+    # P9-09a/c: use project slug as case_id when continuing an active engagement.
+    if engagement_id:
+        case_id = engagement_id
+    else:
+        case_id = (
+            f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
+            f"-{uuid.uuid4().hex[:6].upper()}"
+        )
 
     scope = description.strip()
     if employee_count.strip():
@@ -349,10 +392,14 @@ def dd_intake_form(st) -> Optional[tuple]:
         st.error(f"Required: {', '.join(missing)}")
         return None
 
-    case_id = (
-        f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
-        f"-{uuid.uuid4().hex[:6].upper()}"
-    )
+    # P9-09a/c: use project slug as case_id when continuing an active engagement.
+    if engagement_id:
+        case_id = engagement_id
+    else:
+        case_id = (
+            f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
+            f"-{uuid.uuid4().hex[:6].upper()}"
+        )
 
     jurisdictions = [j.strip() for j in jurisdictions_raw.split(",") if j.strip()]
 

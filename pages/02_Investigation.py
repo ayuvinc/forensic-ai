@@ -83,6 +83,7 @@ if st.session_state.inv_stage == "intake":
             from tools.file_tools import case_dir
             from tools.document_manager import DocumentManager
             from schemas.documents import DocumentProvenance
+            from streamlit_app.shared.intake import get_project_dm, get_project_language_standard
 
             dm = None
             reg_results = []
@@ -112,10 +113,18 @@ if st.session_state.inv_stage == "intake":
                     except Exception as e:  # RG-4: per-file isolation
                         reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
 
+            # P9-09b: fall back to project DM when no files uploaded but engagement active
+            if dm is None:
+                dm = get_project_dm(st)
+
             st.session_state.inv_dm = dm
             st.session_state.inv_reg_results = reg_results
             st.session_state.inv_intake = intake
-            st.session_state.inv_params = {"investigation_type": inv_type, "audience": audience}
+            st.session_state.inv_params = {
+                "investigation_type": inv_type,
+                "audience": audience,
+                "language_standard": get_project_language_standard(st),  # P9-09b
+            }
             st.session_state.inv_stage = "running"
             st.rerun()
 
@@ -160,14 +169,14 @@ elif st.session_state.inv_stage == "running":
 elif st.session_state.inv_stage == "done":
     intake = st.session_state.inv_intake
 
-    from tools.file_tools import case_dir
+    from tools.file_tools import case_dir, get_final_report_path
     from streamlit_app.shared.done_zone import render_done_zone
 
     render_done_zone(
         st,
         case_id=intake.case_id,
         client_name=intake.client_name,
-        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        report_path=get_final_report_path(intake.case_id),
         workflow_label="Investigation Report",
         session_state_keys=["inv_stage", "inv_intake", "inv_params", "inv_result", "inv_dm", "inv_reg_results"],
         stage_key="inv_stage",

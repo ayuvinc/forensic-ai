@@ -12,7 +12,7 @@ import streamlit as st
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import dd_intake_form
 from streamlit_app.shared.pipeline import run_in_status
-from tools.file_tools import case_dir
+from tools.file_tools import case_dir, get_final_report_path
 
 
 def _infer_doc_type(filename: str) -> str:
@@ -137,7 +137,7 @@ elif st.session_state.dd_stage == "done":
         st,
         case_id=intake.case_id,
         client_name=intake.client_name,
-        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        report_path=get_final_report_path(intake.case_id),
         workflow_label="Due Diligence",
         session_state_keys=["dd_stage", "dd_intake", "dd_params", "dd_result", "dd_reg_results"],
         stage_key="dd_stage",
