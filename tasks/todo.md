@@ -431,27 +431,7 @@ Full specs archived in releases/completed-tasks.md.
 
 ---
 
-#### P9-09 — Wire All Workflow Pages to Project Context
-**Files:** pages/2_Investigation.py, pages/6_FRM.py, pages/7_Proposal.py, pages/4_Policy_SOP.py, pages/5_Training.py, pages/8_PPT_Pack.py, pages/0_Scope.py, pages/11_Due_Diligence.py, pages/12_Sanctions.py, pages/13_Transaction_Testing.py
-**Deps:** P9-03A, P9-04, P9-05, P9-06, P9-07B, P9-08
-**BA:** BA-P9-01, BA-P9-03
-**Note:** Large task — must be decomposed into sub-tasks per page at build time.
-
-- [x] P9-09a When `st.session_state.active_project` is set: pre-fill intake form fields from project context (client_name, service_type, language_standard); lock fields that were set at project creation
-- [x] P9-09b When active_project set: `DocumentManager` initialized from `ProjectManager.get_context_for_agents()` instead of fresh intake; accumulated context passed to pipeline
-- [x] P9-09c Post-pipeline: artifacts written to project's E_Drafts/ (via P9-04); final report written to F_Final/; Case Tracker reads from project's F_Final/
-- [x] P9-09d Case Tracker (pages/9_Case_Tracker.py): for P9 projects, "View Project" link routes to Engagements page with active_project set
-- [x] P9-09e If no active_project set (user navigates directly to a workflow page): existing behavior unchanged — standalone case with UUID, root-level folder, no A-F structure (backward compat)
-
-#### AC — P9-09
-- [x] With `active_project` set: intake form shows pre-filled client_name from project; field is read-only
-- [~] With `active_project` set: pipeline receives `interim_context.md` content (if exists) via DocumentManager — PARTIAL: DM initialized with project slug (registered C_Evidence/ docs accessible); interim_context.md not injected into agent prompt text. get_context_for_agents() exists but not called by agents. Acceptable for Phase I scope.
-- [x] With no `active_project`: all pages function identically to Phase 8 behavior — no regression
-- [x] Final report for AF project lands in `cases/{slug}/F_Final/final_report.en.md` — not root
-- [x] Case Tracker "View Project" button present for P9 projects; absent for legacy UUID cases
-
----
-
+~~P9-09 archived → releases/completed-tasks.md (commit c8ee66f)~~
 
 ---
 

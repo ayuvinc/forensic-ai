@@ -326,3 +326,16 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] P9-08e: `pages/06_FRM.py:_render_ai_review_badges()` — 🟢/🟡/🔴 expandable badges per risk item in done stage
 
 20 ACs verified QA_APPROVED. No regressions.
+
+---
+
+## Phase I — P9-09 (2026-04-20 — Session 031, commit c8ee66f)
+
+- [x] P9-09a: All three intake forms (`generic_intake_form`, `frm_intake_form`, `dd_intake_form`) — pre-fill client_name from project meta; `disabled=True` on field; use project slug as `case_id` when `active_project` is set — QA_APPROVED
+- [x] P9-09b: `streamlit_app/shared/intake.py` — `get_project_dm(st)` returns `DocumentManager(slug)` for project; `get_project_language_standard(st)` reads from index entry. Investigation page: project DM fallback + language_standard in headless_params. FRM confirm: project DM fallback. PARTIAL: `interim_context.md` content accessible via DM but not injected into agent prompt text (get_context_for_agents() not called by agents — scoped to Sprint-EMB/EMB-04). — QA_APPROVED with warning
+- [x] P9-09c: `tools/file_tools.py:get_final_report_path(case_id)` — returns `F_Final/final_report.en.md` for AF projects; all 8 done-stage workflow pages use this instead of hardcoded root path — QA_APPROVED
+- [x] P9-09d: `pages/12_Case_Tracker.py` — "View Project" button rendered when `engagement_id` is set on a case; sets `active_project` and switches to Engagements page; absent for legacy UUID cases — QA_APPROVED
+- [x] P9-09e: Backward compatibility — when `active_project` is not set, all intake forms fall through to UUID case_id generation; `get_project_dm` returns None; pipeline behavior unchanged — QA_APPROVED
+- [x] status-update skill: `.claude/commands/status-update.md` — `/status-update` slash command for comprehensive project status table
+
+5 ACs verified, 4 full PASS, 1 partial (P9-09b interim_context injection depth). 131 tests pass. No regressions.
