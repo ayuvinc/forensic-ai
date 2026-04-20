@@ -28,6 +28,63 @@ def _infer_doc_type(filename: str) -> str:
     ext = Path(filename).suffix.lower()
     return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
 
+
+def _render_ai_review_badges(st, case_id: str, risk_items) -> None:
+    """Render P9-08e AI review support-level badges per risk item (green/amber/red).
+
+    Loads ai_review_{date}.json from D_Working_Papers/. If not found, shows nothing.
+    Badge click expands to show evidence_cited and logic_gaps.
+    """
+    import json as _json
+    from pathlib import Path as _Path
+    from tools.file_tools import case_dir
+
+    # Find today's or most recent ai_review file
+    cdir = case_dir(case_id)
+    wp_dir = cdir / "D_Working_Papers"
+    if not wp_dir.exists():
+        return
+
+    review_files = sorted(wp_dir.glob("ai_review_*.json"), reverse=True)
+    if not review_files:
+        return
+
+    try:
+        data = _json.loads(review_files[0].read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    annotations_by_id = {a["finding_id"]: a for a in data.get("annotations", [])}
+    if not annotations_by_id:
+        return
+
+    _BADGE_COLORS = {
+        "supported":           ("🟢", "SUPPORTED"),
+        "partially_supported": ("🟡", "PARTIAL"),
+        "unsupported":         ("🔴", "UNSUPPORTED"),
+    }
+
+    st.subheader("AI Evidence Review")
+    st.caption("Support level per risk item — based on citations in the pipeline output.")
+
+    for risk in risk_items:
+        ann = annotations_by_id.get(risk.risk_id)
+        if not ann:
+            continue
+        icon, label = _BADGE_COLORS.get(ann["support_level"], ("⚪", "UNKNOWN"))
+        with st.expander(f"{icon} {risk.risk_id} — {risk.title} [{label}]"):
+            if ann.get("evidence_cited"):
+                st.markdown("**Evidence cited:**")
+                for e in ann["evidence_cited"]:
+                    st.markdown(f"- {e}")
+            if ann.get("logic_gaps"):
+                st.markdown("**Logic gaps:**")
+                for g in ann["logic_gaps"]:
+                    st.markdown(f"- {g}")
+            if ann.get("rewritten_text"):
+                st.markdown("**AI-suggested rewrite:**")
+                st.markdown(ann["rewritten_text"])
+
 # ── Session bootstrap ─────────────────────────────────────────────────────────
 session = bootstrap(st)
 
@@ -287,6 +344,14 @@ elif st.session_state.frm_stage == "done":
         f"Applying {rewrite_count} rewrite(s) and assembling report..."
         if rewrite_count else "Assembling report..."
     )
+
+    # Build pipeline context so run_frm_finalize can pass language_standard + ai_review_enabled
+    finalize_context = {
+        "case_id": intake.case_id,
+        "language_standard": session.get("default_language_standard", "acfe"),
+        "ai_review_enabled": True,
+    }
+
     with st.spinner(spinner_text):
         deliverable = run_frm_finalize(
             intake,
@@ -294,12 +359,16 @@ elif st.session_state.frm_stage == "done":
             result["citations"],
             result["completed_modules"],
             result["exec_summary"],
+            context=finalize_context,
         )
 
     # FRM-specific: executive summary expander shown above the standard done zone
     if deliverable.executive_summary:
         with st.expander("Executive Summary", expanded=True):
             st.markdown(deliverable.executive_summary)
+
+    # P9-08e: AI review badges — one per risk item showing support level
+    _render_ai_review_badges(st, intake.case_id, finalized)
 
     from tools.file_tools import case_dir
     from streamlit_app.shared.done_zone import render_done_zone

@@ -32,8 +32,10 @@ def build_system_prompt(
     doc_index: DocumentIndex | None = None,
     revision_feedback: str | None = None,
     firm_name: str = "GoodWork Forensic Consulting",
+    language_standard: str = "acfe",
 ) -> str:
     """Build the Consultant system prompt for a given workflow and intake."""
+    from agents.shared.language_standards import get_language_block
 
     is_investigation = workflow in ("investigation_report",)
 
@@ -103,6 +105,8 @@ Produce thorough, professional analysis. Use all available tools before drafting
     if revision_feedback:
         base += f"\nREVISION INSTRUCTIONS FROM PROJECT MANAGER:\n{revision_feedback}\n"
         base += "Address ALL must_fix items before proceeding to should_fix items.\n"
+
+    base += f"\n{get_language_block(language_standard)}\n"
 
     return base
 

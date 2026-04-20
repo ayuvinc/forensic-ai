@@ -141,16 +141,41 @@ def run_investigation_workflow(
         "intake": enriched_intake.model_dump(),
         "generate_arabic": intake.language == "ar",
         "client_name": intake.client_name,
+        "language_standard": headless_params.get("language_standard", "acfe") if headless_params else "acfe",
+        "ai_review_enabled": headless_params.get("ai_review_enabled", True) if headless_params else True,
     }
 
     on_progress("Starting investigation report pipeline...")
     partner_output = orch.run(enriched_intake.model_dump())
 
+    # P9-08d: AI review pass after Partner approval, before final report write
+    review_annotations = []
+    if context.get("ai_review_enabled", True):
+        try:
+            from agents.reviewer.review_agent import ReviewAgent
+            reviewer = ReviewAgent()
+            # Pass the junior output (findings) for review; fall back to partner output
+            draft_for_review = partner_output.get("output", partner_output)
+            review_annotations = reviewer(draft_for_review, context)
+            on_progress(f"AI review complete — {len(review_annotations)} annotation(s)")
+        except Exception:
+            pass
+
     # Build deliverable content
     content = _render_investigation_report(
         enriched_intake, partner_output, inv_type, audience
     )
-    report_path = write_final_report(intake.case_id, content, intake.language)
+
+    # RD-05: build 13-section section_overrides for BaseReportBuilder
+    section_overrides = _build_investigation_section_overrides(
+        enriched_intake, partner_output, inv_type, audience
+    )
+
+    report_path = write_final_report(
+        intake.case_id, content, intake.language,
+        workflow="investigation_report",
+        section_overrides=section_overrides,
+    )
     on_progress(f"Investigation report saved → {report_path}")
 
     deliverable = FinalDeliverable(
@@ -325,3 +350,90 @@ def _map_doc_type(doc_type: str) -> str:
         "attachment": "attachment",
     }
     return mapping.get(doc_type, "document")
+
+
+def _build_investigation_section_overrides(
+    intake: CaseIntake,
+    partner_output: dict,
+    inv_type: str,
+    audience: str,
+) -> dict:
+    """Build 13-section structure dict for BaseReportBuilder (RD-05, per BA-R-05).
+
+    Returns a section_overrides dict with "cover" and "sections" keys.
+    """
+    now = datetime.now(timezone.utc).strftime("%d %B %Y")
+    output = partner_output.get("output", partner_output)
+
+    # Findings narrative
+    findings_overview_lines = []
+    for i, f in enumerate(output.get("findings", []), 1):
+        findings_overview_lines.append(
+            f"{i}. {f.get('title', '')} [{f.get('risk_level', 'medium').upper()}]"
+        )
+    findings_overview = "\n".join(findings_overview_lines) or "No findings identified."
+
+    findings_detail_parts = []
+    for i, f in enumerate(output.get("findings", []), 1):
+        findings_detail_parts.append(
+            f"Finding {i}: {f.get('title', '')}\n\n"
+            f"{f.get('description', '')}\n\n"
+            f"Evidence: {f.get('evidence', '')}"
+        )
+    findings_detail = "\n\n---\n\n".join(findings_detail_parts) or "No detailed findings."
+
+    open_leads = "\n".join(f"- {q}" for q in output.get("open_questions", [])) or "None identified."
+    recommendations = "\n".join(f"- {r}" for r in output.get("recommendations", [])) or "None."
+    partner_notes = output.get("review_notes", "")
+    sign_off = f"Approved by: {output.get('approving_agent', 'Partner')}\nDate: {now}"
+
+    return {
+        "cover": {
+            "title": "Investigation Report",
+            "subtitle": f"Client: {intake.client_name}",
+            "metadata": {
+                "Investigation Type": TYPE_LABELS.get(inv_type, inv_type),
+                "Audience": audience.replace("_", " ").title(),
+                "Jurisdiction": intake.primary_jurisdiction,
+                "Date": now,
+                "Prepared by": "GoodWork Forensic Consulting",
+                "Classification": "CONFIDENTIAL",
+            },
+        },
+        "sections": [
+            {"level": 1, "heading": "1. Executive Summary",
+             "content": output.get("summary", "")},
+            {"level": 1, "heading": "2. Engagement Mandate & Scope",
+             "content": intake.description},
+            {"level": 1, "heading": "3. Methodology",
+             "content": output.get("methodology", "")},
+            {"level": 1, "heading": "4. Background & Context",
+             "content": (
+                 f"Industry: {intake.industry}\n"
+                 f"Primary Jurisdiction: {intake.primary_jurisdiction}\n"
+                 f"Operating Jurisdictions: {', '.join(intake.operating_jurisdictions)}"
+             )},
+            {"level": 1, "heading": "5. Evidence Reviewed",
+             "content": "Evidence items reviewed in the course of this engagement are documented "
+                        "in the Exhibits appendix."},
+            {"level": 1, "heading": "6. Findings — Overview",
+             "content": findings_overview},
+            {"level": 1, "heading": "7. Findings — Detailed",
+             "content": findings_detail},
+            {"level": 1, "heading": "8. Timeline of Events",
+             "content": "Refer to the case timeline in D_Working_Papers/."},
+            {"level": 1, "heading": "9. Regulatory Implications",
+             "content": output.get("regulatory_implications", "")},
+            {"level": 1, "heading": "10. Recommendations",
+             "content": recommendations},
+            {"level": 1, "heading": "11. Open Leads & Remaining Procedures",
+             "content": open_leads},
+            {"level": 1, "heading": "12. Exhibits & Supporting Documents",
+             "content": "Exhibits are filed in C_Evidence/. See document index for full listing."},
+            {"level": 1, "heading": "13. Partner Sign-off & Limitations",
+             "content": f"{partner_notes}\n\n{sign_off}\n\n"
+                        "Limitation: This report is prepared on the basis of information "
+                        "made available at the time of the engagement. Conclusions are drawn "
+                        "solely from permissible evidence as defined by ACFE standards."},
+        ],
+    }

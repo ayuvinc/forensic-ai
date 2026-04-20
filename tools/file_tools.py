@@ -338,14 +338,77 @@ def mark_deliverable_written(case_id: str, workflow: str) -> None:
         pass
 
 
-def write_final_report(case_id: str, content: str, language: str = "en") -> Path:
+def _version_existing_report(case_id: str) -> int:
+    """Move existing final_report.* files to Previous_Versions/final_report.v{N}.* (RD-04).
+
+    Called by write_final_report() before each write to preserve prior outputs.
+    Creates Previous_Versions/ if missing.
+    Returns the highest version number used (0 if nothing was moved).
+    """
+    import shutil as _shutil
+
+    if is_af_project(case_id):
+        search_dir = case_dir(case_id) / "F_Final"
+    else:
+        search_dir = case_dir(case_id)
+
+    if not search_dir.exists():
+        return 0
+
+    existing = list(search_dir.glob("final_report.*"))
+    if not existing:
+        return 0
+
+    # Find the highest existing version in Previous_Versions/ to set next N
+    prev_dir = search_dir / "Previous_Versions"
+    prev_dir.mkdir(exist_ok=True)
+
+    existing_versions = []
+    for p in prev_dir.glob("final_report.v*.*"):
+        # Pattern: final_report.v{N}.{ext} or final_report.v{N}.{lang}.{ext}
+        parts = p.name.split(".")
+        for part in parts:
+            if part.startswith("v") and part[1:].isdigit():
+                existing_versions.append(int(part[1:]))
+                break
+
+    next_v = max(existing_versions, default=0) + 1
+
+    for f in existing:
+        # Build versioned name: insert v{N} before extension(s)
+        # e.g. final_report.en.md → final_report.v1.en.md
+        stem = f.name  # e.g. "final_report.en.md" or "final_report.en.docx"
+        versioned_name = stem.replace("final_report.", f"final_report.v{next_v}.", 1)
+        try:
+            _shutil.move(str(f), str(prev_dir / versioned_name))
+        except Exception:
+            pass  # best-effort — leave in place, no data loss
+
+    return next_v
+
+
+def write_final_report(
+    case_id: str,
+    content: str,
+    language: str = "en",
+    workflow: str = "",
+    section_overrides: Optional[dict] = None,
+) -> Path:
     """Write final_report.{language}.md and final_report.{language}.docx atomically.
 
+    RD-03: Uses BaseReportBuilder for .docx; loads template from firm.json if set.
+    RD-04: Calls _version_existing_report() before writing to preserve prior outputs.
     P9-04c: AF projects write to F_Final/; legacy projects write to case root.
     P9-04d: migration — AF projects move root *.v*.json → E_Drafts/;
             legacy projects move *.v*.json → interim/ (unchanged).
     Permanent files never migrated: state.json, audit_log.jsonl,
     citations_index.json, intake.json, document_index.json.
+
+    Args:
+        section_overrides: Optional dict with keys "cover" and "sections" to drive
+            structured .docx output via BaseReportBuilder.
+            "cover": {title, subtitle, metadata}
+            "sections": [{heading, content, level (1|2)}]
     """
     import shutil
 
@@ -358,22 +421,45 @@ def write_final_report(case_id: str, content: str, language: str = "en") -> Path
     else:
         final_dir = cdir
 
+    # RD-04: version any existing final reports before overwriting
+    _version_existing_report(case_id)
+
+    # Write Markdown (unchanged from pre-RD-03)
     target = final_dir / f"final_report.{language}.md"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)
 
-    # Word document — apply firm branding template if available (FE-09)
+    # RD-03: produce .docx via BaseReportBuilder (replaces OutputGenerator)
     try:
-        from tools.output_generator import OutputGenerator
-        from pathlib import Path as _Path
+        from tools.report_builder import BaseReportBuilder
+
+        # Load template from firm.json["templates"][workflow] if available
+        template_path = _resolve_template(workflow)
+
+        builder = BaseReportBuilder(template_path=template_path)
         docx_path = final_dir / f"final_report.{language}.docx"
-        template = _Path("firm_profile/template.docx")
-        OutputGenerator().generate_docx(
-            content,
-            docx_path,
-            template_path=template if template.exists() else None,
-        )
+
+        if section_overrides:
+            # Structured build: cover page + sections list
+            cover = section_overrides.get("cover", {})
+            if cover:
+                builder.add_cover_page(
+                    title=cover.get("title", "Report"),
+                    subtitle=cover.get("subtitle", ""),
+                    metadata=cover.get("metadata"),
+                )
+                builder.add_toc()
+            for sec in section_overrides.get("sections", []):
+                if sec.get("level", 1) == 2:
+                    builder.add_subsection(sec.get("heading", ""), sec.get("content", ""))
+                else:
+                    builder.add_section(sec.get("heading", ""), sec.get("content", ""))
+        else:
+            # Fallback: write raw markdown content as body text
+            builder.add_section("Report", content)
+
+        builder.save(docx_path)
     except Exception:
         pass
 
@@ -397,3 +483,22 @@ def write_final_report(case_id: str, content: str, language: str = "en") -> Path
                 pass  # best-effort — artifact remains in root, no data loss
 
     return target
+
+
+def _resolve_template(workflow: str) -> Optional[Path]:
+    """Return template path from firm.json["templates"][workflow], or None."""
+    try:
+        import json as _json
+        from config import FIRM_PROFILE_DIR
+        firm_json = FIRM_PROFILE_DIR / "firm.json"
+        if not firm_json.exists():
+            return None
+        data = _json.loads(firm_json.read_text(encoding="utf-8"))
+        tpl_name = data.get("templates", {}).get(workflow)
+        if not tpl_name:
+            return None
+        from config import BASE_DIR
+        tpl_path = BASE_DIR / "templates" / tpl_name
+        return tpl_path if tpl_path.exists() else None
+    except Exception:
+        return None

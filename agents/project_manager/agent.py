@@ -48,7 +48,12 @@ class ProjectManager:
         intake_dict = context.get("intake", {})
         intake = CaseIntake(**intake_dict) if intake_dict else _minimal_intake(context)
 
-        system_prompt = prompts.build_system_prompt(self._workflow, intake, research_mode=config.RESEARCH_MODE)
+        language_standard = context.get("language_standard", "acfe")
+        system_prompt = prompts.build_system_prompt(
+            self._workflow, intake,
+            research_mode=config.RESEARCH_MODE,
+            language_standard=language_standard,
+        )
         task_message  = prompts.build_task_message(junior_output)
 
         result = self._agent.run(

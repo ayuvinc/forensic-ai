@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timezone
-from typing import Callable, Optional
+from typing import Callable, Optional, List
 
 from rich.console import Console
 from rich.prompt import Prompt
@@ -172,15 +172,49 @@ def run_frm_finalize(
     citations: list,
     completed_modules: list[int],
     exec_summary: str,
+    context: Optional[dict] = None,
 ) -> FRMDeliverable:
     """Assemble deliverable from reviewed items and write the final report.
 
     Called after the review loop (CLI: inline; Streamlit: card UI).
-    Writes final_report.en.md, advances state to DELIVERABLE_WRITTEN.
+    Writes final_report.en.md and final_report.en.docx, advances state to DELIVERABLE_WRITTEN.
+
+    RD-06: builds section_overrides (Risk Register Table + summary sections) for BaseReportBuilder.
+    P9-08d: runs AI review pass if context["ai_review_enabled"] is True (default).
     """
     from tools.file_tools import mark_deliverable_written
 
+    _context = context or {}
+
     content_en = _render_risk_register(intake, risk_items, exec_summary, completed_modules)
+
+    # P9-08d: AI review pass after pipeline, before report write
+    if _context.get("ai_review_enabled", True):
+        try:
+            from agents.reviewer.review_agent import ReviewAgent
+            reviewer = ReviewAgent()
+            # Build a pseudo-draft dict from risk_items for the reviewer
+            draft_for_review = {
+                "findings": [
+                    {
+                        "title": r.risk_id,
+                        "description": r.description,
+                        "citations": [c.model_dump() if hasattr(c, "model_dump") else c
+                                      for c in (r.regulatory_references or [])],
+                    }
+                    for r in risk_items
+                ]
+            }
+            reviewer(draft_for_review, {
+                **_context,
+                "case_id": intake.case_id,
+                "workflow": "frm_risk_register",
+            })
+        except Exception:
+            pass
+
+    # RD-06: build section_overrides for structured .docx via BaseReportBuilder
+    section_overrides = _build_frm_section_overrides(intake, risk_items, exec_summary, completed_modules)
 
     deliverable = FRMDeliverable(
         case_id=intake.case_id,
@@ -192,7 +226,11 @@ def run_frm_finalize(
         delivery_date=datetime.now(timezone.utc),
     )
 
-    write_final_report(intake.case_id, content_en, "en")
+    write_final_report(
+        intake.case_id, content_en, "en",
+        workflow="frm_risk_register",
+        section_overrides=section_overrides,
+    )
     mark_deliverable_written(intake.case_id, "frm_risk_register")
 
     return deliverable
@@ -418,6 +456,82 @@ def _generate_executive_summary(
             f"for {intake.client_name} ({intake.industry}). "
             f"A total of {len(risk_items)} risks were identified."
         )
+
+
+def _build_frm_section_overrides(
+    intake: CaseIntake,
+    risk_items: list[RiskItem],
+    exec_summary: str,
+    completed_modules: list[int],
+) -> dict:
+    """Build section_overrides dict for BaseReportBuilder .docx output (RD-06)."""
+    now = datetime.now(timezone.utc).strftime("%d %B %Y")
+
+    # Risk Register table text
+    table_rows = ["| Risk ID | Category | Title | L | I | Rating | Owner |",
+                  "|---------|----------|-------|---|---|--------|-------|"]
+    for r in sorted(risk_items, key=lambda x: -x.risk_rating):
+        label = "HIGH" if r.risk_rating >= 16 else ("MEDIUM" if r.risk_rating >= 9 else "LOW")
+        table_rows.append(
+            f"| {r.risk_id} | {r.category} | {r.title} | "
+            f"{r.likelihood} | {r.impact} | {r.risk_rating} ({label}) | {r.risk_owner or 'TBD'} |"
+        )
+    risk_table_text = "\n".join(table_rows)
+
+    # Recommendations summary
+    all_recs: list[str] = []
+    for r in risk_items:
+        all_recs.extend(r.recommendations or [])
+    recs_text = "\n".join(f"- {rec}" for rec in all_recs[:20]) or "No recommendations recorded."
+
+    return {
+        "cover": {
+            "title": "Fraud Risk Management Register",
+            "subtitle": f"Client: {intake.client_name}",
+            "metadata": {
+                "Industry": intake.industry,
+                "Jurisdiction": intake.primary_jurisdiction,
+                "Modules Assessed": ", ".join(
+                    FRM_MODULES.get(m, str(m)) for m in completed_modules
+                ),
+                "Total Risks": str(len(risk_items)),
+                "Date": now,
+                "Prepared by": "GoodWork Forensic Consulting",
+                "Classification": "CONFIDENTIAL",
+            },
+        },
+        "sections": [
+            {"level": 1, "heading": "1. Executive Summary",
+             "content": exec_summary},
+            {"level": 1, "heading": "2. Risk Register Summary",
+             "content": (
+                 f"Total risks identified: {len(risk_items)}\n"
+                 f"High (≥16/25): {sum(1 for r in risk_items if r.risk_rating >= 16)}\n"
+                 f"Medium (9–15/25): {sum(1 for r in risk_items if 9 <= r.risk_rating < 16)}\n"
+                 f"Low (<9/25): {sum(1 for r in risk_items if r.risk_rating < 9)}"
+             )},
+            {"level": 1, "heading": "3. Risk Register Table",
+             "content": risk_table_text},
+            {"level": 1, "heading": "4. Detailed Risk Descriptions",
+             "content": "\n\n".join(
+                 f"{r.risk_id}: {r.title}\nRating: {r.risk_rating}/25 "
+                 f"(L:{r.likelihood} × I:{r.impact})\n{r.description}"
+                 for r in sorted(risk_items, key=lambda x: -x.risk_rating)
+             ) or "No detailed risks."},
+            {"level": 1, "heading": "5. Recommendations Summary",
+             "content": recs_text},
+            {"level": 1, "heading": "6. Methodology & Framework",
+             "content": (
+                 "This assessment was conducted in accordance with COSO 2013, "
+                 "ISO 37001:2016 (Anti-Bribery Management Systems), and ACFE "
+                 "Fraud Prevention standards."
+             )},
+            {"level": 1, "heading": "7. Partner Sign-off",
+             "content": f"Approved: {now}\nPrepared by: GoodWork Forensic Consulting\n\n"
+                        "This register is confidential and intended solely for the "
+                        "named client. It should not be reproduced without written consent."},
+        ],
+    }
 
 
 def _render_risk_register(

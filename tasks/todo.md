@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: architect
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-20T04:10:01Z — state transition by MCP server
+Last updated:   2026-04-20T14:08:18Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -374,9 +374,9 @@ Full specs archived in releases/completed-tasks.md.
 **BA:** BA-P9-05
 **Note:** Language standard is set per-project at intake. Settings page shows the FIRM DEFAULT only. Per-project override is in New Engagement wizard (P9-03B).
 
-- [ ] P9-07Aa Add "Default Language Standard" selectbox to Settings page: ACFE Internal Review / Expert Witness / Regulatory Submission / Board Pack
-- [ ] P9-07Ab Save writes `firm_profile/firm.json["default_language_standard"]` alongside existing fields
-- [ ] P9-07Ac Load at bootstrap: `st.session_state.default_language_standard` from firm.json or default "acfe"
+- [x] P9-07Aa Add "Default Language Standard" selectbox to Settings page — DONE (already in pages/14_Settings.py)
+- [x] P9-07Ab Save writes `firm_profile/firm.json["default_language_standard"]` — DONE
+- [x] P9-07Ac Load at bootstrap: `st.session_state.default_language_standard` — DONE Phase H
 
 #### AC — P9-07A
 - [ ] Settings page has "Default Language Standard" selectbox with exactly 4 options (matching BA-P9-05 labels)
@@ -390,13 +390,9 @@ Full specs archived in releases/completed-tasks.md.
 **Deps:** P9-01, P9-07A
 **BA:** BA-P9-05
 
-- [ ] P9-07Ba Create `LANGUAGE_STANDARD_BLOCKS: dict[str, str]` in a shared module (`agents/shared/language_standards.py` or inline in each prompts.py) with one instruction block per standard
-  - `"acfe"`: "Write in narrative style. Use qualified language for inferences ('evidence suggests', 'it appears'). Cite every source. Past tense. Third person. No pronouns."
-  - `"expert_witness"`: "Write in court-ready format. Past tense only. Third person only. No pronouns. State only what is directly evidenced. No opinions or inferences — if inference is required, label it explicitly as a reasonable professional conclusion."
-  - `"regulatory"`: "Write in formal regulatory submission style. Cite regulations by full name and section number. Use prescribed structure for the relevant regulatory body. Past tense. Third person."
-  - `"board_pack"`: "Write for a C-suite / board audience. Lead with business risk and impact. Minimize technical jargon. Past tense. Third person. Executive summary first, detail follows."
-- [ ] P9-07Bb All three agents' `build_system_prompt()` functions accept `language_standard: str = "acfe"` param; append the relevant block from `LANGUAGE_STANDARD_BLOCKS`
-- [ ] P9-07Bc All three agents' `__call__()` methods pass `language_standard` from context dict → to prompt builder
+- [x] P9-07Ba `agents/shared/language_standards.py` — DONE Phase H
+- [x] P9-07Bb All three agents' `build_system_prompt()` accept `language_standard` param — DONE Phase H
+- [x] P9-07Bc All three agents' `__call__()` pass `context.get("language_standard", "acfe")` — DONE Phase H
 
 #### AC — P9-07B
 - [ ] `build_system_prompt(language_standard="expert_witness")` includes "court-ready" and "Past tense only" in the returned string — code inspection
@@ -412,11 +408,11 @@ Full specs archived in releases/completed-tasks.md.
 **BA:** BA-P9-06
 **Note:** Runs as a post-pipeline pass before Maher's review screen. Uses Haiku (speed/cost). Results stored in D_Working_Papers/.
 
-- [ ] P9-08a `agents/reviewer/` directory + manifest: role="reviewer", model_preference="haiku", max_turns=3, output_schema="ReviewAnnotation"
-- [ ] P9-08b `ReviewAnnotation` schema in `schemas/artifacts.py`: finding_id: str, support_level: Literal["supported","partially_supported","unsupported"], evidence_cited: list[str], logic_gaps: list[str], rewritten_text: Optional[str]
-- [ ] P9-08c `ReviewAgent.__call__(draft: dict, context: dict) -> list[ReviewAnnotation]` — iterates over `draft["findings"]`; for each finding: classifies support level, identifies logic gaps, rewrites text per language_standard; returns list of annotations
-- [ ] P9-08d Wire into pipeline: orchestrator calls ReviewAgent after Partner approval, before final report write. Annotations stored to `D_Working_Papers/ai_review_{YYYYMMDD}.json`.
-- [ ] P9-08e Streamlit review UI: in existing A/F/R review screen (FRM, Investigation), add a small badge per finding: green "SUPPORTED" / amber "PARTIAL" / red "UNSUPPORTED". Maher can click badge to see evidence_cited and logic_gaps.
+- [x] P9-08a `agents/reviewer/review_agent.py` — DONE Phase H
+- [x] P9-08b `ReviewAnnotation` in `schemas/artifacts.py` — DONE Phase H
+- [x] P9-08c `ReviewAgent.__call__()` — DONE Phase H (citations=[] auto-unsupported, Haiku for rest)
+- [x] P9-08d Wired into investigation_report.py + frm_risk_register.py run_frm_finalize() — DONE Phase H
+- [x] P9-08e FRM done stage badges (green/amber/red with evidence_cited + logic_gaps popover) — DONE Phase H
 
 #### AC — P9-08
 - [ ] `ReviewAnnotation` importable from `schemas.artifacts`; `support_level="invalid"` raises ValidationError
@@ -501,12 +497,12 @@ RD-04 ──── independent (called by RD-03)
 ```
 
 - [x] RD-00 Add `openpyxl>=3.1.0` to `requirements.txt` — DONE (already present before Phase F)
-- [ ] RD-01 `tools/report_builder.py` — `BaseReportBuilder(template_path=None)`: add_cover_page(), add_toc(), add_section(), add_subsection(), set_header(), set_footer(), save(). Style fallback if template styles incompatible.
-- [ ] RD-02 `streamlit_app/shared/template_selector.py` — `render_template_selector(workflow_type)`: check firm.json; if no template → offer "Use my template" / "Build one"; save to `firm_profile/templates/{wf}.docx`; update firm.json
-- [ ] RD-03 Update `tools/file_tools.py:write_final_report()` — use BaseReportBuilder; load template via firm.json; apply section_overrides; call _version_existing_report() first
-- [ ] RD-04 `tools/file_tools.py` — `_version_existing_report(case_id)`: move existing final_report.* to Previous_Versions/final_report.v{N}.*; create Previous_Versions/ if missing
-- [ ] RD-05 Investigation section overrides in `workflows/investigation_report.py` — full 13-section structure per BA-R-05
-- [ ] RD-06 FRM section overrides in `workflows/frm_risk_register.py` — Risk Register Table + Heat Map sections via BaseReportBuilder
+- [x] RD-01 `tools/report_builder.py` — DONE Phase G (9f83126)
+- [x] RD-02 `streamlit_app/shared/template_selector.py` — DONE Phase H
+- [x] RD-03 `tools/file_tools.py:write_final_report()` — DONE Phase H (uses BaseReportBuilder, section_overrides, _version_existing_report)
+- [x] RD-04 `tools/file_tools.py:_version_existing_report()` — DONE Phase H
+- [x] RD-05 Investigation section overrides in `workflows/investigation_report.py` — DONE Phase H (13-section)
+- [x] RD-06 FRM section overrides in `workflows/frm_risk_register.py` — DONE Phase H (7-section)
 
 ---
 

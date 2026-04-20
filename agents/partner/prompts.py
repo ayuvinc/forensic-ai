@@ -10,7 +10,9 @@ def build_system_prompt(
     intake: CaseIntake,
     firm_name: str = "GoodWork Forensic Consulting",
     research_mode: str = "knowledge_only",
+    language_standard: str = "acfe",
 ) -> str:
+    from agents.shared.language_standards import get_language_block
     mode_section = _build_mode_section(research_mode)
 
     return f"""You are a Partner at {firm_name}.
@@ -51,6 +53,8 @@ Your response must be valid JSON:
 }}
 
 If revision is needed, set revision_requested=true and explain clearly in revision_reason.
+
+{get_language_block(language_standard)}
 """
 
 

@@ -130,20 +130,15 @@ elif st.session_state.dd_stage == "running":
 # ── STAGE: done ───────────────────────────────────────────────────────────────
 elif st.session_state.dd_stage == "done":
     intake = st.session_state.dd_intake
-    result = st.session_state.dd_result
 
-    if not result:
-        st.warning("No output was generated. Check the pipeline log and try again.")
-    else:
-        st.success(f"Due Diligence report complete — Case ID: `{intake.case_id}`")
+    from streamlit_app.shared.done_zone import render_done_zone
 
-    report_path = case_dir(intake.case_id) / "final_report.en.md"
-    if report_path.exists():
-        st.download_button(
-            label="Download DD report (.md)",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=f"DD_{intake.client_name}_{intake.case_id}.md",
-            mime="text/markdown",
-        )
-    st.markdown(f"**Case ID:** `{intake.case_id}`")
-    st.markdown(f"**Location:** `cases/{intake.case_id}/`")
+    render_done_zone(
+        st,
+        case_id=intake.case_id,
+        client_name=intake.client_name,
+        report_path=case_dir(intake.case_id) / "final_report.en.md",
+        workflow_label="Due Diligence",
+        session_state_keys=["dd_stage", "dd_intake", "dd_params", "dd_result", "dd_reg_results"],
+        stage_key="dd_stage",
+    )

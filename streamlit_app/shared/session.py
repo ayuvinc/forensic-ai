@@ -77,14 +77,16 @@ def bootstrap(st) -> dict:
 
     registry = ToolRegistry()
 
-    # Firm name — from firm_profile if set up, else placeholder
+    # Firm name and default language standard from firm_profile/firm.json
     firm_name = getattr(config, "FIRM_NAME", None) or _load_firm_name()
+    default_language_standard = _load_default_language_standard()
 
     st.session_state.bootstrapped = True
     st.session_state.registry = registry
     st.session_state.hook_engine = hook_engine
     st.session_state.firm_name = firm_name
     st.session_state.research_mode = getattr(config, "RESEARCH_MODE", "knowledge_only")
+    st.session_state.default_language_standard = default_language_standard
 
     # ACT-02: log session start
     try:
@@ -135,6 +137,20 @@ def _load_firm_name() -> str:
         except (KeyError, json.JSONDecodeError):
             pass
     return "GoodWork Forensic Consulting"
+
+
+def _load_default_language_standard() -> str:
+    """Read default_language_standard from firm_profile/firm.json. Defaults to 'acfe'."""
+    import json
+    from pathlib import Path
+
+    profile_path = Path("firm_profile/firm.json")
+    if profile_path.exists():
+        try:
+            return json.loads(profile_path.read_text()).get("default_language_standard", "acfe")
+        except (KeyError, json.JSONDecodeError):
+            pass
+    return "acfe"
 
 
 def _maybe_redirect_to_setup(st) -> None:

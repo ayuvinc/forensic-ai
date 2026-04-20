@@ -4,6 +4,22 @@ from pydantic import BaseModel, model_validator
 from schemas.research import Citation
 
 
+# ── AI Review Mode schema (P9-08b) ────────────────────────────────────────────
+
+class ReviewAnnotation(BaseModel):
+    """One annotation produced by ReviewAgent for a single finding.
+
+    finding_id matches the finding title or risk_id from the draft.
+    support_level reflects how well the cited evidence supports the claim.
+    Finding with citations=[] is auto-classified as 'unsupported' without a model call.
+    """
+    finding_id: str
+    support_level: Literal["supported", "partially_supported", "unsupported"]
+    evidence_cited: list[str] = []
+    logic_gaps: list[str] = []
+    rewritten_text: Optional[str] = None
+
+
 class JuniorDraft(BaseModel):
     case_id: str
     version: int

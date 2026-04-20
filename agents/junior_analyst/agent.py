@@ -60,8 +60,10 @@ class JuniorAnalyst:
 
         revision_feedback = context.get("pm_feedback") or context.get("revision_feedback")
         firm_name = context.get("firm_name", "GoodWork Forensic Consulting")
+        language_standard = context.get("language_standard", "acfe")
         system_prompt = prompts.build_system_prompt(
-            self._workflow, intake_obj, doc_index, revision_feedback, firm_name=firm_name
+            self._workflow, intake_obj, doc_index, revision_feedback,
+            firm_name=firm_name, language_standard=language_standard,
         )
         task_message = prompts.build_task_message(intake_obj)
 

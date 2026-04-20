@@ -55,7 +55,12 @@ class Partner:
 
         junior_output = context.get("junior_output")
 
-        system_prompt = prompts.build_system_prompt(self._workflow, intake, research_mode=config.RESEARCH_MODE)
+        language_standard = context.get("language_standard", "acfe")
+        system_prompt = prompts.build_system_prompt(
+            self._workflow, intake,
+            research_mode=config.RESEARCH_MODE,
+            language_standard=language_standard,
+        )
         task_message  = prompts.build_task_message(pm_output, junior_output, research_mode=config.RESEARCH_MODE)
 
         result = self._agent.run(
