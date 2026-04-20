@@ -51,15 +51,29 @@ def is_af_project(case_id: str) -> bool:
 def artifact_path(case_id: str, agent: str, artifact_type: str, version: int) -> Path:
     """Return the canonical path for a versioned artifact.
 
+    AF projects (P9-04c): artifacts land in E_Drafts/ subfolder.
+    Legacy projects: artifacts land in case root (unchanged).
     Naming: {agent}_{artifact_type}.v{N}.json
-    Example: junior_draft.v1.json
     """
-    return case_dir(case_id) / f"{agent}_{artifact_type}.v{version}.json"
+    filename = f"{agent}_{artifact_type}.v{version}.json"
+    if is_af_project(case_id):
+        drafts_dir = case_dir(case_id) / "E_Drafts"
+        drafts_dir.mkdir(exist_ok=True)
+        return drafts_dir / filename
+    return case_dir(case_id) / filename
 
 
 def next_version(case_id: str, agent: str, artifact_type: str) -> int:
-    """Return the next available version number for an artifact."""
-    d = case_dir(case_id)
+    """Return the next available version number for an artifact.
+
+    AF projects scan E_Drafts/; legacy projects scan case root.
+    """
+    # P9-04c: AF projects store artifacts in E_Drafts/
+    if is_af_project(case_id):
+        d = case_dir(case_id) / "E_Drafts"
+        d.mkdir(exist_ok=True)
+    else:
+        d = case_dir(case_id)
     existing = list(d.glob(f"{agent}_{artifact_type}.v*.json"))
     if not existing:
         return 1
@@ -267,13 +281,24 @@ def write_envelope(
 def load_envelope(case_id: str, role: str, artifact_type: str) -> Optional[dict]:
     """Load the latest ArtifactEnvelope for a given role+artifact_type.
 
+    AF projects (P9-04c): searches E_Drafts/ first, then case root as fallback.
     Returns the payload dict (not the full envelope) for uniform resume semantics.
     Returns None if no artifact found.
     """
     import glob as _glob
 
-    pattern = str(case_dir(case_id) / f"{role}_{artifact_type}.v*.json")
-    files = sorted(_glob.glob(pattern))
+    cdir = case_dir(case_id)
+    glob_name = f"{role}_{artifact_type}.v*.json"
+
+    if is_af_project(case_id):
+        # Primary location for AF projects
+        files = sorted(_glob.glob(str(cdir / "E_Drafts" / glob_name)))
+        if not files:
+            # Fallback: root (pre-migration artifacts)
+            files = sorted(_glob.glob(str(cdir / glob_name)))
+    else:
+        files = sorted(_glob.glob(str(cdir / glob_name)))
+
     if not files:
         return None
     data = json.loads(open(files[-1], encoding="utf-8").read())
@@ -316,14 +341,24 @@ def mark_deliverable_written(case_id: str, workflow: str) -> None:
 def write_final_report(case_id: str, content: str, language: str = "en") -> Path:
     """Write final_report.{language}.md and final_report.{language}.docx atomically.
 
-    After writing, moves all *.v*.json pipeline artifacts to cases/{id}/interim/
-    so the case root contains only the deliverable and permanent files.
-    Permanent files kept in root: final_report.*, state.json, audit_log.jsonl,
+    P9-04c: AF projects write to F_Final/; legacy projects write to case root.
+    P9-04d: migration — AF projects move root *.v*.json → E_Drafts/;
+            legacy projects move *.v*.json → interim/ (unchanged).
+    Permanent files never migrated: state.json, audit_log.jsonl,
     citations_index.json, intake.json, document_index.json.
     """
     import shutil
 
-    target = case_dir(case_id) / f"final_report.{language}.md"
+    cdir = case_dir(case_id)
+
+    # P9-04c: AF projects write to F_Final/, legacy to case root
+    if is_af_project(case_id):
+        final_dir = cdir / "F_Final"
+        final_dir.mkdir(exist_ok=True)
+    else:
+        final_dir = cdir
+
+    target = final_dir / f"final_report.{language}.md"
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)
@@ -332,7 +367,7 @@ def write_final_report(case_id: str, content: str, language: str = "en") -> Path
     try:
         from tools.output_generator import OutputGenerator
         from pathlib import Path as _Path
-        docx_path = case_dir(case_id) / f"final_report.{language}.docx"
+        docx_path = final_dir / f"final_report.{language}.docx"
         template = _Path("firm_profile/template.docx")
         OutputGenerator().generate_docx(
             content,
@@ -342,24 +377,22 @@ def write_final_report(case_id: str, content: str, language: str = "en") -> Path
     except Exception:
         pass
 
-    # FE-08: move pipeline artifacts to interim/ subfolder (best-effort, non-atomic)
-    # Keeps case root clean — only deliverables and permanent files remain at root level
+    # P9-04d: migrate root-level pipeline artifacts to their archive folder
+    # AF projects → E_Drafts/; legacy projects → interim/ (FE-08 behaviour)
     _KEEP_IN_ROOT = {
         "state.json", "audit_log.jsonl", "citations_index.json",
         "intake.json", "document_index.json",
     }
-    cdir = case_dir(case_id)
-    interim = cdir / "interim"
-
-    versioned = [
-        p for p in cdir.glob("*.v*.json")
-        if p.name not in _KEEP_IN_ROOT
-    ]
+    versioned = [p for p in cdir.glob("*.v*.json") if p.name not in _KEEP_IN_ROOT]
     if versioned:
-        interim.mkdir(exist_ok=True)
+        if is_af_project(case_id):
+            archive_dir = cdir / "E_Drafts"  # AF projects archive to E_Drafts
+        else:
+            archive_dir = cdir / "interim"   # legacy projects archive to interim
+        archive_dir.mkdir(exist_ok=True)
         for artifact in versioned:
             try:
-                shutil.move(str(artifact), str(interim / artifact.name))
+                shutil.move(str(artifact), str(archive_dir / artifact.name))
             except Exception:
                 pass  # best-effort — artifact remains in root, no data loss
 

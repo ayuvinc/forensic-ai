@@ -187,6 +187,14 @@ class DocumentManager:
         index.documents.append(entry)
         index.last_updated = datetime.now(timezone.utc)
         self._save_index(index)
+
+        # P9-06: trigger interim context write if budget ≥ 75%
+        try:
+            if self.context_usage_pct() >= 75.0:
+                self._trigger_interim_context_write()
+        except Exception:
+            pass  # never block document registration on context budget check
+
         return entry
 
     def _extract_text(self, filepath: Path, doc_type: str) -> str:
@@ -532,6 +540,115 @@ class DocumentManager:
 
         scored.sort(key=lambda x: -x[0])
         return [doc for _, doc in scored[:10]]
+
+    # ── Context accumulation (P9-06) ─────────────────────────────────────────
+
+    def get_total_chars(self) -> int:
+        """Sum char_count of all registered source documents.
+
+        interim_context.md is intentionally excluded — only source docs count
+        toward the budget so the budget check stays meaningful after summarisation.
+        """
+        index = self.get_index()
+        return sum(d.char_count for d in index.documents)
+
+    def context_usage_pct(self) -> float:
+        """Return percentage of CONTEXT_BUDGET_CHARS consumed by registered docs."""
+        from config import CONTEXT_BUDGET_CHARS
+        total = self.get_total_chars()
+        if CONTEXT_BUDGET_CHARS <= 0:
+            return 0.0
+        return (total / CONTEXT_BUDGET_CHARS) * 100.0
+
+    def _trigger_interim_context_write(self) -> None:
+        """Summarise all registered documents via Haiku and write interim_context.md.
+
+        Called automatically when context_usage_pct() ≥ 75%. Best-effort —
+        any failure is swallowed so document registration is never blocked.
+        The ProjectManager writes the file atomically.
+        """
+        import anthropic as _anthropic
+        from config import ANTHROPIC_API_KEY, HAIKU
+        from tools.project_manager import ProjectManager
+
+        index = self.get_index()
+        if not index.documents:
+            return
+
+        # Build a compact document listing for the summary prompt
+        doc_lines = []
+        for doc in index.documents:
+            summary_text = doc.summary or ", ".join(
+                s.section_title for s in doc.sections[:5]
+            ) or "(no summary)"
+            doc_lines.append(f"[{doc.doc_id}] {doc.filename}: {summary_text[:400]}")
+        documents_text = "\n".join(doc_lines)
+
+        system = (
+            "You are a forensic analyst creating a condensed briefing from case documents. "
+            "Summarise the following documents into a concise briefing covering: "
+            "key facts, red flags, open questions, and critical excerpts. "
+            "Be comprehensive — this summary replaces source documents in future sessions. "
+            "Format as structured markdown."
+        )
+        try:
+            client = _anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+            resp = client.messages.create(
+                model=HAIKU,
+                max_tokens=2048,
+                system=system,
+                messages=[{"role": "user", "content": f"Documents:\n\n{documents_text}"}],
+            )
+            summary = resp.content[0].text.strip()
+            ProjectManager().write_interim_context(self.case_id, summary)
+        except Exception:
+            pass  # swallow — registration must not fail
+
+    def get_context_for_agents(self) -> str:
+        """Return document content for agent consumption.
+
+        If interim_context.md exists: return its content plus content of any
+        documents registered AFTER its creation date (incremental update pattern).
+        Otherwise: return full content of all registered documents, bounded by
+        DOC_EXCERPT_CHARS per document.
+        """
+        from config import DOC_EXCERPT_CHARS
+        from tools.file_tools import case_dir
+
+        cdir = case_dir(self.case_id)
+        interim_path = cdir / "D_Working_Papers" / "interim_context.md"
+
+        if interim_path.exists():
+            interim_content = interim_path.read_text(encoding="utf-8")
+            interim_mtime = interim_path.stat().st_mtime
+
+            # Append content of documents registered after interim_context was written
+            index = self.get_index()
+            new_docs: list[str] = []
+            for doc in index.documents:
+                doc_text_path = cdir / "_extracted_text" / f"{doc.doc_id}.txt"
+                if doc_text_path.exists() and doc_text_path.stat().st_mtime > interim_mtime:
+                    raw = doc_text_path.read_text(encoding="utf-8", errors="replace")
+                    new_docs.append(
+                        f"[NEW — {doc.filename}]\n{raw[:DOC_EXCERPT_CHARS]}"
+                    )
+
+            if new_docs:
+                return interim_content + "\n\n## New Documents (since last summary)\n\n" + "\n\n".join(new_docs)
+            return interim_content
+
+        # No interim context — return excerpts of all registered docs
+        index = self.get_index()
+        parts: list[str] = []
+        for doc in index.documents:
+            excerpt = doc.summary or ""
+            if not excerpt:
+                # Try reading from disk cache
+                doc_text_path = cdir / "_extracted_text" / f"{doc.doc_id}.txt"
+                if doc_text_path.exists():
+                    excerpt = doc_text_path.read_text(encoding="utf-8", errors="replace")[:DOC_EXCERPT_CHARS]
+            parts.append(f"[{doc.doc_id}] {doc.filename}:\n{excerpt}")
+        return "\n\n".join(parts)
 
     # ── Engagement letter gate ────────────────────────────────────────────────
 
