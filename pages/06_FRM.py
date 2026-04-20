@@ -188,6 +188,15 @@ elif st.session_state.frm_stage == "confirm":
                 "engagement_id": engagement_id,
             })
 
+        st.session_state.frm_stage = "ai_questions"
+        st.rerun()
+
+# ── STAGE: ai_questions ───────────────────────────────────────────────────────
+elif st.session_state.frm_stage == "ai_questions":
+    intake = st.session_state.frm_intake
+    from streamlit_app.shared.aic import render_intake_questions
+    intake_summary = f"Client: {intake.client_name}. {intake.description}"
+    if render_intake_questions(st, intake.case_id, intake_summary):
         st.session_state.frm_stage = "running"
         st.rerun()
 
@@ -377,6 +386,27 @@ elif st.session_state.frm_stage == "done":
 
     from tools.file_tools import case_dir, get_final_report_path
     from streamlit_app.shared.done_zone import render_done_zone
+
+    # FE-03: build xlsx risk register if not already written
+    _cdir = case_dir(intake.case_id)
+    _final_dir = _cdir / "F_Final"
+    _xlsx_path = _final_dir / f"frm_risk_register_{intake.case_id}.xlsx"
+    if not _xlsx_path.exists():
+        try:
+            from tools.frm_excel_builder import FRMExcelBuilder
+            _final_dir.mkdir(parents=True, exist_ok=True)
+            FRMExcelBuilder().build(finalized, _xlsx_path)
+        except Exception:
+            pass
+
+    if _xlsx_path.exists():
+        st.download_button(
+            label="Download Risk Register (.xlsx)",
+            data=_xlsx_path.read_bytes(),
+            file_name=_xlsx_path.name,
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            key=f"frm_xlsx_dl_{intake.case_id}",
+        )
 
     render_done_zone(
         st,

@@ -385,6 +385,130 @@ if mode == "Input Session":
 
     st.divider()
 
+    # FE-06: Workflow-specific panels — gated on state.service_type
+    _service = getattr(state, "service_type", None) or ""
+
+    if _service == "Due Diligence":
+        with st.expander("DD Subjects", expanded=False):
+            st.caption("Register subjects under due diligence screening.")
+            col_dd1, col_dd2, col_dd3 = st.columns([3, 2, 2])
+            with col_dd1:
+                dd_name = st.text_input("Name", placeholder="Full legal name", key=f"dd_sub_name_{slug}")
+            with col_dd2:
+                dd_type = st.selectbox("Type", ["Individual", "Entity"], key=f"dd_sub_type_{slug}")
+            with col_dd3:
+                dd_rel = st.selectbox(
+                    "Relationship",
+                    ["Target", "Related Party", "Other"],
+                    key=f"dd_sub_rel_{slug}",
+                )
+            if st.button("Add Subject", key=f"add_dd_sub_{slug}"):
+                if dd_name.strip():
+                    import json as _json, os as _os
+                    _wp = CASES_DIR / slug / "D_Working_Papers"
+                    _wp.mkdir(parents=True, exist_ok=True)
+                    _path = _wp / "dd_subjects.json"
+                    _entries = []
+                    if _path.exists():
+                        try:
+                            _entries = _json.loads(_path.read_text(encoding="utf-8"))
+                        except Exception:
+                            _entries = []
+                    _entries.append({
+                        "name": dd_name.strip(),
+                        "type": dd_type,
+                        "relationship": dd_rel,
+                        "added_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    _tmp = _path.with_suffix(".tmp")
+                    _tmp.write_text(_json.dumps(_entries, indent=2), encoding="utf-8")
+                    _os.replace(_tmp, _path)
+                    st.success(f"Subject '{dd_name.strip()}' added.")
+                    st.rerun()
+                else:
+                    st.error("Name is required.")
+
+    elif _service == "Sanctions Screening":
+        with st.expander("Screening Targets", expanded=False):
+            st.caption("Register screening targets for this engagement.")
+            col_st1, col_st2, col_st3 = st.columns([3, 2, 2])
+            with col_st1:
+                st_name = st.text_input("Name", placeholder="Full legal name", key=f"st_name_{slug}")
+            with col_st2:
+                st_type = st.selectbox("Type", ["Individual", "Entity"], key=f"st_type_{slug}")
+            with col_st3:
+                st_nat = st.text_input("Nationality", placeholder="e.g. UAE", key=f"st_nat_{slug}")
+            if st.button("Add Target", key=f"add_st_{slug}"):
+                if st_name.strip():
+                    import json as _json, os as _os
+                    _wp = CASES_DIR / slug / "D_Working_Papers"
+                    _wp.mkdir(parents=True, exist_ok=True)
+                    _path = _wp / "sanctions_targets.json"
+                    _entries = []
+                    if _path.exists():
+                        try:
+                            _entries = _json.loads(_path.read_text(encoding="utf-8"))
+                        except Exception:
+                            _entries = []
+                    _entries.append({
+                        "name": st_name.strip(),
+                        "type": st_type,
+                        "nationality": st_nat.strip(),
+                        "added_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    _tmp = _path.with_suffix(".tmp")
+                    _tmp.write_text(_json.dumps(_entries, indent=2), encoding="utf-8")
+                    _os.replace(_tmp, _path)
+                    st.success(f"Target '{st_name.strip()}' added.")
+                    st.rerun()
+                else:
+                    st.error("Name is required.")
+
+    elif _service == "Transaction Testing":
+        with st.expander("Transaction Populations", expanded=False):
+            st.caption("Define the transaction populations being tested.")
+            col_tp1, col_tp2, col_tp3, col_tp4 = st.columns([3, 2, 2, 1])
+            with col_tp1:
+                tp_name = st.text_input("Population name", placeholder="e.g. AP Payments", key=f"tp_name_{slug}")
+            with col_tp2:
+                tp_range = st.text_input("Date range", placeholder="e.g. Jan–Dec 2024", key=f"tp_range_{slug}")
+            with col_tp3:
+                tp_source = st.text_input("Source system", placeholder="e.g. SAP AP", key=f"tp_src_{slug}")
+            with col_tp4:
+                tp_count = st.number_input("Count", min_value=0, value=0, step=1, key=f"tp_count_{slug}")
+            if st.button("Add Population", key=f"add_tp_{slug}"):
+                if tp_name.strip() and tp_count > 0:
+                    import json as _json, os as _os
+                    _wp = CASES_DIR / slug / "D_Working_Papers"
+                    _wp.mkdir(parents=True, exist_ok=True)
+                    _path = _wp / "tt_populations.json"
+                    _entries = []
+                    if _path.exists():
+                        try:
+                            _entries = _json.loads(_path.read_text(encoding="utf-8"))
+                        except Exception:
+                            _entries = []
+                    _entries.append({
+                        "population_name": tp_name.strip(),
+                        "date_range": tp_range.strip(),
+                        "count": tp_count,
+                        "source_system": tp_source.strip(),
+                        "added_at": datetime.now(timezone.utc).isoformat(),
+                    })
+                    _tmp = _path.with_suffix(".tmp")
+                    _tmp.write_text(_json.dumps(_entries, indent=2), encoding="utf-8")
+                    _os.replace(_tmp, _path)
+                    st.success(f"Population '{tp_name.strip()}' added.")
+                    st.rerun()
+                else:
+                    if not tp_name.strip():
+                        st.error("Population name is required.")
+                    if tp_count <= 0:
+                        st.error("Count must be greater than 0.")
+
+    if _service in ("Due Diligence", "Sanctions Screening", "Transaction Testing"):
+        st.divider()
+
     # P9-05d: Context budget bar
     ctx = pm.get_context_summary(slug)
     budget_pct = ctx.get("context_budget_used_pct", 0.0)

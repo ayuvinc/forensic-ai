@@ -509,45 +509,43 @@ RD-04 ──── independent (called by RD-03)
 
 ### Sprint-FE — Frontend Impact Tasks (Session 022 — GATED on P9-05 design)
 
-**BA:** BA-FE-01 (MISSING — needs /ba or /ux session before build)
+**BA:** BA-FE-01, BA-FE-02 — CONFIRMED 2026-04-20
 **Scope:** Frontend changes required by Sprint-EMB, Sprint-AIC, Sprint-RD, Sprint-WF, Sprint-FR, Phase 9
 **Security:** Same as Phase 8 — localhost:8501, no auth, no new data paths
 
-- [ ] FE-GATE-BA: BA-FE-01 decision required before any Sprint-FE task enters build queue — covers: AI questions stage placement, template selector placement, per-hit review screen, DD intake extensions, P9-05 workspace UX
+- [x] FE-GATE-BA: CLEARED — BA-FE-01 (AI questions stage) + BA-FE-02 (workspace panels all workflows) confirmed 2026-04-20
 
-- [ ] FE-01 All 10 workflow pages: add `ai_questions` stage between intake and running
-  - State machine: `intake → ai_questions → running → reviewing → done`
-  - AIC-01 output rendered as `st.chat_message` style, one question at a time
-  - "Skip" button advances to running stage
-  - Affects: pages/2, 4, 5, 6, 7, 8, 0, 11, 12, 13
+- [x] FE-01 All 10 workflow pages: add `ai_questions` stage between intake and running — DONE Session 033
+- [x] FE-02 `pages/14_Settings.py` — Template Selector section using `render_template_selector()` — DONE Session 033
+- [x] FE-03 `pages/06_FRM.py` — Done stage xlsx download button via `FRMExcelBuilder` — DONE Session 033
+- [x] FE-04 `pages/10_Sanctions.py` — `per_hit_review` stage with dispositions + policy default — DONE Session 033
+- [x] FE-05 `pages/09_Due_Diligence.py` — subject_count, relationship_type, template_upload fields + routing — DONE Session 033
+- [x] FE-06 `pages/16_Workspace.py` — DD/Sanctions/TT workflow-specific panels gated on service_type — DONE Session 033
+- [x] FE-07 `pages/12_Case_Tracker.py` — Previous Versions section with download buttons — DONE Session 033
 
-- [ ] FE-02 `pages/settings.py` — add Template Selector section
-  - One `render_template_selector(workflow_type)` per workflow type (FRM, Investigation, DD, TT, Sanctions, Proposal)
-  - Saves to `firm_profile/firm.json["templates"][workflow_type]`
+#### AC — Sprint-FE
+- [x] FE-01: On all 10 workflow pages (02, 04, 05, 06, 07, 08, 01_Scope, 11, 10, 09), an `ai_questions` stage exists between intake confirmation and `running`; the stage calls `render_intake_questions()` from `streamlit_app/shared/aic.py` — code inspection of each page
+- [x] FE-01: When `render_intake_questions()` returns `True` (questions answered or skipped), the page transitions to `running` stage — code inspection of stage transition logic
+- [x] FE-01: When AIC-01 returns 0 questions, `render_intake_questions()` returns `True` immediately and the `ai_questions` stage is bypassed — code inspection of `aic.py` (already implemented); page must not block on empty question list
+- [x] FE-01: Answered questions are written to `D_Working_Papers/case_intake.md` as `Q: <text>\nA: <answer>`; skipped questions written as `Q: <text>\nA: [SKIPPED]` — code inspection of `_save_intake_qa()` in `aic.py`
+- [x] FE-01: A Skip button is visible during the `ai_questions` stage on every page; clicking it calls `_save_intake_qa()` with all remaining questions marked `[SKIPPED]` and transitions to `running` — code inspection
+- [x] FE-02: `pages/14_Settings.py` renders a Template Selector section with one `render_template_selector(workflow_type)` call for each of: `frm_risk_register`, `investigation_report`, `due_diligence`, `transaction_testing`, `sanctions_screening`, `client_proposal` — code inspection
+- [x] FE-02: Selecting a template saves `firm_profile/firm.json["templates"][workflow_type]` with the chosen filename; if `firm.json` does not exist, it is created — code inspection of save handler
+- [x] FE-03: `pages/06_FRM.py` Done stage renders a `st.download_button` labelled "Download Risk Register (.xlsx)" alongside the existing DOCX button — code inspection
+- [x] FE-03: The `.xlsx` download button is only rendered if the Excel file exists under `F_Final/`; if the file is absent the button is not shown and no error is raised — code inspection of the conditional
+- [x] FE-04: `pages/10_Sanctions.py` has a `per_hit_review` stage between `running` and `done`; one `st.expander` per entity hit is rendered — code inspection
+- [x] FE-04: Each hit expander contains a disposition `st.selectbox` with options: True Match / False Positive / Requires Investigation / Escalate; firm default pre-loaded from `sanctions_disposition_policy.json` when file exists — code inspection
+- [x] FE-04: "Confirm all dispositions" button writes dispositions to `D_Working_Papers/` and transitions to `done` stage — code inspection of the confirm handler
+- [x] FE-05: `pages/09_Due_Diligence.py` intake form includes `st.number_input` for subject count (min=1), `st.radio` for relationship type (Unrelated / Related), and `st.file_uploader` for DD template (.docx) — code inspection
+- [x] FE-05: When `subject_count == 1` AND `relationship == "Unrelated"`, the pipeline is routed to per-subject format; when `subject_count > 1` OR `relationship == "Related"`, routed to consolidated format — code inspection of routing condition
+- [x] FE-06: `pages/16_Workspace.py` renders a "DD Subjects" expander only when `state.service_type == "Due Diligence"`; adding a subject with a non-empty name appends to `dd_subjects.json` atomically; empty name shows inline error and does not write — code inspection
+- [x] FE-06: `pages/16_Workspace.py` renders a "Screening Targets" expander only when `state.service_type == "Sanctions Screening"`; adds to `sanctions_targets.json` atomically; empty name blocked — code inspection
+- [x] FE-06: `pages/16_Workspace.py` renders a "Transaction Populations" expander only when `state.service_type == "Transaction Testing"`; adds to `tt_populations.json` atomically; empty name or count ≤ 0 blocked — code inspection
+- [x] FE-06: When `state.service_type` is unrecognised (e.g. legacy type), no workflow-specific panel is rendered and no exception is raised — code inspection of the service_type dispatch block
+- [x] FE-07: `pages/12_Case_Tracker.py` project detail expander shows a "Previous Versions" section listing files in `Previous_Versions/` with `st.download_button` per file — code inspection
+- [x] FE-07: "Previous Versions" section is not rendered when `Previous_Versions/` folder does not exist for the project — code inspection of the conditional check
 
-- [ ] FE-03 `pages/6_FRM.py` — Done stage: add second download button for Excel (.xlsx)
-  - `st.download_button("Download Risk Register (.xlsx)", ...)` alongside existing DOCX button
-
-- [ ] FE-04 `pages/12_Sanctions.py` — add per-hit review stage
-  - New stage between pipeline and Done: one expander per entity hit
-  - Disposition selectbox per hit: True Match / False Positive / Requires Investigation / Escalate
-  - Firm default pre-loaded from `sanctions_disposition_policy.json`; consultant can override
-  - "Confirm all dispositions" → triggers final report write
-
-- [ ] FE-05 `pages/11_Due_Diligence.py` — extend intake form
-  - Add: subject count (`st.number_input`), relationship type (`st.radio`: Unrelated / Related), DD template upload (`st.file_uploader` for .docx)
-  - Route to per-subject or consolidated format based on subject count + relationship
-
-- [ ] FE-06 P9-05 Input Session workspace — full UX design pass required
-  - Conditional panels by workflow type:
-    - All workflows: semantic search bar (EMB-03), AIC follow-up panel, context budget bar
-    - FRM only: stakeholder input form (FR-01)
-    - Investigation only: exhibit register + leads register (WF-01b)
-  - Build order: shared panels first, then workflow-specific panels
-
-- [ ] FE-07 Case Tracker + Project workspace — surface Previous_Versions/
-  - In project detail expander: "Previous Versions" section listing versioned reports with download buttons
-  - Only shown if `Previous_Versions/` folder exists in project root
+**Status: READY_FOR_REVIEW**
 
 ---
 

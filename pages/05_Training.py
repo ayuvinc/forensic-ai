@@ -69,8 +69,17 @@ if st.session_state.tr_stage == "intake":
                 "include_quiz": include_quiz,
                 "include_case_study": include_case_study,
             }
-            st.session_state.tr_stage = "running"
+            st.session_state.tr_stage = "ai_questions"
             st.rerun()
+
+# ── STAGE: ai_questions ───────────────────────────────────────────────────────
+elif st.session_state.tr_stage == "ai_questions":
+    intake = st.session_state.tr_intake
+    from streamlit_app.shared.aic import render_intake_questions
+    intake_summary = f"Client: {intake.client_name}. {intake.description}"
+    if render_intake_questions(st, intake.case_id, intake_summary):
+        st.session_state.tr_stage = "running"
+        st.rerun()
 
 # ── STAGE: running ────────────────────────────────────────────────────────────
 elif st.session_state.tr_stage == "running":

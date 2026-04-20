@@ -42,6 +42,27 @@ if st.session_state.dd_stage == "intake":
     if result is not None:
         intake, dd_params = result
 
+        # FE-05: extended intake fields
+        subject_count = st.number_input(
+            "Number of subjects",
+            min_value=1,
+            value=1,
+            step=1,
+            help="How many individuals or entities are being screened?",
+        )
+        relationship = st.radio(
+            "Relationship type",
+            ["Unrelated", "Related"],
+            horizontal=True,
+            help="Related subjects may share beneficial ownership or family ties.",
+        )
+        template_upload = st.file_uploader(
+            "DD template (.docx, optional)",
+            type=["docx"],
+            key="dd_template_upload",
+            help="Upload a firm-specific DD template to override the default.",
+        )
+
         # ── Document upload — Zone A (below intake form, above pipeline start) ─
         uploaded_files = st.file_uploader(
             "Upload case documents (optional)",
@@ -85,9 +106,29 @@ if st.session_state.dd_stage == "intake":
                     reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
             # WI-3: dm NOT passed to workflow — registration only
 
+        # FE-05: routing based on subject_count + relationship (per BA-FE-02)
+        if subject_count == 1 and relationship == "Unrelated":
+            dd_params["report_format"] = "per_subject"
+        else:
+            dd_params["report_format"] = "consolidated"
+
+        dd_params["subject_count"] = subject_count
+        dd_params["relationship"] = relationship
+        if template_upload is not None:
+            dd_params["template_filename"] = template_upload.name
+
         st.session_state.dd_reg_results = reg_results
         st.session_state.dd_intake = intake
         st.session_state.dd_params = dd_params
+        st.session_state.dd_stage = "ai_questions"
+        st.rerun()
+
+# ── STAGE: ai_questions ───────────────────────────────────────────────────────
+elif st.session_state.dd_stage == "ai_questions":
+    intake = st.session_state.dd_intake
+    from streamlit_app.shared.aic import render_intake_questions
+    intake_summary = f"Client: {intake.client_name}. {intake.description}"
+    if render_intake_questions(st, intake.case_id, intake_summary):
         st.session_state.dd_stage = "running"
         st.rerun()
 

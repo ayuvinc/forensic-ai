@@ -58,7 +58,7 @@ def render_intake_questions(
     case_id: str,
     intake_summary: str,
 ) -> bool:
-    """Render AIC-01: post-intake follow-up questions via Haiku.
+    """Render AIC-01: post-intake follow-up questions via Haiku, one at a time.
 
     Returns True when the consultant has answered or skipped all questions and
     it is safe to proceed to the pipeline.
@@ -67,11 +67,13 @@ def render_intake_questions(
     """
     _state_key   = f"aic01_state_{case_id}"
     _answers_key = f"aic01_answers_{case_id}"
+    _idx_key     = f"aic01_idx_{case_id}"
 
     # States: "generating" | "asking" | "done" | "skipped"
     if _state_key not in st.session_state:
         st.session_state[_state_key]   = "generating"
         st.session_state[_answers_key] = {}
+        st.session_state[_idx_key]     = 0
 
     state = st.session_state[_state_key]
 
@@ -88,36 +90,48 @@ def render_intake_questions(
         st.session_state[_state_key] = "asking"
         st.rerun()
 
-    # state == "asking"
+    # state == "asking" — show one question at a time (BA-FE-01)
     questions: list[dict] = st.session_state.get("aic01_questions", [])
     answers: dict = st.session_state[_answers_key]
+    idx: int = st.session_state[_idx_key]
+
+    if idx >= len(questions):
+        # All questions answered — persist and proceed
+        _save_intake_qa(case_id, questions, answers)
+        st.session_state[_state_key] = "done"
+        return True
 
     st.markdown("### Follow-up Questions")
-    st.caption("These questions help improve the quality of the final deliverable.")
+    st.caption(f"Question {idx + 1} of {len(questions)} — helps improve deliverable quality.")
 
-    for q in questions:
-        qid = q["id"]
-        # Render question in chat_message style per spec (AIC-01)
-        with st.chat_message("assistant"):
-            st.markdown(f"**{q['question']}**")
-            st.caption(f"Why this matters: {q['why_important']}")
-        answer = st.text_area(
-            "Your answer (leave blank to skip this question)",
-            key=f"aic01_ans_{case_id}_{qid}",
-            value=answers.get(qid, ""),
-        )
-        answers[qid] = answer
+    q = questions[idx]
+    qid = q["id"]
 
-    st.session_state[_answers_key] = answers
+    with st.chat_message("assistant"):
+        st.markdown(f"**{q['question']}**")
+        st.caption(f"Why this matters: {q['why_important']}")
+
+    answer = st.text_area(
+        "Your answer (leave blank to skip this question)",
+        key=f"aic01_ans_{case_id}_{qid}",
+        value=answers.get(qid, ""),
+    )
 
     col1, col2 = st.columns([1, 3])
     with col1:
-        if st.button("Save & Continue", key=f"aic01_save_{case_id}"):
-            _save_intake_qa(case_id, questions, answers)
-            st.session_state[_state_key] = "done"
+        if st.button("Send", key=f"aic01_send_{case_id}_{qid}", type="primary"):
+            answers[qid] = answer.strip() if answer.strip() else "[SKIPPED]"
+            st.session_state[_answers_key] = answers
+            st.session_state[_idx_key] = idx + 1
             st.rerun()
     with col2:
         if st.button("Skip for now", key=f"aic01_skip_{case_id}"):
+            # Mark current and all remaining questions as [SKIPPED]
+            for remaining in questions[idx:]:
+                if not answers.get(remaining["id"]):
+                    answers[remaining["id"]] = "[SKIPPED]"
+            st.session_state[_answers_key] = answers
+            _save_intake_qa(case_id, questions, answers)
             st.session_state[_state_key] = "skipped"
             st.rerun()
 
@@ -144,11 +158,12 @@ def _generate_followup_questions(intake_summary: str) -> list[dict]:
 
 
 def _save_intake_qa(case_id: str, questions: list[dict], answers: dict) -> None:
-    """Persist intake Q&A to D_Working_Papers/intake_qa.json."""
+    """Persist intake Q&A to intake_qa.json and append to case_intake.md (BA-FE-01)."""
     cdir = case_dir(case_id)
     wp_dir = cdir / "D_Working_Papers"
     wp_dir.mkdir(parents=True, exist_ok=True)
 
+    # Machine-readable record
     qa_path = wp_dir / "intake_qa.json"
     record = {
         "saved_at": datetime.now(timezone.utc).isoformat(),
@@ -156,7 +171,7 @@ def _save_intake_qa(case_id: str, questions: list[dict], answers: dict) -> None:
             {
                 "question":      q["question"],
                 "why_important": q["why_important"],
-                "answer":        answers.get(q["id"], ""),
+                "answer":        answers.get(q["id"], "[SKIPPED]") or "[SKIPPED]",
             }
             for q in questions
         ],
@@ -164,6 +179,21 @@ def _save_intake_qa(case_id: str, questions: list[dict], answers: dict) -> None:
     tmp = qa_path.with_suffix(".tmp")
     tmp.write_text(json.dumps(record, indent=2), encoding="utf-8")
     os.replace(tmp, qa_path)
+
+    # Human-readable append to case_intake.md (Q: / A: format per spec)
+    intake_path = wp_dir / "case_intake.md"
+    lines = []
+    for q in questions:
+        ans = answers.get(q["id"], "[SKIPPED]") or "[SKIPPED]"
+        lines.append(f"Q: {q['question']}\nA: {ans}")
+    block = "\n\n".join(lines)
+    existing = intake_path.read_text(encoding="utf-8") if intake_path.exists() else "# Case Intake Log\n"
+    if not existing.endswith("\n"):
+        existing += "\n"
+    updated = existing + f"\n## AIC Follow-up Questions\n\n{block}\n"
+    tmp_md = intake_path.with_suffix(".tmp")
+    tmp_md.write_text(updated, encoding="utf-8")
+    os.replace(tmp_md, intake_path)
 
 
 # ── AIC-02 ─────────────────────────────────────────────────────────────────────
