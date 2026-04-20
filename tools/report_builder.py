@@ -143,6 +143,80 @@ class BaseReportBuilder:
             self._add_body_text(content)
         return self
 
+    def add_heat_map(self, risk_items: list) -> "BaseReportBuilder":
+        """Add a 5×5 likelihood × impact heat map table to the document (FR-05).
+
+        Cells are colour-coded by risk rating (likelihood × impact):
+          1-4  → green   (#92D050)
+          5-9  → amber   (#FFC000)
+          10-19 → red    (#FF0000)
+          20-25 → dark red (#C00000)
+
+        risk_items: list of RiskItem objects or dicts with likelihood/impact fields.
+        Returns self for fluent chaining.
+        AC: calling with 25 stub items (all L×I combos) returns self without raising.
+        """
+        from docx.shared import RGBColor
+        from docx.oxml.ns import qn
+        from docx.oxml import OxmlElement
+
+        def _color(likelihood: int, impact: int) -> tuple[int, int, int]:
+            rating = likelihood * impact
+            if rating >= 20:
+                return (192, 0, 0)
+            if rating >= 10:
+                return (255, 0, 0)
+            if rating >= 5:
+                return (255, 192, 0)
+            return (146, 208, 80)
+
+        def _set_cell_bg(cell, rgb: tuple[int, int, int]) -> None:
+            """Apply background shading to a table cell via direct XML."""
+            tc   = cell._tc
+            tcPr = tc.get_or_add_tcPr()
+            shd  = OxmlElement("w:shd")
+            shd.set(qn("w:val"), "clear")
+            shd.set(qn("w:color"), "auto")
+            shd.set(qn("w:fill"), "{:02X}{:02X}{:02X}".format(*rgb))
+            tcPr.append(shd)
+
+        # Build rating count map — each (likelihood, impact) cell shows risk count
+        counts: dict[tuple[int, int], int] = {}
+        for item in risk_items:
+            def _get(attr, default=1):
+                if hasattr(item, attr):
+                    return getattr(item, attr)
+                return item.get(attr, default) if isinstance(item, dict) else default
+            l = max(1, min(5, _get("likelihood")))
+            i = max(1, min(5, _get("impact")))
+            counts[(l, i)] = counts.get((l, i), 0) + 1
+
+        # Add a heading for the heat map
+        self._doc.add_paragraph("Risk Heat Map", style=self._resolve_style("Heading 2"))
+
+        # 6×6 table: row 0 = column headers; col 0 = row headers
+        tbl = self._doc.add_table(rows=6, cols=6)
+        tbl.style = self._resolve_style("Table Grid")
+
+        # Column header row (impact 1–5)
+        hdr_row = tbl.rows[0]
+        hdr_row.cells[0].text = "L \\ I"
+        for impact in range(1, 6):
+            hdr_row.cells[impact].text = str(impact)
+
+        # Data rows (likelihood 1–5)
+        for likelihood in range(1, 6):
+            row = tbl.rows[likelihood]
+            row.cells[0].text = str(likelihood)
+            for impact in range(1, 6):
+                cell  = row.cells[impact]
+                rgb   = _color(likelihood, impact)
+                count = counts.get((likelihood, impact), 0)
+                cell.text = str(count) if count else ""
+                _set_cell_bg(cell, rgb)
+
+        return self
+
     def save(self, output_path: str | Path) -> Path:
         """Atomically write the document to output_path.
 

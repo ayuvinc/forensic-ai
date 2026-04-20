@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "ak-state-machine": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/Users/akaushal011/forensic-ai/mcp-servers/state_machine_server.py"
+      ],
+      "env": {
+        "PROJECT_ROOT": "/Users/akaushal011/forensic-ai"
+      }
+    },
+    "ak-audit-log": {
+      "type": "stdio",
+      "command": "python3",
+      "args": [
+        "/Users/akaushal011/forensic-ai/mcp-servers/audit_log_server.py"
+      ],
+      "env": {
+        "PROJECT_ROOT": "/Users/akaushal011/forensic-ai",
+        "AUDIT_LOG_PATH": "tasks/audit-log.md"
+      }
+    }
+  }
+}

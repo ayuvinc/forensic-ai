@@ -250,6 +250,84 @@ class ProjectManager:
         except Exception:
             return ""
 
+    # ── Exhibit and Lead register (WF-01a) ───────────────────────────────────
+
+    def add_exhibit(self, slug: str, exhibit: dict) -> None:
+        """Append an exhibit entry to D_Working_Papers/exhibits.json.
+
+        exhibit should contain at minimum: exhibit_id (str), description (str).
+        added_at is injected automatically.
+        """
+        path = self._case_dir(slug) / "D_Working_Papers" / "exhibits.json"
+        exhibits = self._load_json_list(path)
+        exhibit.setdefault("added_at", datetime.now(timezone.utc).isoformat())
+        exhibits.append(exhibit)
+        self._write_json_atomic(path, exhibits)
+
+    def add_lead(self, slug: str, lead: dict) -> None:
+        """Append a lead entry to D_Working_Papers/leads_register.json.
+
+        lead should contain: lead_id (str), description (str).
+        status defaults to "open". added_at injected automatically.
+        """
+        path = self._case_dir(slug) / "D_Working_Papers" / "leads_register.json"
+        leads = self._load_json_list(path)
+        lead.setdefault("status", "open")
+        lead.setdefault("added_at", datetime.now(timezone.utc).isoformat())
+        leads.append(lead)
+        self._write_json_atomic(path, leads)
+
+    def update_lead(self, slug: str, lead_id: str, updates: dict) -> None:
+        """Update an existing lead by lead_id.
+
+        Raises KeyError if lead_id is not found — callers must handle this
+        to avoid silent no-ops when an ID is mistyped.
+        """
+        path = self._case_dir(slug) / "D_Working_Papers" / "leads_register.json"
+        leads = self._load_json_list(path)
+        for lead in leads:
+            if lead.get("lead_id") == lead_id:
+                lead.update(updates)
+                lead["updated_at"] = datetime.now(timezone.utc).isoformat()
+                self._write_json_atomic(path, leads)
+                return
+        raise KeyError(f"Lead not found: {lead_id}")
+
+    def get_open_leads(self, slug: str) -> list[dict]:
+        """Return all leads where status != 'confirmed'."""
+        path = self._case_dir(slug) / "D_Working_Papers" / "leads_register.json"
+        return [l for l in self._load_json_list(path) if l.get("status") != "confirmed"]
+
+    def get_confirmed_leads(self, slug: str) -> list[dict]:
+        """Return all leads where status == 'confirmed'."""
+        path = self._case_dir(slug) / "D_Working_Papers" / "leads_register.json"
+        return [l for l in self._load_json_list(path) if l.get("status") == "confirmed"]
+
+    # ── Stakeholder context (FR-02) ───────────────────────────────────────────
+
+    def get_stakeholder_context(self, slug: str) -> str:
+        """Return stakeholder inputs as a formatted string for agent injection.
+
+        Returns empty string if stakeholder_inputs.json does not exist — no crash.
+        """
+        path = self._case_dir(slug) / "D_Working_Papers" / "stakeholder_inputs.json"
+        if not path.exists():
+            return ""
+        try:
+            entries = json.loads(path.read_text(encoding="utf-8"))
+            if not entries:
+                return ""
+            lines = ["## Stakeholder Inputs"]
+            for e in entries:
+                name = e.get("name", "Unknown")
+                role = e.get("role", "")
+                concern = e.get("key_concern", "")
+                risk_view = e.get("risk_view", "")
+                lines.append(f"**{name}** ({role}): Concern — {concern}. Risk view — {risk_view}.")
+            return "\n".join(lines)
+        except Exception:
+            return ""
+
     # ── Collision detection ───────────────────────────────────────────────────
 
     def detect_slug_collision(self, slug: str) -> bool:
