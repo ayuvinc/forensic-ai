@@ -11,11 +11,11 @@ The Architect and skill agents own the write gate.
 ## Current Status
 
 ```
-session:        025
-sprint:         repo-reorg
-active_persona: architect
-last_skill_run: architect (repo reorganisation)
-last_updated:   2026-04-19 UTC
+session:        034
+sprint:         TPL-05
+active_persona: none
+last_skill_run: session-close (interim closeout)
+last_updated:   2026-04-20 UTC
 ```
 
 ---
@@ -64,6 +64,72 @@ runtime_impact: none
 ## Queued Messages
 
 <!-- Agents append messages here. Architect clears at session close. -->
+
+### qa — Session034 AC — 2026-04-20T00:00:00Z
+```yaml
+run_id: "qa-034-tpl05-20260420"
+agent: "qa"
+origin: claude-core
+status: PASS
+timestamp_utc: "2026-04-20T00:00:00Z"
+summary: "TPL-05 — 7 ACs written; stale next-action.md options A/C/D noted as already implemented"
+
+stale_next_action_note: |
+  Session 034 next-action.md listed four options (A–D). QA investigation confirmed:
+  - Option A (WORK-02, WORK-03): ALREADY DONE — [x] in todo.md; code verified in
+    pages/12_Case_Tracker.py (_render_workpaper_button) and workflows/workpaper.py
+  - Option C (CONV-02): ALREADY DONE — [x] in todo.md; streamlit_app/shared/evidence_chat_panel.py built (Phase F)
+  - Option D (KL-02, ACT-02, ACT-03): ALREADY DONE — [x] in todo.md;
+    tools/knowledge_harvester.py, tools/activity_logger.py, pages/15_Activity_Log.py all confirmed built
+  - Option B (TPL-05): GENUINELY PENDING — the only unbuilt task from next-action.md options
+
+  next-action.md should be updated by Architect after Session 034 closes.
+
+ac_tpl05:
+  task_id: TPL-05
+  mode: pre-build (Mode A)
+  criteria_count: 7
+  criteria:
+    - "Smoke test script runs without exception (exit code 0)"
+    - "Output file cases/{case_id}/F_Final/final_report.docx exists after run"
+    - "python-docx opens output file and finds ≥1 paragraph with .style.name starting with GW_"
+    - "cases/{case_id}/audit_log.jsonl contains template_resolved event with fallback: false"
+    - "firm_profile/templates/templates.json frm_risk_register entry has base = frm_risk_register_base.docx"
+    - "Pre-condition: firm_profile/templates/frm_risk_register_base.docx exists (test skips with message if absent)"
+    - "Error state: if base.docx absent, pipeline falls back gracefully (no crash), template_resolved event has fallback: true"
+
+  env_requirement: "ANTHROPIC_API_KEY set + RESEARCH_MODE=knowledge_only (avoids Tavily calls)"
+  blocker_note: "TPL-05 is an end-to-end smoke test — requires live FRM pipeline run, not code inspection"
+
+warnings:
+  - "Duplicate TPL-05 entry in tasks/todo.md (lines 557-558) — cleaned up; one entry retained with expanded AC"
+  - "frm_risk_register_base.docx confirmed at firm_profile/templates/ (not templates/) — test must use correct path"
+
+artifacts_written:
+  - tasks/todo.md
+  - channel.md
+
+next_action: "/junior-dev to run TPL-05 smoke test on feature/sprint-tpl05"
+```
+
+### session-close — Session034 closeout — 2026-04-20T17:33:20Z
+```yaml
+run_id: "session-close-034-tpl05-handoff-20260420T173320Z"
+agent: "session-close"
+origin: claude-core
+status: PASS
+timestamp_utc: "2026-04-20T17:33:20Z"
+summary: "Session 034 closed — interim QA/planning closeout only; TPL-05 remains the next executable task"
+warnings:
+  - "Session 034 did not execute the TPL-05 smoke test; it only prepared AC and corrected the stale handoff"
+artifacts_written:
+  - tasks/todo.md
+  - tasks/next-action.md
+  - tasks/audit-log.md
+  - releases/audit-log.md
+  - channel.md
+next_action: "/junior-dev to run TPL-05 smoke test on a fresh session"
+```
 
 ### qa — Phase-C-UXF07-recheck — QA_APPROVED — 2026-04-19T17:15:00Z
 ```yaml

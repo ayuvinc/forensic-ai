@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
-Active persona: junior-dev
+Active persona: none
 Blocking issue: none
-Last updated:   2026-04-20T16:07:10Z — state transition by MCP server
+Last updated:   2026-04-20T17:33:20Z — Session 034 close by session-close
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -552,10 +552,18 @@ RD-04 ──── independent (called by RD-03)
 ### Sprint-TPL — Report Template System (Session 024)
 
 **BA:** BA-TPL-01, BA-TPL-02
-**Note:** TPL-01 through TPL-04 DONE (merged Phase C + Phase D). TPL-05 is the remaining AC smoke test.
+**Note:** TPL-01 through TPL-04 DONE (merged Phase C + Phase D). TPL-05 is the remaining AC smoke test (Session 034 target).
 
-- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx`; open file in python-docx and confirm at least one paragraph with style matching a GW_ style name is present; audit_log contains `template_resolved` event with `fallback: false`; `templates.json` shows correct base filename in `frm_risk_register.base` slot. ← deps: TPL-01, TPL-02, TPL-03, TPL-04 | AC: smoke test script runs without exception and all three assertions pass.
-- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx`; open file in python-docx and confirm at least one paragraph with style matching a GW_ style name is present; audit_log contains `template_resolved` event with `fallback: false`; `templates.json` shows correct base filename in `frm_risk_register.base` slot. ← deps: TPL-01, TPL-02, TPL-03, TPL-04 | AC: smoke test script runs without exception and all three assertions pass.
+- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx` ← deps: TPL-01, TPL-02, TPL-03, TPL-04
+
+#### AC — TPL-05
+- [ ] Smoke test script runs without exception (no uncaught Python error, exit code 0)
+- [ ] Output file `cases/{case_id}/F_Final/final_report.docx` exists after the run
+- [ ] `python-docx` opens the output file and finds ≥1 paragraph whose `.style.name` starts with `GW_`
+- [ ] `cases/{case_id}/audit_log.jsonl` contains a `template_resolved` event with `fallback: false`
+- [ ] `firm_profile/templates/templates.json` entry for `frm_risk_register` has `base` key equal to `"frm_risk_register_base.docx"` (not a fallback path)
+- [ ] Template file `firm_profile/templates/frm_risk_register_base.docx` exists before the run (pre-condition; test should skip with clear message if absent)
+- [ ] Error state: if `frm_risk_register_base.docx` is absent, pipeline falls back gracefully (no crash) and `template_resolved` event has `fallback: true`
 
 ---
 
