@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: architect
+Active persona: manual-verify
 Blocking issue: none
-Last updated:   2026-04-21T02:31:32Z — state transition by MCP server
+Last updated:   2026-04-21T16:26:30Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -69,6 +69,107 @@ Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09,
 
 ## PENDING TASKS
 
+
+---
+
+### FIX-03 — Fix Workspace header: state.client_name missing from ProjectState [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `16_Workspace.py:129` accesses `state.client_name` and `state.service_type`, but `ProjectState` has neither field — they live on `ProjectIntake` which is not stored in `ProjectState`. Fix: read `client_name` and `service_type` from the index entry (`pm.list_projects()`) using the active slug as the lookup key.
+**Source:** Smoke test run 2 STEP-16 failure (2026-04-21). AttributeError confirmed in screenshot.
+
+- [ ] FIX-03a In `16_Workspace.py`, before line 129: look up the index entry for `slug` via `pm.list_projects()` and extract `client_name` and `service_type`
+- [ ] FIX-03b Replace `state.client_name` and `state.service_type` in line 129 with the index-sourced values; fall back to `"—"` if not found
+- [ ] FIX-03c Confirm no other lines in `16_Workspace.py` access undefined `ProjectState` attributes
+
+#### AC — FIX-03
+- [ ] Workspace page loads `abc-corp-test-engagement` without AttributeError
+- [ ] Header caption shows: `Client: ABC Corp  |  Service: Investigation Report  |  Last session: —` (or actual session date)
+- [ ] If index entry has no `client_name`, caption shows `Client: —` (no crash)
+- [ ] If engagement has no sessions, `Last session: —` is shown (not an exception)
+- [ ] 131 tests still pass after change
+
+---
+
+### CR-01 — Rename "Persona Review" → "Individual Due Diligence - Background checks" (user-facing labels only) [P1, Sprint-IA-01] — READY_FOR_REVIEW
+
+**Scope:** Rename ALL user-facing display labels only. The internal workflow key `persona_review` must NOT change — it is stored in state.json, audit logs, and index entries. Only string literals shown in the UI or CLI.
+**Source:** AK instruction during smoke test run 2 (2026-04-21).
+
+Files with user-facing labels to update:
+- `app.py:73` — sidebar title
+- `pages/03_Persona_Review.py:17` — page `st.title()`
+- `pages/03_Persona_Review.py:18` — `st.caption()` description
+- `pages/03_Persona_Review.py:38` — intake form title string
+- `pages/03_Persona_Review.py:54` — "Run Persona Review" button label
+- `pages/03_Persona_Review.py:79` — "Running Persona Review..." progress string
+- `pages/03_Persona_Review.py:103` — "Persona Review complete" success message
+- `pages/01_Engagements.py:43` — service type option in list
+- `pages/01_Engagements.py:57` — dict key in `_WORKFLOW_PAGES` (this IS a string match, update the key too but keep the value path intact)
+- `pages/12_Case_Tracker.py:29` — display label dict value
+- `pages/16_Workspace.py:149` — display label dict value
+- `streamlit_app/shared/intake.py:98` — button label value
+- `ui/menu.py:17` — CLI menu label
+
+Do NOT rename:
+- Internal key `"persona_review"` (dict keys mapping workflow_type → anything filesystem/state-related)
+- `workflows/persona_review.py` filename
+- `pages/03_Persona_Review.py` filename
+- Any `state.json` field, audit log event, or Python variable/function name
+
+- [ ] CR-01a Update all 13 user-facing label locations listed above
+- [ ] CR-01b Confirm `persona_review` key is unchanged in: `pages/01_Engagements.py` `_WORKFLOW_PAGES` dict value-side routing, `pages/12_Case_Tracker.py`, `pages/16_Workspace.py`, `streamlit_app/shared/intake.py` key
+
+#### AC — CR-01
+- [ ] Sidebar WORKFLOWS section shows "Individual Due Diligence - Background checks" (not "Persona Review")
+- [ ] `pages/03_Persona_Review.py` page title reads "Individual Due Diligence - Background checks"
+- [ ] Run Workflow selectbox on Engagements page shows "Individual Due Diligence - Background checks" as last option
+- [ ] Case Tracker display label shows "Individual Due Diligence - Background checks" for `persona_review` workflow entries
+- [ ] Workspace Workflow Outputs shows "Individual Due Diligence - Background checks" label
+- [ ] Clicking the sidebar link still navigates to `pages/03_Persona_Review.py` (routing unchanged)
+- [ ] `pages/01_Engagements.py` `_WORKFLOW_PAGES` key is updated so New Engagement service type selectbox shows new label AND still routes to `03_Persona_Review.py`
+- [ ] Internal `persona_review` key unchanged in all Python dicts mapping workflow_type → case data
+- [ ] 131 tests still pass after change
+
+---
+
+### FIX-01 — Rename Scope page file (remove "b_" prefix) [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `pages/01b_Scope.py` — filename has "b_" prefix, causing URL slug `/b_Scope` instead of `/Scope`.
+**Source:** Smoke test STEP-10 failure (2026-04-21).
+
+- [x] FIX-01a Rename `pages/01b_Scope.py` to `pages/01_Scope.py`
+- [x] FIX-01b Verify no other file in `pages/` or `app.py` references `01b_Scope` by string — `app.py:53` updated
+
+#### AC — FIX-01
+- [ ] After rename: `streamlit run app.py` — Scope page URL is `localhost:8501/Scope` (not `/b_Scope`)
+- [ ] Sidebar still shows link labelled "Scope" under PROPOSALS section
+- [ ] Scope page loads without error — heading reads "Start here for any new engagement..."
+- [ ] No other page is broken by the rename (sidebar step count unchanged: 5 sections, all links present)
+- [ ] `app.py` or navigation config (if any) does not hardcode the old filename
+
+---
+
+### FIX-02 — Fix seed script: create A-F format engagement [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `build_case_index()` in `tools/file_tools.py` stripped `is_af_project`/`legacy` flags from all index entries → Engagements page put every case in Legacy. Workspace picker showed legacy case IDs; `pm.get_project(legacy_id)` returned None.
+**Fix applied:** `build_case_index()` now writes `is_af_project`/`legacy` per entry. Workspace picker filters to A-F projects only.
+**Source:** Smoke test STEP-13/14/16 failures (2026-04-21).
+
+- [x] FIX-02a Root cause identified: `build_case_index()` did not write `is_af_project` flag
+- [x] FIX-02b `tools/file_tools.py` `build_case_index()` — add `is_af_project` + `legacy` fields per entry
+- [x] FIX-02c `pages/16_Workspace.py` — filter picker to `is_af_project` entries only
+- [x] FIX-02d `state.cases` verified: 3 entries present; all 3 `F_Final/final_report.en.md` files exist
+- [x] FIX-02e `pm.get_project('abc-corp-test-engagement')` loads successfully; index shows af=True
+
+#### AC — FIX-02
+- [ ] `python3 scripts/seed_test_engagement.py` completes with no Python errors; last line: "Seed complete. Run: streamlit run app.py"
+- [ ] After seed + `streamlit run app.py`: "abc-corp-test-engagement" appears in **Active Engagements** section (not Legacy Cases)
+- [ ] Clicking `abc-corp-test-engagement` card on Engagements page loads right panel detail with Run Workflow selectbox
+- [ ] Workspace page: selecting `abc-corp-test-engagement` from picker loads without "not found" error
+- [ ] Workspace page: "Workflow Outputs (3 runs)" expander visible and expanded — 3 sections: Investigation Report, FRM Risk Register, Due Diligence
+- [ ] Each section in Workflow Outputs shows a download button (.md or .docx)
+- [ ] Re-running seed script (second run) does not crash — skips existing engagement, skips existing cases
+- [ ] Legacy Cases count does not increase after seed (seed does not add new legacy cases)
 
 ---
 
@@ -553,6 +654,56 @@ RD-04 ──── independent (called by RD-03)
 
 ---
 
+### Sprint-IA-01 — Product IA Redesign Phase 1: Navigation + Multi-Workflow (Session 036)
+
+**BA sign-off:** BA-IA-01, BA-IA-02, BA-IA-03 — confirmed AK 2026-04-21
+**Branch:** `feature/sprint-fe-triage` (continuing on same branch — no new branch needed)
+**Context:** AK identified fundamental IA issue during FE-TRIAGE-01 pass. Engagement must be root entity. Two arcs: Proposal (Arc 1) and Engagement (Arc 2). Workflow pages demoted from primary nav to secondary. Full design in ba-logic.md Session 036 section.
+**LLD:** `docs/lld/product-ia-design.md` — authority for all navigation and arc decisions.
+
+#### Phase 0 — Doc updates (all BLOCK MERGE TO MAIN — do not block individual build tasks)
+
+- [x] **[ARCH-DOC-01]** HLD refresh — update `docs/hld.md` to reflect post-Phase 8/9 state: (a) System Overview: add Streamlit as primary entry point, (b) Major Components: add streamlit_app/, ProjectManager, EmbeddingEngine, TemplateManager, ActivityLogger, schemas/project.py, (c) Architecture/Data Flow: add Phase 9 engagement flow + Proposal arc + two-arc model, (d) Deployment Model: Streamlit replaces run.py as primary UI (run.py remains for CLI mode), (e) Phase 10-13 section: add Phase 9 decisions. LLD `docs/lld/product-ia-design.md` already written (Session 036). ← no deps | P0 | **BLOCKS MERGE TO MAIN** | AC: hld.md Status = `active`; Major Components includes all Phase 8/9 additions; Architecture/Data Flow shows two arcs; Deployment Model reflects Streamlit as primary.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [x] **[ARCH-DOC-02]** README.md full rewrite — current README describes the old `python run.py` CLI with a 10-item terminal menu. Must be completely rewritten to reflect: (a) Streamlit as primary entry point (`streamlit run app.py`), (b) project/engagement model (Projects with 1–N workstreams), (c) two-arc flow (Proposal arc → Engagement arc), (d) full service line list including DD, Sanctions, TT, AUP, and new investigation types (8 types including AUP + Custom), (e) updated output folder structure (A–F per engagement), (f) updated cost guide, (g) updated troubleshooting for Streamlit. Audience: white-label customer reading for the first time. ← no deps | P0 | **BLOCKS MERGE TO MAIN** | AC: README describes Streamlit entry point; lists all current service lines; project/engagement model explained; no mention of `python run.py` as primary path.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [x] **[ARCH-DOC-03]** Framework brief + scope brief update — (a) `docs/GoodWork_AI_Framework_Brief.md`: update to reflect Streamlit UI, full service line list, two-arc model, project/engagement structure — this is the white-label pitch/executive doc; (b) `docs/scope-brief.md`: move Streamlit from should-have to done; add AUP and Expert Witness to must-have; update Cut-for-Now list to reflect Session 036 decisions. ← no deps | P1 | **BLOCKS MERGE TO MAIN** | AC: Framework Brief mentions Streamlit and all service lines; scope-brief.md reflects current product state accurately.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase A — App-level fixes (no deps on ARCH-DOC-01 — coding can start immediately)
+
+- [x] **[IA-00]** Seed test data script — create `scripts/seed_test_engagement.py`. Writes a mock `ProjectState` with `project_name="ABC Corp Test Engagement"`, `client="ABC Corp"`, and 3 entries in `cases`: `{"investigation_report": "case_test_001", "frm_risk_register": "case_test_002", "due_diligence": "case_test_003"}`. For each case_id: create `cases/{case_id}/state.json` (status=DELIVERABLE_WRITTEN), `cases/{case_id}/F_Final/final_report.en.md` (3-line placeholder), `cases/{case_id}/F_Final/final_report.en.docx` (empty docx via python-docx). No API calls. Run once before testing IA-04. ← no deps | P0 | AC: script runs without error; `streamlit run app.py` → Workspace shows 3 workflow sections under the test engagement; each section shows a download link.
+  - **Auth:** local only | **Data:** writes to cases/ (test data only — gitignored) | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [x] **[IA-01]** Fix `app.py` bootstrap — add `try/except` + `caller_file=__file__` to `session = bootstrap(st)` call on line 25. Same pattern applied to all pages in FE-TRIAGE-05. ← no deps | P0 | AC: app.py bootstrap failure renders error panel, not blank crash; `bootstrap(st, caller_file=__file__)` called in app.py.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [x] **[IA-02]** Navigation restructure — replace pages/ directory convention with `st.navigation()` in `app.py`. Group pages into sections per `docs/lld/product-ia-design.md` (MAIN: Engagements, Workspace; PROPOSALS: Scope, Proposals; MONITOR: Case Tracker, Activity Log; SETTINGS: Team, Settings; WORKFLOWS: all workflow pages). 00_Setup not in nav (redirect-only). Use `st.Page(title=...)` to set display names — fixes "b Scope" → "Scope" without file rename. ← deps: IA-01 | P0 | AC: sidebar shows exactly 5 sections (MAIN, PROPOSALS, MONITOR, SETTINGS, WORKFLOWS); "b Scope" gone, replaced by "Scope" in PROPOSALS; 00_Setup not visible in sidebar; all workflow pages still reachable; existing `st.switch_page()` calls still work.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase B — Engagement multi-workflow
+
+- [x] **[IA-03]** Verify multi-workflow in `01_Engagements.py` — confirm "Run Workflow" selectbox (line ~199) allows ALL workflow types regardless of engagement's primary `service_type`. If any restriction exists, remove it. ← no deps | P1 | AC: an engagement created with service_type "Investigation Report" can also launch FRM, DD, or any other workflow from the Engagements detail panel without error.
+  - **Auth:** local only | **Data:** reads ProjectState; writes active_project to session_state | **PII:** none | **Audit:** none | **Abuse:** service_type is read from state.json, not user input at this point
+
+- [x] **[IA-04]** Workspace multi-workflow outputs — update `16_Workspace.py` to show all workflow runs under the active engagement, not just the primary. Read `ProjectState.cases` dict (all workflow_type → case_id entries) and render a section per workflow with links to its outputs in E_Drafts/ and F_Final/. ← no deps | P1 | AC: an engagement with 2+ workflow runs shows a section per workflow in Workspace; each section shows latest draft/final report download link; engagement with 0 runs shows "No workflows run yet."
+  - **Auth:** local only | **Data:** reads cases/{slug}/; no writes | **PII:** report content is Maher's work product, stored locally | **Audit:** none | **Abuse:** slug validated by ProjectManager._safe_slug()
+
+#### Phase C — Proposal arc v1 (navigation only — no new functionality)
+
+- [x] **[IA-05]** Reposition Proposal arc in navigation — in the `st.navigation()` config, move `07_Proposal.py` into a "Proposals" section with title "Proposals". Move `01b_Scope.py` (display title: "Scope") into same section as step 1 of Arc 1. Add a static info panel at top of 07_Proposal.py: "Arc 1 — Proposal: Step 2 of 3 (Proposal Deck). Complete Scope first, then upload signed letter to create an Engagement." ← deps: IA-02 | P2 | AC: sidebar shows "Proposals" section with "Scope" and "Proposals" entries; 07_Proposal.py renders info banner at top; no other page content changes.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase D — Verification
+
+- [ ] **[IA-VERIFY]** Full page walk — run `streamlit run app.py`, confirm new sidebar structure, confirm all pages still load, confirm multi-workflow launch from Engagements, confirm Workspace shows workflow outputs. ← deps: IA-01..05 | AC: sidebar matches 4-section design; all 17 pages render; no new crashes introduced.
+
+**Note:** IA-06 (full Proposal arc with scoping conversation + engagement letter generation) is Sprint-IA-02 — separate session. This sprint is navigation and multi-workflow only.
+
+---
+
 ### Sprint-FE-TRIAGE — Frontend Smoke Test + Bug Fix (target: ~2026-05-05)
 
 **Context:** AK ran manual frontend testing (2026-04-21). Pages 00 (Setup), 01 (Engagements/Scope), and 16 (Workspace) showed crashes or errors. Workflow execution was broken. Exact errors not captured — triage session required.
@@ -572,21 +723,21 @@ RD-04 ──── independent (called by RD-03)
 
 #### Phase B — Pre-defined structural fixes (parallel with Phase A)
 
-- [ ] **[FE-TRIAGE-03]** Fix naming collision — rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar renders both pages without duplication or shadowing. ← no deps | P0 | AC: `streamlit run app.py` sidebar shows both Scope and Engagements pages; no 404 on either; no duplicate entries.
+- [x] **[FE-TRIAGE-03]** Fix naming collision — rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar renders both pages without duplication or shadowing. ← no deps | P0 | AC: `streamlit run app.py` sidebar shows both Scope and Engagements pages; no 404 on either; no duplicate entries.
   - **Auth:** local only
   - **Data boundaries:** pages/ rename only; no schema or state change
   - **PII:** none
   - **Audit:** none required (structural rename)
   - **Abuse surface:** none
 
-- [ ] **[FE-TRIAGE-04]** Replace private Streamlit API in `_maybe_redirect_to_setup` — `streamlit_app/shared/session.py:156-179`. Remove `get_script_run_ctx`, `ctx.page_script_hash`, `ctx.script_path`. Replace with caller-filename detection: add optional `caller_file: str = ""` param to `bootstrap(st, caller_file=__file__)` and check `"00_Setup" in caller_file` instead. Update all 17 `bootstrap(st)` call sites to pass `__file__`. ← no deps | P0 | AC: `bootstrap(st, caller_file=__file__)` called on all pages; `_maybe_redirect_to_setup` contains no Streamlit runtime imports; 00_Setup.py does not redirect to itself; any other page redirects to setup when readiness check fails.
+- [x] **[FE-TRIAGE-04]** Replace private Streamlit API in `_maybe_redirect_to_setup` — `streamlit_app/shared/session.py:156-179`. Remove `get_script_run_ctx`, `ctx.page_script_hash`, `ctx.script_path`. Replace with caller-filename detection: add optional `caller_file: str = ""` param to `bootstrap(st, caller_file=__file__)` and check `"00_Setup" in caller_file` instead. Update all 17 `bootstrap(st)` call sites to pass `__file__`. ← no deps | P0 | AC: `bootstrap(st, caller_file=__file__)` called on all pages; `_maybe_redirect_to_setup` contains no Streamlit runtime imports; 00_Setup.py does not redirect to itself; any other page redirects to setup when readiness check fails.
   - **Auth:** local only
   - **Data boundaries:** session.py only; no state change
   - **PII:** none
   - **Audit:** none required
   - **Abuse surface:** caller_file is a string passed from `__file__` — not user-controlled
 
-- [ ] **[FE-TRIAGE-05]** Harden bootstrap call sites — wrap `session = bootstrap(st, caller_file=__file__)` in try/except at all 17 page call sites. On exception: render `st.error(f"Page failed to load: {e}")` + `st.stop()`. Prevents blank crash; gives Maher a readable error and a path to report it. ← deps: FE-TRIAGE-04 | P1 | AC: artificially break one import in bootstrap, confirm the page renders an error panel instead of a blank crash; restore import; confirm normal page renders correctly.
+- [x] **[FE-TRIAGE-05]** Harden bootstrap call sites — wrap `session = bootstrap(st, caller_file=__file__)` in try/except at all 17 page call sites. On exception: render `st.error(f"Page failed to load: {e}")` + `st.stop()`. Prevents blank crash; gives Maher a readable error and a path to report it. ← deps: FE-TRIAGE-04 | P1 | AC: artificially break one import in bootstrap, confirm the page renders an error panel instead of a blank crash; restore import; confirm normal page renders correctly.
   - **Auth:** local only
   - **Data boundaries:** pages/ only; no state mutation on failure path
   - **PII:** exception message must not include file contents or case data — verify error string is safe before rendering
@@ -695,3 +846,57 @@ SETUP-00 through SETUP-03 all completed and merged. See releases/completed-tasks
 - [x] **[ACT-03]** Create `pages/07_Activity_Log.py` — per UX-020. (Built as 15_Activity_Log.py — 07 conflicts with existing 07_Proposal.py) Date range picker + category multiselect + free-text search. Paginated 50 events per page. Export as CSV button. Sidebar warning if `st.session_state.get("act_log_warn")` is True. ← deps: ACT-01 | AC: page renders with empty log (shows "No activity recorded yet"); date filter correctly narrows events; category filter works independently and in combination with date; CSV export produces valid file with all visible events; corrupt log file shows error message, does not crash.
 
 ---
+
+
+## Sprint-SIM (Simulation Findings — auto-generated)
+
+| ID | Severity | Source | Description | Effort | Status |
+|----|----------|--------|-------------|--------|--------|
+| SIM-01 [CONFIRMED_EMPIRICAL] | HIGH | Monte Carlo | investigation_report: success_rate=54.4%, top failure=NO_CITATIONS | M | OPEN |
+| SIM-02 [CONFIRMED_EMPIRICAL] | HIGH | Monte Carlo | frm_risk_register: success_rate=57.2%, top failure=MAX_TURNS | M | OPEN |
+| SIM-03 | MEDIUM | Monte Carlo | persona_review: success_rate=74.4%, top failure=SCHEMA_VALIDATION | M | OPEN |
+| SIM-04 [CONFIRMED_EMPIRICAL] | HIGH | Game Theory | B: Information Asymmetry (PM over-approves): Partner rejection rate 46.4% — no recovery path (Pipeli | L | OPEN |
+| SIM-05 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-06 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-07 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-08 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-09 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-10 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-11 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-12 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-13 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-14 [CONFIRMED_EMPIRICAL] | HIGH | Fuzz | description/text_pii: PII value passed through sanitize_pii unchanged | S | OPEN |
+| SIM-15 | MEDIUM | Conflict/session_state_collision | Key 'active_project' referenced in 4 pages: 01_Engagements.py, 06_FRM.py, 12_Case_Tracker.py, 16_Wor | S | OPEN |
+| SIM-16 | MEDIUM | Conflict/hook_ordering | persist_artifact (hook N) fires BEFORE extract_citations (hook N+1). If citation extraction fails (e | S | OPEN |
+| SIM-17 | MEDIUM | Conflict/state_machine_reachability | States unreachable from INTAKE_CREATED: pipeline_error. These states can never be entered via valid  | S | OPEN |
+
+
+## Sprint-FUT (Future-Direction Simulation Findings — auto-generated)
+
+| ID | Priority | Area | Description | Effort | Sprint | Status |
+|----|----------|------|-------------|--------|--------|--------|
+| FUT-01 | P1 | pii | Add UAE IBAN regex to sanitize_pii (AE07... pattern confirmed bypassed) | S | Sprint-SIM | DONE |
+| FUT-02 | P1 | pii | Strip null bytes (\x00..\x02) from free-text fields in sanitize_pii | S | Sprint-SIM | DONE |
+| FUT-03 | P1 | schema | Add ge=1, le=5 validators to RiskItem.likelihood and RiskItem.impact — 0 and 6 both accepted by Pyda | S | Sprint-SIM | DONE |
+| FUT-04 | P1 | orchestrator | Thread pm_feedback into Junior context on revision runs — confirmed missing: feedback_in_context=Non | M | Sprint-SIM | DONE |
+| FUT-05 | P2 | schema | Add min_length=1 to JuniorDraft.findings list — empty findings accepted today | S | Sprint-SIM | DONE |
+| FUT-06 | P2 | orchestrator | Add Partner→PM feedback recovery path — human decision gate with in-app review | L | Sprint-SIM | DONE |
+| FUT-07 | P2 | hook | enforce_evidence_chain root cause resolved — reads evidence_items from output fallback | M | Sprint-SIM | DONE |
+| FUT-09 | P1 | future_workflow | multi_tenant_workstream: CRITICAL — success_rate=14.2%, top failure=MAX_TURNS | L | Sprint-IA-01/02 | OPEN |
+| FUT-10 | P1 | future_workflow | expert_witness_report: CRITICAL — success_rate=24.8%, top failure=PIPELINE_ERROR | L | Sprint-IA-01/02 | OPEN |
+| FUT-11 | P1 | future_workflow | custom_investigation: CRITICAL — success_rate=27.6%, top failure=PIPELINE_ERROR | L | Sprint-IA-01/02 | OPEN |
+| FUT-12 | P1 | future_workflow | frm_guided_exercise: CRITICAL — success_rate=28.6%, top failure=PIPELINE_ERROR | L | Sprint-IA-01/02 | OPEN |
+| FUT-13 | P1 | future_workflow | aup_investigation: CRITICAL — success_rate=31.6%, top failure=PIPELINE_ERROR | L | Sprint-IA-01/02 | OPEN |
+| FUT-14 | P2 | future_workflow | co_work_session: HIGH — success_rate=58.0%, top failure=PIPELINE_ERROR | M | Sprint-IA-01/02 | OPEN |
+| FUT-15 | P2 | future_workflow | evidence_chat_session: HIGH — success_rate=58.0%, top failure=PIPELINE_ERROR | M | Sprint-IA-01/02 | OPEN |
+| FUT-16 | P2 | future_workflow | knowledge_harvester: HIGH — success_rate=61.8%, top failure=HOOK_VETO_POST | M | Sprint-IA-01/02 | OPEN |
+| FUT-17 | P2 | future_workflow | workpaper_promotion: HIGH — success_rate=66.8%, top failure=PIPELINE_ERROR | M | Sprint-IA-01/02 | OPEN |
+| FUT-18 | P2 | future_workflow | app_bootstrap: HIGH — success_rate=67.0%, top failure=PIPELINE_ERROR | M | Sprint-IA-01/02 | OPEN |
+| FUT-19 | P2 | slug | Artifact filenames appear to be named by agent + version only (e.g. junior_output.v1.json). When two | M | Sprint-IA-01 IA-03 | OPEN |
+| FUT-20 | P1 | bootstrap | app.py calls bootstrap() without a try/except wrapper. If bootstrap() raises (missing firm_profile/, | M | Sprint-IA-01 IA-01 | DONE |
+| FUT-21 | P1 | bootstrap | 00_Setup.py calls bootstrap() AND app.py calls bootstrap(). CLOSED — 00_Setup.py does NOT call bootstrap; no circular redirect risk. | M | Sprint-IA-01 IA-01 | CLOSED |
+| FUT-22 | P2 | template | templates/ directory exists but contains no .docx files. Any workflow that calls python-docx with a  | M | Sprint-IA-02 | OPEN |
+| FUT-23 | P1 | locking | No file locking primitives found in orchestrator.py or tools/file_tools.py. Current atomic write use | M | Sprint-IA-02 (co-work / shipping models 3+) | OPEN |
+| FUT-25 | P2 | future_design | evidence_chat_session: cap CEM context at 50 turns with explicit truncation warning (CEM_CONTEXT_CHA | S | Sprint-IA-02 (CEM) | OPEN |
+| FUT-26 | P2 | future_design | workpaper_promotion: require audit_log.jsonl to exist before promotion — surface friendly error on m | S | Sprint-IA-01 | OPEN |
+| FUT-27 | P2 | future_design | knowledge_harvester: implement PII filter (client names, case IDs, financial amounts) as a mandatory | M | Sprint-IA-02 (future) | OPEN |

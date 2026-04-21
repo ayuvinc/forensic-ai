@@ -28,6 +28,51 @@ A client suspects fraud, misconduct, or a compliance breach. They want a formal 
 | 5 | Cybercrime / BEC / digital fraud | Business Email Compromise, hacking |
 | 6 | Regulatory breach | Violations of specific regulations |
 | 7 | Whistleblower complaint | Formal internal complaints |
+| 8 | Agreed-Upon Procedures (AUP) | Strictly scoped procedures; factual findings only — no conclusions |
+| 9 | Other / Custom | Investigation does not fit a predefined category; structure proposed by model, confirmed by Maher |
+
+---
+
+## AUP Mode — Special Rules (Type 8)
+
+AUP engagements follow AICPA/IAASB agreed-upon procedures standards. The scope is the procedures list — nothing else is in scope.
+
+**Intake:** Maher provides the agreed procedures list as numbered items. Each item is discrete and specific. The intake conversation confirms: (a) who agreed to these procedures (client, regulator, counsel?), (b) the subject matter (transactions, contracts, accounts), (c) the reporting period.
+
+**Agent behavior — Junior:**
+- Structure output as one section per procedure: Procedure → Work Performed → Factual Finding.
+- Do not add sections outside the procedures list.
+- Do not draw conclusions or implications. Report only what was observed.
+- If evidence encountered is outside the procedures scope, flag as "Matter Outside Scope" — do not investigate or report findings on it.
+
+**Agent behavior — PM:**
+- Check that every procedure in the list has a corresponding section. Flag any missing procedures.
+- Check that no conclusion or recommendation language has been introduced.
+
+**Agent behavior — Partner:**
+- HARD RULE: no opinion language, no "therefore", no recommendations unless a procedure explicitly calls for one.
+- If any conclusion language is found, return to PM with: "AUP — conclusions not permitted. Strip and restate as observation."
+- Confirm procedures list in output matches procedures list in intake exactly.
+
+**AUP report does NOT include:**
+- Executive Summary (replace with "Purpose and Scope of Procedures")
+- Findings and Conclusions section
+- Recommendations section
+- Any implication language
+
+---
+
+## Custom Investigation Mode — Special Rules (Type 9)
+
+For investigations that span categories or do not fit any predefined type.
+
+**Intake:** Maher describes in free text: (a) the nature of the matter, (b) the subject (person, entity, process, transaction set), (c) the objectives (what questions need to be answered), (d) any known evidence already in hand.
+
+**Pre-draft structure confirmation:** Before the Junior begins drafting, the model proposes a report structure tailored to the described matter. Maher confirms or adjusts. Draft begins only after structure is confirmed. This step is mandatory for Custom type.
+
+**Agent behavior:** All standard investigation rules apply (evidence chain, three-agent pipeline, regulatory checks, authoritative citations). The difference is that the structural template is derived from the description, not from a predefined category template.
+
+**Partner review for Custom type:** Coherence and defensibility are the primary criteria. Partner confirms: (a) stated objectives are addressed, (b) conclusions follow from evidence, (c) no scope creep beyond the stated matter.
 
 ---
 

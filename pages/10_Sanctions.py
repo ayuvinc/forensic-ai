@@ -12,7 +12,11 @@ from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 from tools.file_tools import case_dir, get_final_report_path
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("Sanctions Screening")
 st.caption("OFAC, UN, EU, UK OFSI, and UAE local sanctions list screening")

@@ -95,7 +95,7 @@ def render_engagement_banner(st) -> Optional[dict]:
 _SUBMIT_LABELS: dict[str, str] = {
     "engagement_scoping":    "Begin Scoping",
     "investigation_report":  "Run Investigation",
-    "persona_review":        "Run Persona Review",
+    "persona_review":        "Run Individual Due Diligence",
     "policy_sop":            "Generate Policy / SOP",
     "training_material":     "Generate Training Material",
     "frm_risk_register":     "Run FRM Pipeline",

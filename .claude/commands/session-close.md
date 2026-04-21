@@ -49,6 +49,17 @@ Checks/Actions (run in order, BLOCKED on first failure):
 3. tasks/ux-specs.md — verify empty or all entries APPROVED.
 4. tasks/risk-register.md — verify no unreviewed OPEN entries.
 5. Verify all Codex conditions resolved or AK-accepted (check channel.md for unresolved CONDITIONS).
+5a. DOC FRESHNESS CHECK — MANDATORY. For every sprint completed this session, verify:
+    - README.md — does it reflect the current entry point, service lines, and product model?
+    - docs/hld.md — does it reflect all components and flows built this session?
+    - docs/GoodWork_AI_Framework_Brief.md — does it reflect current service lines and UI?
+    - docs/scope-brief.md — are completed items marked done? Are new items in scope?
+    - docs/product-packaging.md — does it reflect any new service lines, BA decisions, or commercial insights from this session? This doc captures epiphanies — check it even if no code shipped.
+    - Any docs/lld/*.md affected by this session's changes — are they current?
+    If ANY doc is stale: BLOCKED with `STALE_PROJECT_DOCS`. List every stale doc.
+    Stale docs are NOT a backlog item — they are a session-close defect. Do not close until resolved.
+    Exception: if an ARCH-DOC-NN task is explicitly written and approved for the stale doc,
+    and it is the FIRST task in the next sprint, the close may proceed with a WARNING.
 6. git add [changed project files].
 7. git commit -m "chore: Session N close — [one-line summary of what was built]".
 8. git push origin main.

@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-21 01:45:00 UTC — Session 035 closed by architect
-- Session summary: Session 035 — TPL-05 completed and merged. Wired TemplateManager into write_final_report, added template_resolved audit event, updated BaseReportBuilder to prefer GW_ styles; all 7 ACs pass (scripts/smoke_test_tpl05.py). Also planned Sprint-FE-TRIAGE (~2026-05-05) after AK reported crashes on pages 00/01/16. Sprint-TPL fully complete. Next: FE-TRIAGE-01 triage pass.
+- Last updated: 2026-04-21 04:10:00 UTC — Session 036 closed by session-close
+- Session summary: Session 036 — ARCH-DOC-01/02/03 complete (hld.md, README, GoodWork Brief, scope-brief all fully rewritten). New: docs/lld/product-ia-design.md (Sprint-IA-01 LLD), docs/product-packaging.md (6 shipping models). BA-IA-04..08 confirmed (project_name, min workstream, AUP type 8, Custom type 9, hybrid intake, Partner never blocks). architect.md + session-close.md updated with doc freshness enforcement + epiphany rule. FE-TRIAGE-03/04/05 committed. Sprint-IA-01 fully designed — coding begins Session 037.
 
 ## Use Case Note
 
@@ -106,7 +106,7 @@ RETRY_BACKOFF_SECONDS = [1, 3, 10]
 | `sanctions_check.py` | **Authoritative only**: ofac.treas.gov, un.org/securitycouncil, sanctions.ec.europa.eu | Return "no authoritative match identified" — never infer |
 | `company_lookup.py` | UAE registries, Zawya, official filings | Flag as "unverified" if not from official registry |
 
-**Rule:** Final deliverables may only cite from `authoritative_citations`. Regulatory claims without authoritative sources must carry a disclaimer.
+**Rule:** Final deliverables prefer `authoritative_citations`. Regulatory claims without authoritative sources must carry a disclaimer. The Partner always signs off — it never blocks delivery. Where standards are not fully met, the Partner appends specific disclaimers to the affected sections so Maher can decide whether to address them or proceed.
 
 ---
 
@@ -149,7 +149,11 @@ TIMEOUT      = manifest.timeout_seconds    # Hard timeout per agent run
 
 # After each tool result: validate against ResearchResult schema
 # Strip script/HTML from web content, truncate to 2000 chars (anti prompt-injection)
-# Block approval if workflow requires citations but output has 0 authoritative_citations
+# Partner NEVER blocks sign-off — always approves with explicit disclaimers when standards not met.
+# If 0 authoritative_citations: sign off + append disclaimer "Research limitations: no authoritative
+# sources were identified for [topic]. Findings in this section are based on [general sources /
+# knowledge base only] and should be independently verified before reliance."
+# Blocking stalls the engagement. Disclaimers preserve transparency without stopping delivery.
 ```
 
 ---

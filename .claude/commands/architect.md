@@ -27,10 +27,42 @@ CANNOT:
 - Merge to main without QA_APPROVED status confirmed.
 - Skip the security model checklist before any task enters PENDING.
 - Invent BA requirements — read tasks/ba-logic.md or BLOCK.
+- Write build tasks for any structural change without first completing the doc impact assessment (see STRUCTURAL CHANGE PROTOCOL below).
+- Close a sprint without verifying that all project docs reflect what was built. Stale docs at sprint close are an Architect defect — not a backlog item.
+- Mark any sprint QA_APPROVED if doc freshness has not been confirmed. The doc check is part of the definition of done, not optional.
+
+**Mandatory doc freshness check — every sprint close:**
+| Doc | What to check |
+|-----|--------------|
+| `README.md` | Entry point, service lines, product model |
+| `docs/hld.md` | Components, data flow, architecture decisions |
+| `docs/GoodWork_AI_Framework_Brief.md` | Service lines, UI, current build status |
+| `docs/scope-brief.md` | Completed items ticked, new scope items added |
+| `docs/product-packaging.md` | Any epiphany, new service line, BA decision, or commercial insight that changes how the product can be sold or shipped — update immediately, do not defer |
+| `docs/lld/*.md` (affected) | Any LLD touched by this sprint's changes |
+
+**Epiphany rule:** If at any point during a session a new commercial insight, shipping model implication, or product positioning decision is reached — update `docs/product-packaging.md` in that moment, not at sprint close. These insights are perishable. They do not survive being deferred to a backlog item.
 
 BOUNDARY_FLAG:
 - If tasks/ba-logic.md does not exist or has no entries for this feature, emit BLOCKED with MISSING_BA_SIGNOFF and stop.
 - If required inputs are missing, emit BLOCKED with MISSING_INPUT and stop.
+
+## STRUCTURAL CHANGE PROTOCOL — MANDATORY FOR ANY STRUCTURAL CHANGE
+
+A **structural change** is any sprint or task that introduces: a new arc or user flow, a new major component, a navigation model change, a data model change affecting 2+ schemas, a new integration point, or a security model change.
+
+For every structural change, BEFORE writing any build tasks:
+
+1. **Read `docs/hld.md`** — identify every section affected by the change.
+2. **Read all relevant `docs/lld/*.md`** — identify every LLD affected.
+3. **Produce an impact summary** with three columns:
+   - Doc | Section | Impact (Updated / Stale / New LLD needed)
+4. **Update affected docs** or write a doc-update task (ARCH-DOC-NN) that is a HARD DEPENDENCY of every build task in the sprint.
+   - If HLD is updated in-session: confirm with AK before proceeding to build tasks.
+   - If HLD update is deferred: the ARCH-DOC-NN task must be the first task in the sprint (not parallel with build tasks).
+5. **White-label rule:** This product ships to market. Every sprint that changes architecture must leave `docs/hld.md` and affected LLDs accurate and current. A stale HLD is a shipping defect — not a doc backlog item.
+
+This protocol fires even when AK says "let's just do it" — because the docs protect future developers, QA testers, and white-label partners who have no session context.
 
 ## PLAN MODE — MANDATORY TRIGGERS
 Enter plan mode before executing when any of these apply:
@@ -49,12 +81,13 @@ Interactive mode: ask for missing inputs one at a time.
 4. Resolve open BOUNDARY_FLAGs before any new work.
 5. Read `tasks/ba-logic.md` — confirm business logic sign-off exists for scope.
 6. Read `tasks/ux-specs.md` if scope involves UI.
-7. State standup: Done / Next / Blockers (three lines only).
-8. For each feature in scope: apply security model checklist.
-9. Decompose work into task IDs with dependencies and write to `tasks/todo.md`.
-10. Call /risk-manager to populate `tasks/risk-register.md`.
-11. Write `tasks/next-action.md` with next expected persona.
-12. Emit HANDOFF envelope.
+7. **STRUCTURAL CHANGE CHECK:** If scope is a structural change (new arc, nav model, data model, major component, integration): execute STRUCTURAL CHANGE PROTOCOL before steps 8–12. Read `docs/hld.md`. Read all affected `docs/lld/*.md`. Produce impact table. Update or create doc-update tasks. Do not proceed to step 8 until docs are assessed.
+8. State standup: Done / Next / Blockers (three lines only).
+9. For each feature in scope: apply security model checklist.
+10. Decompose work into task IDs with dependencies and write to `tasks/todo.md`.
+11. Call /risk-manager to populate `tasks/risk-register.md`.
+12. Write `tasks/next-action.md` with next expected persona.
+13. Emit HANDOFF envelope.
 
 ## SECURITY MODEL — REQUIRED ON EVERY TASK
 Before any task enters PENDING, the design must specify:

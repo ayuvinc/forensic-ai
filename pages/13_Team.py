@@ -15,7 +15,11 @@ import streamlit as st
 from config import FIRM_PROFILE_DIR
 from streamlit_app.shared.session import bootstrap
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 _TEAM_JSON = FIRM_PROFILE_DIR / "team.json"
 

@@ -140,3 +140,20 @@ st.session_state is shared across all Streamlit pages at runtime. A page that ex
 set by a previous page will crash if navigated to directly or if the prior page failed. Integration
 must be explicitly tested: run the app, open each page in order from a clean state, verify that
 session state flows correctly from page to page. This test was never in the sprint cycle. Add it.
+
+[2026-04-21] [PROCESS] Manual smoke tests without a written protocol produce no permanent artifact and
+restart from zero every sprint. The fix is a reusable skill (/smoke-test) that: (1) loads a per-sprint
+test spec from tasks/smoke-tests/{sprint_id}.md, (2) drives one atomic step at a time with 1/0 binary
+feedback, (3) asks confirm questions on pass and diagnostic questions on fail, (4) writes results to
+releases/ as the session progresses. The spec format separates the interaction protocol (the skill) from
+the test steps (the spec), so the skill never needs to change when a new sprint is tested. Lesson: any
+recurring manual verification process that produces no artifact should be extracted into a skill.
+
+[2026-04-21] [ARCH] Simulation (parametric MC + empirical + future-direction MC) is a full pre-build
+quality system, not a one-off exercise. Three phases: (1) parametric MC — assign failure probabilities
+to each code path, compute crash rate across 1000 runs, identify dominant failure modes; (2) empirical
+— run real code with mocked LLM responses, confirm/refute each parametric claim with actual behaviour;
+(3) future-direction MC — simulate workflows that do not exist yet, surface design gates before build
+begins. This session produced 30 FUT-N tickets, fixed 8 P1/P2 defects before any production crash, and
+wrote 4 design gates blocking 4 future features from being built incorrectly. Run this before every
+major feature sprint, not just when things break.

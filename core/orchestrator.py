@@ -35,6 +35,13 @@ class RevisionLimitError(Exception):
 class PipelineError(Exception):
     pass
 
+class PartnerRevisionGate(Exception):
+    """Raised when Partner requests revision. Not a crash — requires consultant decision."""
+    def __init__(self, feedback: str, objections: list[str]):
+        super().__init__(feedback)
+        self.feedback   = feedback
+        self.objections = objections
+
 
 # ── Orchestrator ──────────────────────────────────────────────────────────────
 
@@ -137,8 +144,11 @@ class Orchestrator:
                 self._set_status(CaseStatus.PM_REVISION_REQUESTED)
                 # re-run junior with PM feedback
                 revised = self.junior_fn(
-                    {**junior_output, "pm_feedback": output.get("feedback")},
-                    {**context, "agent": "junior", "revision_round": self._revision_counts["junior"]},
+                    junior_output,
+                    {**context,
+                     "agent": "junior",
+                     "revision_round": self._revision_counts["junior"],
+                     "pm_feedback": output.get("revision_reason") or output.get("feedback", "")},
                 )
                 self._set_status(CaseStatus.JUNIOR_DRAFT_COMPLETE)
                 junior_output = revised
@@ -154,11 +164,12 @@ class Orchestrator:
 
         revision_requested = output.get("revision_requested", False)
         if revision_requested:
-            self._set_status(CaseStatus.PARTNER_REVISION_REQ)
-            raise PipelineError(
-                "Partner requested revision — re-run pipeline from PM stage. "
-                f"Reason: {output.get('feedback', 'unspecified')}"
-            )
+            feedback   = output.get("revision_reason") or output.get("feedback", "")
+            objections = output.get("conditions") or output.get("objections") or []
+            self._set_status(CaseStatus.PARTNER_REVISION_REQ,
+                             extra={"partner_feedback": feedback,
+                                    "partner_objections": objections})
+            raise PartnerRevisionGate(feedback=feedback, objections=objections)
 
         self._set_status(CaseStatus.PARTNER_REVIEW_COMPLETE)
         self._set_status(CaseStatus.OWNER_READY)

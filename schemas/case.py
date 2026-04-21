@@ -1,6 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from core.state_machine import CaseStatus
 
 
@@ -26,5 +26,5 @@ class CaseState(BaseModel):
     workflow: str
     status: CaseStatus
     revision_rounds: dict[str, int] = {}   # {"junior": 0, "pm": 0}
-    last_updated: datetime
+    last_updated: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     error: Optional[str] = None

@@ -18,6 +18,7 @@ from core.hook_engine import HookVetoError
 # ── Patterns stripped by sanitize_pii ────────────────────────────────────────
 _PII_PATTERNS = [
     (re.compile(r'\b[A-Z]{1,2}\d{6,9}\b'), '[PASSPORT_REDACTED]'),          # passport numbers
+    (re.compile(r'\bAE\d{2}[0-9A-Z]{3}\d{16}\b'), '[IBAN_REDACTED]'),       # UAE IBAN (AE + 21 chars)
     (re.compile(r'\b\d{10,20}\b'), '[ACCOUNT_REDACTED]'),                    # bank account numbers
     (re.compile(r'\b\d{3}-\d{2}-\d{4}\b'), '[SSN_REDACTED]'),               # SSN-style
     (re.compile(r'\b(?:\d[ -]?){13,16}\b'), '[CARD_REDACTED]'),             # card numbers
@@ -53,6 +54,7 @@ def sanitize_pii(payload: dict, context: dict) -> dict:
             continue
         for pattern, replacement in _PII_PATTERNS:
             value = pattern.sub(replacement, value)
+        value = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f]', '', value)
         payload[field] = value
     return payload
 

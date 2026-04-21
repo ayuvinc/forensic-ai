@@ -65,7 +65,7 @@ def enforce_evidence_chain(payload: dict, context: dict) -> dict:
         return payload
 
     output = payload.get("output", payload)
-    evidence_items_raw = context.get("evidence_items", [])
+    evidence_items_raw = context.get("evidence_items") or output.get("evidence_items", [])
     finding_chains_raw = output.get("finding_chains", [])
 
     if not evidence_items_raw or not finding_chains_raw:

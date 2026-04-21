@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, Field, model_validator
 from schemas.research import Citation
 
 
@@ -24,7 +24,7 @@ class JuniorDraft(BaseModel):
     case_id: str
     version: int
     summary: str
-    findings: list[dict]           # {title, description, evidence, risk_level}
+    findings: list[dict] = Field(min_length=1)  # {title, description, evidence, risk_level}
     methodology: str
     regulatory_implications: str
     recommendations: list[str]
@@ -90,9 +90,9 @@ class RiskItem(BaseModel):
     title: str
     description: str
     red_flags: list[str] = []
-    likelihood: int                    # 1–5
+    likelihood: int = Field(ge=1, le=5)
     likelihood_rationale: str = ""
-    impact: int                        # 1–5
+    impact: int = Field(ge=1, le=5)
     impact_rationale: str = ""
     risk_rating: int = 0               # computed: likelihood × impact
     risk_owner: str = ""               # editable by consultant

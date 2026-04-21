@@ -16,7 +16,11 @@ from schemas.project import ProjectIntake, derive_slug
 from streamlit_app.shared.session import bootstrap
 from tools.project_manager import AF_FOLDERS, ProjectManager
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 pm = ProjectManager()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
@@ -36,6 +40,7 @@ _SERVICE_TYPES = [
     "Policy / SOP",
     "Training Material",
     "Client Proposal",
+    "Individual Due Diligence - Background checks",
 ]
 
 _HEALTH_DOT = {"green": "🟢", "amber": "🟡", "red": "🔴"}
@@ -49,6 +54,7 @@ _WORKFLOW_PAGE = {
     "Policy / SOP":         "pages/04_Policy_SOP.py",
     "Training Material":    "pages/05_Training.py",
     "Client Proposal":      "pages/07_Proposal.py",
+    "Individual Due Diligence - Background checks": "pages/03_Persona_Review.py",
 }
 
 

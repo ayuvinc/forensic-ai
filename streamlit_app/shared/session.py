@@ -37,17 +37,20 @@ h2, h3 { color: #282827; font-weight: 600 !important; border-bottom: 2px solid #
 """
 
 
-def bootstrap(st) -> dict:
+def bootstrap(st, caller_file: str = "") -> dict:
     """Initialise registry, hook_engine, firm_name, and design system in st.session_state.
 
     Returns the session state dict for convenience.
 
     On every call (even after bootstrapped=True), checks app readiness and
     redirects to 00_Setup.py if any required artifact is missing.  The redirect
-    is skipped when the current page IS 00_Setup.py (avoids an infinite loop).
+    is skipped when the calling page IS 00_Setup.py (avoids an infinite loop).
+
+    Pass caller_file=__file__ from every page so setup-page detection works
+    without relying on private Streamlit runtime internals.
     """
     # Readiness gate — runs on every page load, not just first boot
-    _maybe_redirect_to_setup(st)
+    _maybe_redirect_to_setup(st, caller_file=caller_file)
 
     if "bootstrapped" in st.session_state:
         return st.session_state
@@ -104,7 +107,7 @@ def bootstrap(st) -> dict:
     _SIDEBAR_GUIDE = """
 <div style="margin-top:1.5rem;padding-top:0.75rem;border-top:1px solid #E0DEDD;">
   <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">INVESTIGATION</p>
-  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Scope · Investigation · Persona Review</p>
+  <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Scope · Investigation · Individual Due Diligence</p>
   <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">COMPLIANCE</p>
   <p style="font-size:10px;color:#9B9B9A;margin:0 0 10px 8px;line-height:1.5;">Policy SOP · Training · FRM</p>
   <p style="font-size:10px;font-weight:700;color:#9B9B9A;letter-spacing:0.08em;margin:0 0 4px 0;">BUSINESS</p>
@@ -153,25 +156,14 @@ def _load_default_language_standard() -> str:
     return "acfe"
 
 
-def _maybe_redirect_to_setup(st) -> None:
+def _maybe_redirect_to_setup(st, caller_file: str = "") -> None:
     """Redirect to 00_Setup.py if the app is not fully configured.
 
-    Skipped on the setup page itself (avoids infinite redirect loop).
-    Uses get_script_run_ctx to detect the current page path without importing
-    Streamlit internals that may change across versions — falls back gracefully
-    if the context is unavailable.
+    Skipped when caller_file belongs to 00_Setup.py (avoids infinite redirect loop).
+    Uses the caller's __file__ path — no Streamlit private runtime APIs needed.
     """
-    try:
-        from streamlit.runtime.scriptrunner import get_script_run_ctx
-        ctx = get_script_run_ctx()
-        if ctx is not None:
-            page_path = getattr(ctx, "page_script_hash", "") or ""
-            # Also check the actual script path if available
-            script_path = getattr(ctx, "script_path", "") or ""
-            if "00_Setup" in script_path or "00_Setup" in page_path:
-                return  # Already on setup page — do not redirect
-    except Exception:
-        pass  # If context unavailable, allow redirect check to proceed
+    if "00_Setup" in caller_file:
+        return  # Already on setup page — do not redirect
 
     from streamlit_app.shared.readiness import check_readiness
     result = check_readiness()

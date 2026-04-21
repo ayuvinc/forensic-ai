@@ -20,7 +20,11 @@ from config import CASES_DIR, CONTEXT_BUDGET_CHARS
 from streamlit_app.shared.session import bootstrap
 from tools.project_manager import ProjectManager
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 pm = ProjectManager()
 
 
@@ -89,8 +93,8 @@ st.title("Engagement Workspace")
 slug = st.session_state.get("active_project")
 
 if not slug:
-    # No active project — show picker
-    projects = pm.list_projects()
+    # No active project — show picker (A-F projects only; legacy cases not loadable here)
+    projects = [p for p in pm.list_projects() if p.get("is_af_project")]
     if not projects:
         st.info("No engagements found. Create one on the Engagements page.")
         st.stop()
@@ -119,16 +123,72 @@ last_session = (
     if state.sessions else "—"
 )
 
+# client_name and service_type live on ProjectIntake, not ProjectState — read from index
+_idx_entry = next((p for p in pm.list_projects() if p.get("case_id") == slug), {})
+_client_name = _idx_entry.get("client_name", "—")
+_service_type = _idx_entry.get("service_type", "—")
+
 col_h1, col_h2 = st.columns([2, 1])
 with col_h1:
     st.subheader(slug)
-    st.caption(f"Client: {state.client_name}  |  Service: {state.service_type}  |  Last session: {last_session}")
+    st.caption(f"Client: {_client_name}  |  Service: {_service_type}  |  Last session: {last_session}")
 with col_h2:
     st.markdown(
         f'<span style="background:#F5F2F0;border:1px solid #D5D5D5;border-radius:4px;'
         f'padding:2px 8px;font-size:12px;">{lang_labels.get(lang_std, lang_std)}</span>',
         unsafe_allow_html=True,
     )
+
+st.divider()
+
+# ── IA-04: Workflow Outputs — all runs under this engagement ──────────────────
+_WORKFLOW_LABELS: dict[str, str] = {
+    "investigation_report": "Investigation Report",
+    "frm_risk_register":    "FRM Risk Register",
+    "due_diligence":        "Due Diligence",
+    "sanctions_screening":  "Sanctions Screening",
+    "transaction_testing":  "Transaction Testing",
+    "policy_sop":           "Policy / SOP",
+    "training_material":    "Training Material",
+    "client_proposal":      "Client Proposal",
+    "persona_review":       "Individual Due Diligence - Background checks",
+}
+
+cases_dict = state.cases if state else {}
+with st.expander(
+    f"Workflow Outputs ({len(cases_dict)} run{'s' if len(cases_dict) != 1 else ''})",
+    expanded=bool(cases_dict),
+):
+    if not cases_dict:
+        st.caption("No workflows run yet for this engagement.")
+    else:
+        for wf_type, case_id in cases_dict.items():
+            wf_label = _WORKFLOW_LABELS.get(wf_type, wf_type.replace("_", " ").title())
+            st.markdown(f"**{wf_label}** — case `{case_id}`")
+            wf_cdir = CASES_DIR / case_id
+            # F_Final outputs
+            final_files = []
+            for search in (wf_cdir / "F_Final", wf_cdir):
+                if search.exists():
+                    final_files = sorted(search.glob("final_report.*.*"))
+                    if final_files:
+                        break
+            if final_files:
+                for f in final_files:
+                    st.download_button(
+                        label=f"Download {f.name}",
+                        data=f.read_bytes(),
+                        file_name=f.name,
+                        key=f"ws_dl_{case_id}_{f.name}",
+                    )
+            else:
+                # E_Drafts fallback
+                draft_files = sorted((wf_cdir / "E_Drafts").glob("*.json")) if (wf_cdir / "E_Drafts").exists() else []
+                if draft_files:
+                    st.caption(f"  Draft: `{draft_files[-1].name}`")
+                else:
+                    st.caption("  No outputs yet.")
+            st.divider()
 
 st.divider()
 

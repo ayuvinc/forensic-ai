@@ -199,6 +199,7 @@ def build_case_index() -> Path:
         if not case_id:
             continue
 
+        af = is_af_project(case_id)
         entries.append({
             "case_id":       case_id,
             "workflow":      state.get("workflow", ""),
@@ -206,6 +207,8 @@ def build_case_index() -> Path:
             "last_updated":  state.get("last_updated", ""),
             "client_name":   state.get("client_name", ""),
             "engagement_id": state.get("engagement_id", ""),
+            "is_af_project": af,
+            "legacy":        not af,
         })
 
     tmp = _INDEX_PATH.with_suffix(".tmp")
@@ -249,6 +252,7 @@ def read_state(case_id: str) -> dict | None:
 def append_audit_event(case_id: str, event: dict) -> None:
     """Append one JSON line to audit_log.jsonl (append-only, never mutate)."""
     log_path = case_dir(case_id) / "audit_log.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     event.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(event, default=str) + "\n")

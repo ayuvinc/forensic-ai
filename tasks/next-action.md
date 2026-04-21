@@ -4,56 +4,77 @@
 OPEN
 
 ## NEXT_PERSONA
-junior-dev
+manual-verify → architect → session-close
 
 ## NEXT_TASK
-**Session 036 (continued): Sprint-FE-TRIAGE — begin Phase B structural fixes**
+**Session 037: Sprint-IA-01 — IA-VERIFY gate (manual), then merge to main**
 
-Sprint-FE-TRIAGE plan approved (Session 036). Task decomposition complete.
+Sprint-IA-01 build is complete and committed (`2d68014` on `feature/sprint-fe-triage`).
+131 tests pass. The only remaining gate is IA-VERIFY — a manual browser pass.
 
-**Immediate tasks (no FE-TRIAGE-01 dependency):**
+**Required before QA_APPROVED:**
 
-1. `FE-TRIAGE-03` — Rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar shows both pages.
-2. `FE-TRIAGE-04` — Replace private Streamlit API in `streamlit_app/shared/session.py:156-179`. Add `caller_file` param to `bootstrap()`, update all 17 call sites.
+1. `IA-VERIFY` — AK runs: `streamlit run app.py`
+   - Sidebar shows exactly 5 sections: MAIN, PROPOSALS, MONITOR, SETTINGS, WORKFLOWS
+   - "b Scope" is gone — shows "Scope" under PROPOSALS
+   - 00_Setup NOT visible in sidebar (redirect-only)
+   - All workflow pages reachable via sidebar
+   - Engagements page: "Run Workflow" selectbox includes Persona Review
+   - Workspace: run `python3 scripts/seed_test_engagement.py` first, then open "abc-corp-test-engagement" — should show "Workflow Outputs" expander with 3 sections + download links
+   - Proposals page: Arc 1 info banner visible at top
+   - No new crashes introduced on any page
 
-**After FE-TRIAGE-04 complete:**
-3. `FE-TRIAGE-05` — Wrap `bootstrap()` call sites in try/except with degraded-mode error panel.
+2. AK reports PASS/FAIL back. If PASS: architect closes sprint, merges to main, writes session-close.
 
-**After Phase B complete:**
-4. `FE-TRIAGE-01` — Triage pass: run `streamlit run app.py`, walk pages 00→16, populate `tasks/fe-triage-table.md`.
+**If IA-VERIFY has failures:**
+- Note the exact page + error
+- Open /junior-dev to fix, then re-run IA-VERIFY
 
-**Branch:** `feature/sprint-fe-triage`
-**ACs:** see Sprint-FE-TRIAGE block in tasks/todo.md
+## COMMAND
+After AK runs IA-VERIFY:
+```
+/architect Sprint-IA-01 IA-VERIFY PASS — close sprint, merge feature/sprint-fe-triage to main, write session-close
+```
+
+Or if failures found:
+```
+/junior-dev IA-VERIFY failure: [exact error] — fix and retest
+```
 
 ## COMPLETION STATUS
 
 ```
 Phase 1-8 + Sprints A-G:   100% ██████████ DONE — all merged
 Phase H + Phase I (P9):    100% ██████████ DONE — merged c8ee66f
-Sprint-RD:                 100% ██████████ RD-00..06 all done
-P9 (Engagement Framework): 100% ██████████ P9-01..09 all done
-Sprint-WF:                 100% ██████████ DONE — merged 3b498cc
-Sprint-FR:                 100% ██████████ DONE — merged 3b498cc
-Sprint-AIC:                100% ██████████ DONE — merged 4315d2a
-Sprint-EMB:                100% ██████████ DONE — merged eee13f2
-Sprint-FE:                 100% ██████████ DONE — merged a526bab
-Sprint-WORK-02/03:         100% ██████████ DONE — merged 34bdcb1
-Sprint-CONV-02:            100% ██████████ DONE — merged 4315d2a
-KL-02 / ACT-02 / ACT-03:  100% ██████████ DONE — merged dfe9d65
+Sprint-RD:                 100% ██████████ DONE
+P9 (Engagement Framework): 100% ██████████ DONE
+Sprint-WF/FR/AIC/EMB/FE:  100% ██████████ DONE
+Sprint-WORK/CONV/KL/ACT:  100% ██████████ DONE
 Sprint-TPL (TPL-01..05):   100% ██████████ DONE — merged Session 035
-Sprint-FE-TRIAGE:            0% ░░░░░░░░░░ NEXT (~2026-05-05)
+Sprint-FE-TRIAGE-03/04/05: 100% ██████████ DONE — on feature/sprint-fe-triage
+Sprint-REM-01..04:         100% ██████████ DONE — committed 2d68014
+Sprint-IA-01 docs:         100% ██████████ DONE — hld, README, brief, scope, LLD, packaging all current
+Sprint-IA-01 code:         100% ██████████ BUILT — awaiting IA-VERIFY (manual gate)
+Sprint-IA-01 QA:             0% ░░░░░░░░░░ BLOCKED — IA-VERIFY not yet run
+Sprint-IA-02 (hybrid intake): 0% ░░░░░░░░░░ AFTER Sprint-IA-01 merges
 ```
 
-**OVERALL: ~93% complete by task count (~99% by functional value)**
+**OVERALL: ~95% complete by task count**
 
 ## CARRY_FORWARD_CONTEXT
-Session 035 built TPL-05:
-- Wired TemplateManager into write_final_report (replaced dead firm.json["templates"] lookup)
-- Added template_resolved audit event (fallback: false = workflow base; fallback: true = generic/absent)
-- BaseReportBuilder now prefers GW_ styles (GW_Heading1/2, GW_Body, GW_Title) when template defines them
-- Smoke test at scripts/smoke_test_tpl05.py — all 7 ACs pass
-- Session also planned Sprint-FE-TRIAGE after AK reported crashes on pages 00/01/16
+Sprint-IA-01 delivered:
+- app.py: st.navigation() 5-section sidebar, bootstrap(st, caller_file=__file__)
+- 01_Engagements.py: Persona Review added to workflow selectbox (no service_type restriction confirmed)
+- 16_Workspace.py: Workflow Outputs expander iterates ProjectState.cases
+- 07_Proposal.py: Arc 1 info banner
+- scripts/seed_test_engagement.py: test engagement with 3 completed workflow cases
+
+Sprint-REM-01..04 also committed in same PR:
+- PII hardening (FUT-01..03), orchestrator fix (FUT-04), schema validators (FUT-05), Partner decision gate (FUT-06), evidence chain fix (FUT-07), audit_log mkdir (FUT-24)
+- feature-gates.md (Gates 1–4) — pre-build requirements for unbuilt features
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- FE-TRIAGE requires streamlit run app.py (RESEARCH_MODE=knowledge_only is fine — no API calls needed for triage)
-- sentence-transformers not installed in dev env — EMB tests use code-inspection path
+- IA-VERIFY requires manual browser test — cannot be automated
+- sentence-transformers not installed — EMB tests use code-inspection path
+- FE-TRIAGE-01 (full triage pass) paused — resume after Sprint-IA-01 merges if crashes remain
+- Sprint-IA-02 gated on IA-VERIFY PASS

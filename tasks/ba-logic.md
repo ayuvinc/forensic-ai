@@ -965,3 +965,211 @@ _What must be true for a feature to be considered done._
 **Open questions for AK:** None.
 
 **Open questions for AK:** None.
+
+---
+
+## Session 036 BA — Product IA Redesign (2026-04-21)
+
+---
+
+### BA-IA-01 — Engagement as Root Entity (Multi-Workflow)
+- Status: CONFIRMED — AK session 036
+- Resolves: BA-P9-01 open question "Should a single project support multiple service types simultaneously?"
+
+**AK decision:** YES. An engagement is the root entity for all work. A single engagement can contain multiple workflows (Investigation, FRM, DD, Sanctions, TT, Policy, Training) running independently. Each workflow produces its own work papers and draft report. All outputs accumulate in the engagement folder. Maher assembles the final combined deliverable himself.
+
+**Business rules:**
+- `service_type` at engagement creation is the PRIMARY type (for labeling and default workflow) — not a constraint on which workflows can be run.
+- Additional workflows can be launched against the same engagement from the Engagement detail page or Workspace.
+- Each workflow run maps to a `case_id` in `ProjectState.cases[workflow_type]`. Multiple workflow types coexist under one engagement slug.
+- Work papers, draft reports, and data analysis from all workflows accumulate in the engagement's A-F folder structure. No workflow is siloed.
+- There is NO automatic combined deliverable — Maher reviews all workflow outputs and assembles the final client document manually (or triggers a future "Compile Report" feature).
+
+**Impact on current schema:** `ProjectState.cases: dict[str, str]` already supports this. No schema change required. Navigation and UI are the affected surfaces.
+
+---
+
+### BA-IA-02 — Two-Arc Product Model
+- Status: CONFIRMED — AK session 036
+
+**Arc 1 — Proposal (pre-engagement)**
+- Purpose: win the work before an engagement is created.
+- Flow: Proposal deck (pitch) → Scoping conversation → Scope of Work letter (draft → client signs).
+- Output: signed engagement letter stored in `firm_profile/proposals/{slug}/` or uploaded to the engagement's `A_Engagement_Management/` folder.
+- Creating an engagement from Arc 1: once the letter is signed, Maher creates an engagement and links the signed letter as the engagement foundation. The engagement can also be created independently (if scoping happened outside the tool).
+- Arc 1 is standalone — it can exist without an engagement (for prospects who don't convert).
+
+**Arc 2 — Engagement (root for all work)**
+- Purpose: execute the work, produce deliverables.
+- Created either: (a) from Arc 1 signed letter, or (b) independently.
+- Contains: Input Sessions, multiple workflow runs, work papers, reports.
+- Engagement is the primary navigation home for Maher during active case work.
+
+---
+
+### BA-IA-03 — Navigation Model
+- Status: CONFIRMED — AK session 036
+
+**Business rules:**
+- Workflow pages (Investigation, FRM, DD, Sanctions, TT, Policy, Training) are NOT primary sidebar navigation. They are sub-workflows launched from inside an Engagement or Workspace.
+- Primary sidebar navigation contains: Engagements, Workspace, Proposals, Case Tracker, Activity Log, Team, Settings.
+- Workflow pages remain as separate Streamlit pages but appear in a clearly labelled secondary section ("Workflows") at the bottom of the sidebar — accessible directly for power users, but the primary path is through Engagement.
+- The `01b_Scope.py` page is repositioned as part of the Proposal arc (scoping step), not as a standalone page.
+- The landing screen (app.py) is updated to reflect the two-arc model.
+
+---
+
+### BA-IA-04 — Project Name + Minimum Workstream Constraint
+- Status: CONFIRMED — AK session 036
+
+**AK decision:** Engagements are named Projects. Each project must have at least 1 workstream — 0 workstreams is not a valid state.
+
+**Business rules:**
+- Every engagement (ProjectState) has a `project_name` field set by Maher at creation (e.g. "ABC Corp Fraud Investigation Q1 2026"). This is distinct from `client_name` (who the client is) and `slug` (the filesystem identifier).
+- At project creation, Maher must select at least 1 workstream. The creation form/intake does not allow submission with 0 workstreams selected.
+- Workstreams can be added later (1 → N). The minimum constraint is at creation only — a project cannot be created empty.
+- Workspace display: a project always has at least 1 workstream section visible. "No workflows run yet" is valid at the individual workstream level (workstream added but not yet executed), but never at the project level.
+- `service_type` on ProjectState should be renamed/aliased to reflect that it represents the primary workstream, not the only one. For now it remains for backward compatibility but should be read as "primary_workstream_type".
+
+**Impact on schema:** `ProjectState` needs a `project_name: str` field. Intake validation must enforce `len(initial_workstreams) >= 1`. This is a minor schema change — additive, no breaking change to existing state.json files (project_name defaults to slug if absent).
+
+**Impact on UI:** Engagement creation form must include: (1) Project Name input, (2) workstream selector with at least 1 required. Workspace must never render an empty project.
+
+---
+
+### BA-IA-05 — AUP (Agreed-Upon Procedures) as Investigation Type + Standalone Mode
+- Status: CONFIRMED — AK session 036
+
+**AK decision:** Add AUP as investigation type 8. AUP can also be used outside a full investigation project as a scoped standalone delivery. Scope is strictly defined by the agreed procedures list — no scope creep, no unilateral expansion.
+
+**Business rules:**
+- Investigation intake: when Maher selects type = "Agreed-Upon Procedures", intake captures the procedures list explicitly — each numbered procedure is a discrete item. This list locks the scope. Nothing outside the list is reported.
+- Agent output structure for AUP: one section per procedure → (a) procedure as stated, (b) what was done, (c) factual finding. No conclusions section. No "therefore" or implication language.
+- Partner hard rule for AUP: enforce no-opinion constraint. If Junior or PM output contains recommendation language, conclusions, or implied fault, Partner must flag and strip before approval. AUP reports are factual observation reports only — AICPA/IAASB standards apply.
+- AUP is NOT a substitute for an investigation. If Maher's described scope implies a conclusion is needed, the system should prompt: "This sounds like an investigation, not an AUP. Do you want to change the type?"
+- Standalone AUP: can be run as a workstream type in any project, or as a standalone one-off outside a project (same pattern as Policy/SOP — Mode B entry point is acceptable for AUP).
+
+**Impact on investigation_framework.md:** Add type 8 — Agreed-Upon Procedures. Add AUP-specific agent behavior notes (procedures-list intake, no-conclusions rule, section-per-procedure structure).
+**Impact on schema:** `investigation_type` is already a string field — no schema change. AUP is a valid value.
+**Impact on workflow:** Investigation intake branching — detect AUP type and switch to procedures-list intake flow. Junior system prompt gains AUP mode guardrail.
+
+---
+
+### BA-IA-06 — Custom / Other Investigation Type
+- Status: CONFIRMED — AK session 036
+
+**AK decision:** Add "Other / Custom" as investigation type 9. Real-world investigations frequently span categories or don't map to any predefined type. Forcing a category on a non-fitting investigation degrades output quality and forces Maher to lie about the nature of the work.
+
+**Business rules:**
+- When Maher selects type = "Other / Custom", intake captures a free-text description of the nature, subject, and objectives of the investigation. This description becomes the structural anchor — not a predefined template.
+- No forced section headers for Custom type. Before drafting begins, the Junior proposes a report structure based on Maher's description. Maher confirms or adjusts. Only then does drafting proceed.
+- All other investigation rules apply (evidence chain, three-agent pipeline, audit trail, authoritative citations).
+- Partner review for Custom type: Partner must confirm that the proposed structure and conclusions are internally consistent with the stated objectives — there is no regulatory checklist to apply, so coherence and defensibility are the primary review criteria.
+- Custom type does NOT bypass the privilege flag (BA-future) or conflict check (BA-future) — those apply to all investigation types.
+
+**Impact on investigation_framework.md:** Add type 9 — Other / Custom. Add custom-type intake and structure-confirmation flow notes.
+**Impact on schema:** No change — `investigation_type` is a free string field.
+**Impact on workflow:** Investigation intake must present "Other / Custom" as a valid selection and branch into free-text description mode.
+
+---
+
+### BA-IA-07 — Hybrid Intake Architecture: Structured Fields + Remarks-Triggered Conversation
+- Status: CONFIRMED — AK session 036
+
+**AK decision:** Intake across all workflows must be redesigned as a hybrid model. Structured fields (dropdowns, checkboxes, radio buttons) handle scope-defining parameters. Each structured field or field group has an optional Remarks cell. If Remarks is non-empty, the model triggers a targeted conversation to resolve the nuance. If Remarks is empty, the field value is accepted as-is — no conversation, fast path through intake.
+
+**The core principle:**
+- Dropdown/selector = selects the lane (maps to agent behavior, report structure, scope parameters)
+- Remarks cell = safety valve for edge cases, unusual circumstances, cross-category situations
+- Remarks non-empty → targeted conversation fires for that field only
+- Remarks empty → fast path, no conversation
+- Result: clean cases are fast; complex cases get exactly the conversation they need, where they need it
+
+**Intake flow (all workflows):**
+
+```
+STEP 1 — Structured fields
+  Present dropdowns / checkboxes / radio buttons for all scope-defining parameters.
+  Each field or field group has an optional "Remarks" text area (collapsed by default).
+
+STEP 2 — Remarks scan
+  After Maher completes all structured fields:
+  For each field where Remarks is non-empty:
+    → Model reads the Remarks and asks 1–2 targeted clarifying questions
+    → Maher answers
+    → Conversation output is merged into the structured field value / appended as refined context
+
+STEP 3 — Confirmation
+  Model presents intake summary: all structured values + any refined context from conversations.
+  Maher confirms or corrects.
+  Intake is locked. Agents receive the final structured + refined intake object.
+
+STEP 4 — Agent handoff
+  Agents always receive structured parameters (clean enum values) + narrative context (refined from conversations).
+  Agents never receive raw free text that requires inference to determine scope.
+```
+
+**Fields requiring Remarks cells (minimum):**
+
+| Workflow | Field | Why Remarks needed |
+|---|---|---|
+| All | Primary jurisdiction | "UAE + offshore holding structure" needs elaboration |
+| Investigation | Investigation type | "Type 3 but also involves AML aspects" — cross-category |
+| Investigation | Regulators implicated | "Possibly DFSA but matter is ongoing — uncertain" |
+| Investigation | Evidence available | "Some documents withheld by client — access limited" |
+| FRM | Modules in scope | "Module 4 but only for one subsidiary" |
+| DD | DD depth | "Enhanced but time-constrained to 5 days" |
+| DD | Subject jurisdictions | "Registered UAE but ops in 4 countries" |
+| TT | Transaction types | "Vendor payments but specifically construction subcontractors" |
+| AUP | Procedures list | Each procedure may need a Remarks cell for scope clarification |
+| Custom | All fields | By definition, Custom type needs more elaboration everywhere |
+
+**Conversation trigger rules:**
+- Trigger if: Remarks cell for a field is non-empty AND length > 10 characters (ignore accidental single words)
+- Do NOT trigger for: narrative/background fields (client description, allegation detail) — these are always free text, no trigger needed
+- Maximum 2 follow-up questions per Remarks cell — do not let intake conversation expand into a full discussion
+- If Maher's answer introduces a new scope item not in the structured fields, add it as a tagged custom scope note — do not re-open the structured fields
+
+**What this replaces:**
+- The current fully conversational guided_intake.py approach, which asks all questions as free text and relies on inference throughout
+- Fully free-text investigation type / audience / jurisdiction fields across all workflows
+
+**What this does NOT replace:**
+- Narrative fields: client background, allegation description, specific circumstances — these remain free text with no structured equivalent
+- FRM guided exercise conversation — the 4-question per-risk-area loop remains conversational (it is already structured around a fixed question set)
+- AUP procedures list entry — this is inherently free text per procedure, but each procedure can have a Remarks cell
+
+**Impact on `guided_intake.py`:**
+Significant redesign required. The intake engine needs:
+1. A structured-field renderer (dropdowns, checkboxes, radio buttons per workflow)
+2. A remarks scanner that identifies non-empty Remarks after structured fields are complete
+3. A targeted conversation runner that fires for each field with Remarks (max 2 questions)
+4. A confirmation + lock step that produces the final `CaseIntake` object
+
+**Impact on all intake Pydantic schemas:**
+Each workflow's intake schema must separate structured fields (typed enums/lists) from narrative fields (strings). Currently many fields are plain strings where they should be enums with an optional remarks string alongside.
+
+**Sprint assignment:** Sprint-IA-02 — intake redesign is a separate sprint from Sprint-IA-01 (navigation). The two are independent. Navigation ships first.
+
+---
+
+### BA-IA-08 — Partner Always Signs Off; Never Blocks
+- Status: CONFIRMED — AK session 036
+
+**AK decision:** The Partner agent must never block or stall the pipeline. It always signs off. Where a deliverable does not meet the full standard (no authoritative citations, weak evidence chain, incomplete regulatory mapping), the Partner approves and appends explicit section-level disclaimers. The consultant then decides whether to address the gap or proceed.
+
+**Business rules:**
+- Partner sign-off is unconditional on delivery. The pipeline must always complete.
+- Where `authoritative_citations = 0` for a section or topic: Partner appends disclaimer — "Research limitations: no authoritative sources were identified for [topic]. Findings are based on [general sources / knowledge base only] and should be independently verified before reliance."
+- Where evidence chain has gaps: Partner appends — "Evidence limitation: [specific gap]. This finding should be treated as indicative pending [additional evidence]."
+- Where regulatory mapping is incomplete: Partner appends — "Regulatory note: authoritative regulatory guidance for [jurisdiction/topic] was not identified at the time of this review. Consult [relevant regulator] directly before reliance."
+- The disclaimer is attached to the specific affected section — not a blanket footer on the whole report.
+- The consultant reviews every disclaimer before the deliverable goes to a client. Maher decides what to address and what to pass on with the disclaimer intact.
+
+**Rationale:** Blocking sign-off stalls the engagement. In real practice, a Partner would sign a report with a limitation note rather than refuse to sign until perfect sources are found. The disclaimer approach mirrors real-world professional practice: transparency over perfection.
+
+**Impact on Partner agent prompts:** Remove any instruction to block or reject based on citation count. Replace with instruction to identify gaps, append section-level disclaimers, and approve.
+**Impact on agent_base.py guardrail:** Remove hard block on `authoritative_citations = 0`. Replace with disclaimer-append trigger.
+**Impact on CLAUDE.md:** Updated this session.
+
+---
