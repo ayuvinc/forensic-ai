@@ -50,7 +50,7 @@ pg = st.navigation(
             st.Page("pages/16_Workspace.py",   title="Workspace"),
         ],
         "PROPOSALS": [
-            st.Page("pages/01b_Scope.py",   title="Scope"),
+            st.Page("pages/01_Scope.py",   title="Scope"),
             st.Page("pages/07_Proposal.py", title="Proposals"),
         ],
         "MONITOR": [
@@ -70,7 +70,7 @@ pg = st.navigation(
             st.Page("pages/04_Policy_SOP.py",         title="Policy / SOP"),
             st.Page("pages/05_Training.py",           title="Training Material"),
             st.Page("pages/08_PPT_Pack.py",           title="PPT Pack"),
-            st.Page("pages/03_Persona_Review.py",     title="Persona Review"),
+            st.Page("pages/03_Persona_Review.py",     title="Individual Due Diligence - Background checks"),
         ],
     }
 )

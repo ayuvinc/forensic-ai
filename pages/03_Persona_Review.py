@@ -14,7 +14,7 @@ except Exception as _bootstrap_err:
     st.error(f"Page failed to load: {_bootstrap_err}")
     st.stop()
 
-st.title("Persona Review")
+st.title("Individual Due Diligence - Background checks")
 st.caption("Review a deliverable from CFO, Legal Counsel, UAE Regulator, and Insurance Adjuster perspectives")
 
 PERSONA_OPTIONS = {
@@ -35,7 +35,7 @@ if st.session_state.pr_stage != "intake":
 
 # ── STAGE: intake ─────────────────────────────────────────────────────────────
 if st.session_state.pr_stage == "intake":
-    intake = generic_intake_form(st, "persona_review", "Persona Review — Intake")
+    intake = generic_intake_form(st, "persona_review", "Individual Due Diligence - Background checks — Intake")
 
     if intake is not None:
         st.markdown("**Select personas to review**")
@@ -51,7 +51,7 @@ if st.session_state.pr_stage == "intake":
             height=200,
         )
 
-        if st.button("Run Persona Review", type="primary"):
+        if st.button("Run Individual Due Diligence", type="primary"):
             if not selected:
                 st.error("Select at least one persona.")
             else:
@@ -76,7 +76,7 @@ elif st.session_state.pr_stage == "running":
     try:
         result = run_in_status(
             st,
-            "Running Persona Review...",
+            "Running Individual Due Diligence...",
             run_persona_review_workflow,
             intake,
             session.registry,
@@ -100,7 +100,7 @@ elif st.session_state.pr_stage == "done":
     if not result:
         st.warning("No output was generated. Check the pipeline log and try again.")
     else:
-        st.success(f"Persona Review complete — {len(result)} review(s) — Case ID: `{intake.case_id}`")
+        st.success(f"Individual Due Diligence complete — {len(result)} review(s) — Case ID: `{intake.case_id}`")
         for review in result:
             with st.expander(f"{review.persona} — {review.overall_verdict.upper()}"):
                 st.markdown(f"**Perspective:** {review.perspective}")

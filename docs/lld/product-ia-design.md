@@ -36,7 +36,7 @@ The Proposal arc exists before any engagement is created. It handles prospect si
 
 ```
 [Arc 1 — Proposal]
-  01b_Scope.py     → Engagement scoping conversation (what services, what scope)
+  01_Scope.py      → Engagement scoping conversation (what services, what scope)
   07_Proposal.py   → Proposal deck generation
   [manual step]    → Client signs engagement letter
   → Triggers Arc 2: Maher creates Engagement from signed letter

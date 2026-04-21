@@ -14,7 +14,7 @@ MENU_ITEMS = [
     ("0",  "SCOPING",       "Scope New Engagement",           "Problem-first — describe the situation, model recommends the service"),
     ("1",  "INVESTIGATION",  "New Case Intake",               "Create a new case folder and set up structure"),
     ("2",  "INVESTIGATION",  "Investigation Report",          "Full pipeline — Junior > PM > Partner review"),
-    ("3",  "INVESTIGATION",  "Persona Review",                "Review deliverable through CFO/Lawyer/Regulator/Adjuster lens"),
+    ("3",  "INVESTIGATION",  "Individual Due Diligence - Background checks", "Review deliverable through CFO/Lawyer/Regulator/Adjuster lens"),
     ("4",  "COMPLIANCE",     "Policy / SOP Generator",        "Assisted — draft or gap-analyse policies and SOPs"),
     ("5",  "COMPLIANCE",     "Training Material",             "Assisted — role-specific training content"),
     ("6",  "COMPLIANCE",     "FRM Risk Register",             "Full pipeline — Fraud Risk Management Register"),

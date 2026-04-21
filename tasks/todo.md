@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: junior-dev
+Active persona: manual-verify
 Blocking issue: none
-Last updated:   2026-04-21T14:11:18Z — state transition by MCP server
+Last updated:   2026-04-21T16:26:30Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -69,6 +69,107 @@ Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09,
 
 ## PENDING TASKS
 
+
+---
+
+### FIX-03 — Fix Workspace header: state.client_name missing from ProjectState [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `16_Workspace.py:129` accesses `state.client_name` and `state.service_type`, but `ProjectState` has neither field — they live on `ProjectIntake` which is not stored in `ProjectState`. Fix: read `client_name` and `service_type` from the index entry (`pm.list_projects()`) using the active slug as the lookup key.
+**Source:** Smoke test run 2 STEP-16 failure (2026-04-21). AttributeError confirmed in screenshot.
+
+- [ ] FIX-03a In `16_Workspace.py`, before line 129: look up the index entry for `slug` via `pm.list_projects()` and extract `client_name` and `service_type`
+- [ ] FIX-03b Replace `state.client_name` and `state.service_type` in line 129 with the index-sourced values; fall back to `"—"` if not found
+- [ ] FIX-03c Confirm no other lines in `16_Workspace.py` access undefined `ProjectState` attributes
+
+#### AC — FIX-03
+- [ ] Workspace page loads `abc-corp-test-engagement` without AttributeError
+- [ ] Header caption shows: `Client: ABC Corp  |  Service: Investigation Report  |  Last session: —` (or actual session date)
+- [ ] If index entry has no `client_name`, caption shows `Client: —` (no crash)
+- [ ] If engagement has no sessions, `Last session: —` is shown (not an exception)
+- [ ] 131 tests still pass after change
+
+---
+
+### CR-01 — Rename "Persona Review" → "Individual Due Diligence - Background checks" (user-facing labels only) [P1, Sprint-IA-01] — READY_FOR_REVIEW
+
+**Scope:** Rename ALL user-facing display labels only. The internal workflow key `persona_review` must NOT change — it is stored in state.json, audit logs, and index entries. Only string literals shown in the UI or CLI.
+**Source:** AK instruction during smoke test run 2 (2026-04-21).
+
+Files with user-facing labels to update:
+- `app.py:73` — sidebar title
+- `pages/03_Persona_Review.py:17` — page `st.title()`
+- `pages/03_Persona_Review.py:18` — `st.caption()` description
+- `pages/03_Persona_Review.py:38` — intake form title string
+- `pages/03_Persona_Review.py:54` — "Run Persona Review" button label
+- `pages/03_Persona_Review.py:79` — "Running Persona Review..." progress string
+- `pages/03_Persona_Review.py:103` — "Persona Review complete" success message
+- `pages/01_Engagements.py:43` — service type option in list
+- `pages/01_Engagements.py:57` — dict key in `_WORKFLOW_PAGES` (this IS a string match, update the key too but keep the value path intact)
+- `pages/12_Case_Tracker.py:29` — display label dict value
+- `pages/16_Workspace.py:149` — display label dict value
+- `streamlit_app/shared/intake.py:98` — button label value
+- `ui/menu.py:17` — CLI menu label
+
+Do NOT rename:
+- Internal key `"persona_review"` (dict keys mapping workflow_type → anything filesystem/state-related)
+- `workflows/persona_review.py` filename
+- `pages/03_Persona_Review.py` filename
+- Any `state.json` field, audit log event, or Python variable/function name
+
+- [ ] CR-01a Update all 13 user-facing label locations listed above
+- [ ] CR-01b Confirm `persona_review` key is unchanged in: `pages/01_Engagements.py` `_WORKFLOW_PAGES` dict value-side routing, `pages/12_Case_Tracker.py`, `pages/16_Workspace.py`, `streamlit_app/shared/intake.py` key
+
+#### AC — CR-01
+- [ ] Sidebar WORKFLOWS section shows "Individual Due Diligence - Background checks" (not "Persona Review")
+- [ ] `pages/03_Persona_Review.py` page title reads "Individual Due Diligence - Background checks"
+- [ ] Run Workflow selectbox on Engagements page shows "Individual Due Diligence - Background checks" as last option
+- [ ] Case Tracker display label shows "Individual Due Diligence - Background checks" for `persona_review` workflow entries
+- [ ] Workspace Workflow Outputs shows "Individual Due Diligence - Background checks" label
+- [ ] Clicking the sidebar link still navigates to `pages/03_Persona_Review.py` (routing unchanged)
+- [ ] `pages/01_Engagements.py` `_WORKFLOW_PAGES` key is updated so New Engagement service type selectbox shows new label AND still routes to `03_Persona_Review.py`
+- [ ] Internal `persona_review` key unchanged in all Python dicts mapping workflow_type → case data
+- [ ] 131 tests still pass after change
+
+---
+
+### FIX-01 — Rename Scope page file (remove "b_" prefix) [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `pages/01b_Scope.py` — filename has "b_" prefix, causing URL slug `/b_Scope` instead of `/Scope`.
+**Source:** Smoke test STEP-10 failure (2026-04-21).
+
+- [x] FIX-01a Rename `pages/01b_Scope.py` to `pages/01_Scope.py`
+- [x] FIX-01b Verify no other file in `pages/` or `app.py` references `01b_Scope` by string — `app.py:53` updated
+
+#### AC — FIX-01
+- [ ] After rename: `streamlit run app.py` — Scope page URL is `localhost:8501/Scope` (not `/b_Scope`)
+- [ ] Sidebar still shows link labelled "Scope" under PROPOSALS section
+- [ ] Scope page loads without error — heading reads "Start here for any new engagement..."
+- [ ] No other page is broken by the rename (sidebar step count unchanged: 5 sections, all links present)
+- [ ] `app.py` or navigation config (if any) does not hardcode the old filename
+
+---
+
+### FIX-02 — Fix seed script: create A-F format engagement [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+
+**Root cause:** `build_case_index()` in `tools/file_tools.py` stripped `is_af_project`/`legacy` flags from all index entries → Engagements page put every case in Legacy. Workspace picker showed legacy case IDs; `pm.get_project(legacy_id)` returned None.
+**Fix applied:** `build_case_index()` now writes `is_af_project`/`legacy` per entry. Workspace picker filters to A-F projects only.
+**Source:** Smoke test STEP-13/14/16 failures (2026-04-21).
+
+- [x] FIX-02a Root cause identified: `build_case_index()` did not write `is_af_project` flag
+- [x] FIX-02b `tools/file_tools.py` `build_case_index()` — add `is_af_project` + `legacy` fields per entry
+- [x] FIX-02c `pages/16_Workspace.py` — filter picker to `is_af_project` entries only
+- [x] FIX-02d `state.cases` verified: 3 entries present; all 3 `F_Final/final_report.en.md` files exist
+- [x] FIX-02e `pm.get_project('abc-corp-test-engagement')` loads successfully; index shows af=True
+
+#### AC — FIX-02
+- [ ] `python3 scripts/seed_test_engagement.py` completes with no Python errors; last line: "Seed complete. Run: streamlit run app.py"
+- [ ] After seed + `streamlit run app.py`: "abc-corp-test-engagement" appears in **Active Engagements** section (not Legacy Cases)
+- [ ] Clicking `abc-corp-test-engagement` card on Engagements page loads right panel detail with Run Workflow selectbox
+- [ ] Workspace page: selecting `abc-corp-test-engagement` from picker loads without "not found" error
+- [ ] Workspace page: "Workflow Outputs (3 runs)" expander visible and expanded — 3 sections: Investigation Report, FRM Risk Register, Due Diligence
+- [ ] Each section in Workflow Outputs shows a download button (.md or .docx)
+- [ ] Re-running seed script (second run) does not crash — skips existing engagement, skips existing cases
+- [ ] Legacy Cases count does not increase after seed (seed does not add new legacy cases)
 
 ---
 

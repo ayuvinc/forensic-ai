@@ -26,7 +26,7 @@ _INDEX_PATH = CASES_DIR / "index.json"
 _WORKFLOW_LABELS: dict[str, str] = {
     "frm_risk_register":    "FRM Risk Register",
     "investigation_report": "Investigation Report",
-    "persona_review":       "Persona Review",
+    "persona_review":       "Individual Due Diligence - Background checks",
     "policy_sop":           "Policy / SOP",
     "training_material":    "Training Material",
     "client_proposal":      "Client Proposal",

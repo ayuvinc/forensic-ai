@@ -40,7 +40,7 @@ _SERVICE_TYPES = [
     "Policy / SOP",
     "Training Material",
     "Client Proposal",
-    "Persona Review",
+    "Individual Due Diligence - Background checks",
 ]
 
 _HEALTH_DOT = {"green": "🟢", "amber": "🟡", "red": "🔴"}
@@ -54,7 +54,7 @@ _WORKFLOW_PAGE = {
     "Policy / SOP":         "pages/04_Policy_SOP.py",
     "Training Material":    "pages/05_Training.py",
     "Client Proposal":      "pages/07_Proposal.py",
-    "Persona Review":       "pages/03_Persona_Review.py",
+    "Individual Due Diligence - Background checks": "pages/03_Persona_Review.py",
 }
 
 

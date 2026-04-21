@@ -85,7 +85,7 @@ The consultant (Maher) organises all work into **Projects**. Each Project maps t
 
 ```
 ARC 1 — PROPOSAL (pre-engagement, no ProjectState)
-  01b_Scope.py  → engagement scoping conversation → scope output
+  01_Scope.py   → engagement scoping conversation → scope output
   07_Proposal.py → proposal deck generation → .pptx saved to firm_profile/proposals/
   [manual: client signs engagement letter]
          │
@@ -198,7 +198,7 @@ Final deliverables prefer `authoritative_citations`. Where authoritative sources
 | Proposal Deck (PPT) | Mode B | Single-pass Sonnet |
 | Engagement Scoping | Mode B | Single-pass Sonnet |
 | Evidence Chat | Conversational | Single-pass with document context |
-| Persona Review | Standalone | Single-pass Sonnet/Opus |
+| Individual Due Diligence - Background checks | Standalone | Single-pass Sonnet/Opus |
 
 **Planned (not yet built):** Expert Witness Report (model routing exists, workflow page pending), AML Program Review, Regulatory Response Report.
 
