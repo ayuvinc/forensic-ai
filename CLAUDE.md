@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-21 01:45:00 UTC — Session 035 closed by architect
-- Session summary: Session 035 — TPL-05 completed and merged. Wired TemplateManager into write_final_report, added template_resolved audit event, updated BaseReportBuilder to prefer GW_ styles; all 7 ACs pass (scripts/smoke_test_tpl05.py). Also planned Sprint-FE-TRIAGE (~2026-05-05) after AK reported crashes on pages 00/01/16. Sprint-TPL fully complete. Next: FE-TRIAGE-01 triage pass.
+- Last updated: 2026-04-21 04:10:00 UTC — Session 036 closed by session-close
+- Session summary: Session 036 — ARCH-DOC-01/02/03 complete (hld.md, README, GoodWork Brief, scope-brief all fully rewritten). New: docs/lld/product-ia-design.md (Sprint-IA-01 LLD), docs/product-packaging.md (6 shipping models). BA-IA-04..08 confirmed (project_name, min workstream, AUP type 8, Custom type 9, hybrid intake, Partner never blocks). architect.md + session-close.md updated with doc freshness enforcement + epiphany rule. FE-TRIAGE-03/04/05 committed. Sprint-IA-01 fully designed — coding begins Session 037.
 
 ## Use Case Note
 
