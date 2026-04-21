@@ -124,3 +124,4 @@
 | 2026-04-21T17:06:04Z | qa | COMPLETE | qa-038-fix03-cr01-ac-20260421 | AC written for FIX-03 (state.client_name fix in 16_Workspace.py) and CR-01 (Persona Review → Individual Due Diligence label rename, 13 locations) |
 | 2026-04-21T17:09:15Z | junior-dev | COMPLETE | junior-dev-038-fix03-cr01-20260421 | FIX-03 (Workspace client_name from index) + CR-01 (Persona Review → Individual Due Diligence rename, 14 locations) — 131 tests pass, READY_FOR_REVIEW |
 | 2026-04-21T17:11:21Z | smoke-test | QA_APPROVED | smoke-test-sprint-ia-01-20260421-r3 | Sprint-IA-01 run 3 — 17/17 steps pass across runs 1-3. Branch feature/sprint-fe-triage QA_APPROVED for merge to main. |
+| 2026-04-21T17:14:57Z | architect | COMPLETE | architect-038-sprint-ia-01-merge-20260421 | Sprint-IA-01 merged to main (9d0aa49) — doc freshness confirmed, hld.md + product-ia-design.md updated, next-action points to session-close |

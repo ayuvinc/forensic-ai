@@ -4,41 +4,19 @@
 OPEN
 
 ## NEXT_PERSONA
-manual-verify → architect → session-close
+session-close
 
 ## NEXT_TASK
-**Session 037: Sprint-IA-01 — IA-VERIFY gate (manual), then merge to main**
+**Session 038: Sprint-IA-01 COMPLETE — close session**
 
-Sprint-IA-01 build is complete and committed (`2d68014` on `feature/sprint-fe-triage`).
-131 tests pass. The only remaining gate is IA-VERIFY — a manual browser pass.
+Sprint-IA-01 is fully merged to main (commit 9d0aa49).
+All 17 smoke test steps pass. QA_APPROVED.
 
-**Required before QA_APPROVED:**
-
-1. `IA-VERIFY` — AK runs: `streamlit run app.py`
-   - Sidebar shows exactly 5 sections: MAIN, PROPOSALS, MONITOR, SETTINGS, WORKFLOWS
-   - "b Scope" is gone — shows "Scope" under PROPOSALS
-   - 00_Setup NOT visible in sidebar (redirect-only)
-   - All workflow pages reachable via sidebar
-   - Engagements page: "Run Workflow" selectbox includes Persona Review
-   - Workspace: run `python3 scripts/seed_test_engagement.py` first, then open "abc-corp-test-engagement" — should show "Workflow Outputs" expander with 3 sections + download links
-   - Proposals page: Arc 1 info banner visible at top
-   - No new crashes introduced on any page
-
-2. AK reports PASS/FAIL back. If PASS: architect closes sprint, merges to main, writes session-close.
-
-**If IA-VERIFY has failures:**
-- Note the exact page + error
-- Open /junior-dev to fix, then re-run IA-VERIFY
+Run `/session-close` to close Session 038 and write the session summary.
 
 ## COMMAND
-After AK runs IA-VERIFY:
 ```
-/architect Sprint-IA-01 IA-VERIFY PASS — close sprint, merge feature/sprint-fe-triage to main, write session-close
-```
-
-Or if failures found:
-```
-/junior-dev IA-VERIFY failure: [exact error] — fix and retest
+/session-close
 ```
 
 ## COMPLETION STATUS
@@ -51,30 +29,29 @@ P9 (Engagement Framework): 100% ██████████ DONE
 Sprint-WF/FR/AIC/EMB/FE:  100% ██████████ DONE
 Sprint-WORK/CONV/KL/ACT:  100% ██████████ DONE
 Sprint-TPL (TPL-01..05):   100% ██████████ DONE — merged Session 035
-Sprint-FE-TRIAGE-03/04/05: 100% ██████████ DONE — on feature/sprint-fe-triage
-Sprint-REM-01..04:         100% ██████████ DONE — committed 2d68014
-Sprint-IA-01 docs:         100% ██████████ DONE — hld, README, brief, scope, LLD, packaging all current
-Sprint-IA-01 code:         100% ██████████ BUILT — awaiting IA-VERIFY (manual gate)
-Sprint-IA-01 QA:             0% ░░░░░░░░░░ BLOCKED — IA-VERIFY not yet run
-Sprint-IA-02 (hybrid intake): 0% ░░░░░░░░░░ AFTER Sprint-IA-01 merges
+Sprint-FE-TRIAGE-03/04/05: 100% ██████████ DONE — merged Session 038
+Sprint-REM-01..04:         100% ██████████ DONE — merged Session 038
+Sprint-IA-01:              100% ██████████ DONE — merged Session 038 (9d0aa49)
+Sprint-IA-02 (hybrid intake): 0% ░░░░░░░░░░ NEXT SPRINT
 ```
 
-**OVERALL: ~95% complete by task count**
+**OVERALL: ~97% complete by task count**
 
 ## CARRY_FORWARD_CONTEXT
-Sprint-IA-01 delivered:
-- app.py: st.navigation() 5-section sidebar, bootstrap(st, caller_file=__file__)
-- 01_Engagements.py: Persona Review added to workflow selectbox (no service_type restriction confirmed)
-- 16_Workspace.py: Workflow Outputs expander iterates ProjectState.cases
-- 07_Proposal.py: Arc 1 info banner
-- scripts/seed_test_engagement.py: test engagement with 3 completed workflow cases
+Sprint-IA-01 delivered and merged:
+- app.py: st.navigation() 5-section sidebar
+- 01_Scope.py: renamed from 01b_Scope.py (URL slug fix)
+- 16_Workspace.py: Workflow Outputs expander, A-F picker filter, client_name from index
+- 01_Engagements.py: IDD - Background checks in service type + Run Workflow selectbox
+- tools/file_tools.py: build_case_index() preserves is_af_project flag
+- scripts/seed_test_engagement.py: seed creates A-F engagement
+- All "Persona Review" labels → "Individual Due Diligence - Background checks" (14 locations)
+- docs/hld.md + docs/lld/product-ia-design.md: updated to reflect rename + file rename
 
-Sprint-REM-01..04 also committed in same PR:
-- PII hardening (FUT-01..03), orchestrator fix (FUT-04), schema validators (FUT-05), Partner decision gate (FUT-06), evidence chain fix (FUT-07), audit_log mkdir (FUT-24)
-- feature-gates.md (Gates 1–4) — pre-build requirements for unbuilt features
+Open observations (carry to Sprint-IA-02 or backlog):
+- OBS-02: "Investigation Report" sidebar label → AK preference is "Investigation"
+- OBS-03: No back/home navigation on Workspace error state
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- IA-VERIFY requires manual browser test — cannot be automated
-- sentence-transformers not installed — EMB tests use code-inspection path
-- FE-TRIAGE-01 (full triage pass) paused — resume after Sprint-IA-01 merges if crashes remain
-- Sprint-IA-02 gated on IA-VERIFY PASS
+- Sprint-IA-02 (hybrid intake) — can begin next session
+- FE-TRIAGE-01 (full triage pass) — resume if crashes remain post-IA-01 merge

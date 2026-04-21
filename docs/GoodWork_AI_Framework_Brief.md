@@ -107,7 +107,7 @@ The consultant can accept, override, or reject any agent output at any point. Th
 | **Client Proposal** | Assisted single-pass | 7-section proposal with firm branding and fee structure |
 | **Proposal Deck** | Assisted single-pass | Slide-by-slide prompt kit for PowerPoint build |
 | **Engagement Scoping** | Assisted single-pass | Scope of work document |
-| **Persona Review** | Standalone | CFO / Lawyer / Regulator / Insurer perspective challenge |
+| **Individual Due Diligence - Background checks** | Standalone | CFO / Lawyer / Regulator / Insurer perspective challenge |
 
 **Full pipeline** workstreams include revision loops, evidence chain validation, and partner sign-off. **Assisted** workstreams produce a complete deliverable in one AI pass. Both produce .docx and .md output with full audit trail.
 
@@ -204,8 +204,8 @@ Stored in `firm_profile/` locally. Loaded automatically into every proposal, rep
 | 4 client personas (CFO, Lawyer, Regulator, Insurer) | Complete |
 | Bilingual output (English / Arabic) | Complete |
 | Firm profile setup wizard | Complete |
-| Streamlit browser UI (18 pages) | Complete — navigation restructure in progress |
-| Product IA redesign (two-arc model, st.navigation()) | In progress — Sprint-IA-01 |
+| Streamlit browser UI (18 pages) | Complete — 5-section st.navigation() sidebar |
+| Product IA redesign (two-arc model, st.navigation()) | Complete — Sprint-IA-01 merged 2026-04-21 |
 | Hybrid intake (structured dropdowns + remarks conversation) | Designed — Sprint-IA-02 |
 | Expert Witness workflow | Planned |
 | FRM guided exercise redesign | Planned |
