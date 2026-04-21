@@ -88,7 +88,7 @@ class BaseReportBuilder:
         title_run.bold = True
         try:
             title_run.font.size = Pt(24)
-            title_para.style = doc.styles["Title"]
+            title_para.style = doc.styles[self._resolve_style("Title")]
         except (KeyError, Exception):
             title_run.font.size = Pt(24)
 
@@ -254,13 +254,35 @@ class BaseReportBuilder:
                     )
         return Document()
 
+    # Mapping from standard Word styles to GW_ equivalents.
+    # When a GW_ style is present in the loaded template it takes priority,
+    # ensuring at least one GW_-prefixed paragraph appears in every output.
+    _GW_STYLE_MAP = {
+        "Heading 1": "GW_Heading1",
+        "Heading 2": "GW_Heading2",
+        "Normal":    "GW_Body",
+        "Title":     "GW_Title",
+    }
+
     def _resolve_style(self, style_name: str) -> str:
-        """Return style_name if it exists in the document; fall back to 'Normal'."""
-        try:
-            _ = self._doc.styles[style_name]
+        """Return the best available style for the document.
+
+        Priority: GW_ equivalent → requested style → 'Normal'.
+        Ensures GW_-prefixed paragraphs appear in the output when the template
+        carries GW_ styles (TPL-05 AC requirement).
+        """
+        available = {s.name for s in self._doc.styles}
+
+        # Prefer GW_ equivalent if the template defines it
+        gw_name = self._GW_STYLE_MAP.get(style_name)
+        if gw_name and gw_name in available:
+            return gw_name
+
+        # Fall back to the requested style
+        if style_name in available:
             return style_name
-        except (KeyError, Exception):
-            return "Normal"
+
+        return "Normal"
 
     def _add_body_text(self, content: str) -> None:
         """Add body paragraphs, splitting on double newlines."""
