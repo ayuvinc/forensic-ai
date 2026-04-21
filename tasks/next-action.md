@@ -1,24 +1,28 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
-architect
+junior-dev
 
 ## NEXT_TASK
-**Session 036: FE-TRIAGE — Streamlit frontend triage pass**
+**Session 036 (continued): Sprint-FE-TRIAGE — begin Phase B structural fixes**
 
-Sprint-TPL is now fully complete (TPL-01..05 all merged, Session 035). No pending sprint tasks remain.
+Sprint-FE-TRIAGE plan approved (Session 036). Task decomposition complete.
 
-**Primary task (~2026-05-05):**
+**Immediate tasks (no FE-TRIAGE-01 dependency):**
 
-`FE-TRIAGE-01` triage pass:
-  Run `streamlit run app.py` with `RESEARCH_MODE=knowledge_only`. Open pages 00 → 16 in order. For each page capture: exact traceback or visible error, crash-on-load vs crash-on-action, severity (P0/P1/P2). Record in triage table. Do NOT write any fix code during this task.
+1. `FE-TRIAGE-03` — Rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar shows both pages.
+2. `FE-TRIAGE-04` — Replace private Streamlit API in `streamlit_app/shared/session.py:156-179`. Add `caller_file` param to `bootstrap()`, update all 17 call sites.
 
-After FE-TRIAGE-01 is complete, architect runs FE-TRIAGE-02 (root cause grouping) and writes fix tasks FE-TRIAGE-03..N.
+**After FE-TRIAGE-04 complete:**
+3. `FE-TRIAGE-05` — Wrap `bootstrap()` call sites in try/except with degraded-mode error panel.
 
-**Branch convention:** `feature/sprint-fe-triage`
+**After Phase B complete:**
+4. `FE-TRIAGE-01` — Triage pass: run `streamlit run app.py`, walk pages 00→16, populate `tasks/fe-triage-table.md`.
+
+**Branch:** `feature/sprint-fe-triage`
 **ACs:** see Sprint-FE-TRIAGE block in tasks/todo.md
 
 ## COMPLETION STATUS

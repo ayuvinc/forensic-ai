@@ -105,3 +105,6 @@
 | 2026-04-21T01:20:00Z | architect | COMPLETE | architect-035-fe-triage-plan-2026-04-21 | Sprint-FE-TRIAGE added to tasks/todo.md — pages 00/01/16 crashed during AK manual test; triage + fix sprint planned for ~2026-05-05 |
 | 2026-04-21T01:35:00Z | junior-dev | COMPLETE | junior-dev-035-tpl-05-2026-04-21 | TPL-05 implemented — wired TemplateManager into write_final_report, added template_resolved audit event, updated BaseReportBuilder to prefer GW_ styles; all 7 ACs pass; READY_FOR_REVIEW |
 | 2026-04-21T01:40:00Z | qa-run | QA_APPROVED | qa-run-035-tpl-05-2026-04-21 | TPL-05 QA_APPROVED — all 7 ACs pass, imports clean, no workflow regressions, GW_ style preference verified |
+| 2026-04-21T01:45:00Z | architect | COMPLETE | architect-035-session-close-2026-04-21 | Session 035 closed — TPL-05 merged to main, Sprint-TPL archived, Sprint-FE-TRIAGE queued for ~2026-05-05, next-action.md written |
+| 2026-04-21T02:31:32Z | session-open | COMPLETE | session-open-036-fe-triage-20260421T023132Z | Session 036 opened — state CLOSED→OPEN, persona set to architect, FE-TRIAGE-01 queued |
+| 2026-04-21T02:35:00Z | architect | COMPLETE | architect-036-fe-triage-plan-20260421T023500Z | Sprint-FE-TRIAGE plan approved — 5 root causes diagnosed, tasks FE-TRIAGE-01..06..N + VERIFY written to todo.md, 5 lessons appended, next-action updated |

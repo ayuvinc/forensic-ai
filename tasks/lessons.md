@@ -107,3 +107,36 @@ permanently avoids the feature that caused the crash. Trust hit zero at iteratio
 Recovery is near-impossible once a practitioner decides a tool is unreliable — they will route
 around it permanently. This means: zero crashes is the only acceptable target for core workflows
 (FRM, Investigation). Degraded-with-warning is acceptable. CRASH is not.
+
+[2026-04-21] [PROCESS] The QA gate (QA_APPROVED) was never connected to UI runtime verification.
+Sprint ACs were verifiable by code inspection or CLI smoke test. No AC ever required opening the
+Streamlit app and confirming a page loads. QA_APPROVED meant "backend pipeline is correct" not
+"frontend renders correctly." These are two different claims. Every sprint that ships frontend pages
+must include an explicit AC: "run streamlit, open all affected pages, confirm render before
+QA_APPROVED." Code correctness does not imply UI runtime correctness.
+
+[2026-04-21] [ARCH] Two pages sharing the same numeric prefix in pages/ is undefined behavior in
+Streamlit (pages/01_Engagements.py and pages/01_Scope.py both existed). Streamlit routing uses the
+filename prefix to order and register pages. Collisions are resolved by filesystem sort order, which
+is not guaranteed. Result: one page may silently shadow the other, or both may behave erratically.
+Rule: enforce unique numeric prefixes across all pages/ files before any sprint is QA_APPROVED.
+Architect must verify this during task decomposition, not after a crash report.
+
+[2026-04-21] [ARCH] Using Streamlit private APIs (streamlit.runtime.scriptrunner.get_script_run_ctx,
+ctx.page_script_hash, ctx.script_path) for page detection is fragile. These are undocumented
+attributes that change across Streamlit versions. Swallowing the AttributeError silently (bare
+except) hides the failure and causes every page to attempt a redirect. Rule: page detection logic
+must use only the documented public API (st.query_params, page filename inspection via __file__,
+or a session_state flag). Never read private ctx attributes for routing decisions.
+
+[2026-04-21] [ARCH] Calling bootstrap(st) at module level (top of every Streamlit page, outside any
+function or render block) means an import failure in any of the 8 modules loaded by bootstrap crashes
+the page before it renders anything. The crash is invisible to the user — they see a blank page or
+an unhandled exception with no recovery path. Rule: bootstrap() must be wrapped in try/except at
+every call site, and failures must render a visible degraded-mode panel rather than a hard crash.
+
+[2026-04-21] [PROCESS] Pages built and verified in isolation do not constitute a tested application.
+st.session_state is shared across all Streamlit pages at runtime. A page that expects session keys
+set by a previous page will crash if navigated to directly or if the prior page failed. Integration
+must be explicitly tested: run the app, open each page in order from a clean state, verify that
+session state flows correctly from page to page. This test was never in the sprint cycle. Add it.

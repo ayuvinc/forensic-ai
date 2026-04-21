@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: junior-dev
+Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-21T01:26:12Z — state transition by MCP server
+Last updated:   2026-04-21T02:31:32Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -558,12 +558,54 @@ RD-04 ──── independent (called by RD-03)
 **Context:** AK ran manual frontend testing (2026-04-21). Pages 00 (Setup), 01 (Engagements/Scope), and 16 (Workspace) showed crashes or errors. Workflow execution was broken. Exact errors not captured — triage session required.
 **Pre-condition:** Run `streamlit run app.py` with `RESEARCH_MODE=knowledge_only` and go through each page in order, capturing exact error messages. No API calls needed for triage.
 **Scope:** All 17 pages (00–16). Triage first, fix second.
+**Branch:** `feature/sprint-fe-triage`
+**Root causes (Session 036, diagnosed before triage pass):** RC1 QA gate gap, RC2 naming collision, RC3 private Streamlit API, RC4 bootstrap crash, RC5 no integration test.
 
-- [ ] **[FE-TRIAGE-01]** Triage pass — open each page in order (00→16), capture exact traceback or visible error per page. Record in a triage table: page | error type | crash-on-load vs crash-on-action | severity (P0/P1/P2). No fixes in this task.
-- [ ] **[FE-TRIAGE-02]** Root cause grouping — after triage, architect groups errors by root cause (import failure, missing session key, broken API call, layout bug). Writes fix tasks below, one per root cause group.
-- [ ] **[FE-TRIAGE-03..N]** Fix tasks — written by architect after FE-TRIAGE-02 is complete. Placeholder; will be expanded.
+#### Phase A — Discovery
 
-**Note:** FE-TRIAGE-02 and FE-TRIAGE-03..N are blocked on FE-TRIAGE-01 completing. Do not begin fixes before the full triage table exists.
+- [ ] **[FE-TRIAGE-01]** Triage pass (junior-dev) — run `streamlit run app.py` with `RESEARCH_MODE=knowledge_only`. Open pages 00→16 in order from a clean browser session. For each page capture: exact traceback or visible error text, crash-on-load vs crash-on-action, severity P0/P1/P2. Record in triage table in `tasks/fe-triage-table.md`. No fixes in this task. ← no deps | AC: triage table exists with one row per page (17 rows); every P0 has a full traceback; table committed to branch before FE-TRIAGE-02 starts.
+  - **Auth:** local only, no external access
+  - **Data boundaries:** reads pages/ and streamlit_app/ only; no case data written
+  - **PII:** none
+  - **Audit:** append `fe_triage_pass_complete` event to audit_log.jsonl on completion
+  - **Abuse surface:** read-only pass; no mutations
+
+#### Phase B — Pre-defined structural fixes (parallel with Phase A)
+
+- [ ] **[FE-TRIAGE-03]** Fix naming collision — rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar renders both pages without duplication or shadowing. ← no deps | P0 | AC: `streamlit run app.py` sidebar shows both Scope and Engagements pages; no 404 on either; no duplicate entries.
+  - **Auth:** local only
+  - **Data boundaries:** pages/ rename only; no schema or state change
+  - **PII:** none
+  - **Audit:** none required (structural rename)
+  - **Abuse surface:** none
+
+- [ ] **[FE-TRIAGE-04]** Replace private Streamlit API in `_maybe_redirect_to_setup` — `streamlit_app/shared/session.py:156-179`. Remove `get_script_run_ctx`, `ctx.page_script_hash`, `ctx.script_path`. Replace with caller-filename detection: add optional `caller_file: str = ""` param to `bootstrap(st, caller_file=__file__)` and check `"00_Setup" in caller_file` instead. Update all 17 `bootstrap(st)` call sites to pass `__file__`. ← no deps | P0 | AC: `bootstrap(st, caller_file=__file__)` called on all pages; `_maybe_redirect_to_setup` contains no Streamlit runtime imports; 00_Setup.py does not redirect to itself; any other page redirects to setup when readiness check fails.
+  - **Auth:** local only
+  - **Data boundaries:** session.py only; no state change
+  - **PII:** none
+  - **Audit:** none required
+  - **Abuse surface:** caller_file is a string passed from `__file__` — not user-controlled
+
+- [ ] **[FE-TRIAGE-05]** Harden bootstrap call sites — wrap `session = bootstrap(st, caller_file=__file__)` in try/except at all 17 page call sites. On exception: render `st.error(f"Page failed to load: {e}")` + `st.stop()`. Prevents blank crash; gives Maher a readable error and a path to report it. ← deps: FE-TRIAGE-04 | P1 | AC: artificially break one import in bootstrap, confirm the page renders an error panel instead of a blank crash; restore import; confirm normal page renders correctly.
+  - **Auth:** local only
+  - **Data boundaries:** pages/ only; no state mutation on failure path
+  - **PII:** exception message must not include file contents or case data — verify error string is safe before rendering
+  - **Audit:** none required
+  - **Abuse surface:** error message rendered via st.error() — no HTML injection risk in Streamlit's safe renderer
+
+#### Phase C — Unknown fixes (blocked on FE-TRIAGE-01)
+
+- [ ] **[FE-TRIAGE-02]** Root cause grouping (architect) — read `tasks/fe-triage-table.md`. Group errors by root cause category (import failure, missing session key, broken API call, version mismatch, layout bug). Write FE-TRIAGE-06..N fix tasks below, one task per root cause group. ← deps: FE-TRIAGE-01 | AC: every P0 and P1 from triage table is covered by a fix task; fix tasks written to this sprint block before any fix code is written.
+
+- [ ] **[FE-TRIAGE-06..N]** Fix tasks — written by architect after FE-TRIAGE-02. Placeholder; expanded in next session.
+
+#### Phase D — Verification
+
+- [ ] **[FE-TRIAGE-VERIFY]** Full page walk from clean state — run `streamlit run app.py`, open pages 00→16 in order, confirm all P0s and P1s resolved. This is the QA_APPROVED gate for the entire sprint. ← deps: FE-TRIAGE-03, 04, 05, 06..N | AC: all 17 pages render without exception; no P0 remains; P2s documented but do not block merge; triage table updated with PASS/FAIL per fix.
+
+**Process fix (permanent — applies after this sprint):** Every sprint touching `pages/` must include AC: "run `streamlit run app.py`, open all affected pages, confirm render before QA_APPROVED." Architect enforces this at task decomposition time.
+
+**Note:** FE-TRIAGE-02 and FE-TRIAGE-06..N are blocked on FE-TRIAGE-01. FE-TRIAGE-03/04 can start immediately. FE-TRIAGE-05 blocked on FE-TRIAGE-04 (needs updated bootstrap signature).
 
 ---
 
