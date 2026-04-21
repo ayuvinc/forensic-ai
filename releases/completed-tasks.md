@@ -387,3 +387,11 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] FE-07: `pages/12_Case_Tracker.py` — Previous Versions section in `_render_case_detail()`; lists files in `Previous_Versions/` with per-file `st.download_button`; section absent when folder does not exist
 
 20/20 AC assertions PASS. 131 tests PASS. QA_APPROVED (qa-run-033-sprint-fe-20260420).
+
+---
+
+## Sprint-TPL — TPL-05 (Session 035 — 2026-04-21)
+
+- [x] TPL-05: Wired `TemplateManager.resolve()` into `write_final_report` (replaced dead `firm.json["templates"]` lookup). Emits `template_resolved` audit event with `fallback: false` (workflow base found) or `fallback: true` (generic fallback or template absent). `BaseReportBuilder._resolve_style` updated to prefer GW_ equivalents (`GW_Heading1`, `GW_Heading2`, `GW_Body`, `GW_Title`) when template defines them — ensures ≥1 GW_-prefixed paragraph in every branded output docx. Smoke test at `scripts/smoke_test_tpl05.py` covers all 7 ACs.
+
+7/7 ACs PASS. QA_APPROVED (qa-run-035-tpl-05-2026-04-21).

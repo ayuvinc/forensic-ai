@@ -4,20 +4,22 @@
 CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+architect
 
 ## NEXT_TASK
-**Session 035: junior-dev runs TPL-05 end-to-end smoke test**
+**Session 036: FE-TRIAGE — Streamlit frontend triage pass**
 
-Session 034 was an interim QA/planning closeout only. It clarified that `TPL-05` is the only genuinely pending item from the prior handoff; the other options previously listed here were already completed and merged.
+Sprint-TPL is now fully complete (TPL-01..05 all merged, Session 035). No pending sprint tasks remain.
 
-**Primary task:**
+**Primary task (~2026-05-05):**
 
-`TPL-05` smoke test:
-  Run the FRM pipeline end-to-end with `RESEARCH_MODE=knowledge_only`, generate `cases/{case_id}/F_Final/final_report.docx`, open it with `python-docx`, confirm at least one `GW_` style is present, verify `template_resolved` audit event has `fallback: false`, and confirm `firm_profile/templates/templates.json` maps `frm_risk_register.base` to `frm_risk_register_base.docx`.
+`FE-TRIAGE-01` triage pass:
+  Run `streamlit run app.py` with `RESEARCH_MODE=knowledge_only`. Open pages 00 → 16 in order. For each page capture: exact traceback or visible error, crash-on-load vs crash-on-action, severity (P0/P1/P2). Record in triage table. Do NOT write any fix code during this task.
 
-**Branch convention:** `feature/sprint-{sprint-name}`
-**ACs:** see relevant AC blocks in tasks/todo.md
+After FE-TRIAGE-01 is complete, architect runs FE-TRIAGE-02 (root cause grouping) and writes fix tasks FE-TRIAGE-03..N.
+
+**Branch convention:** `feature/sprint-fe-triage`
+**ACs:** see Sprint-FE-TRIAGE block in tasks/todo.md
 
 ## COMPLETION STATUS
 
@@ -32,19 +34,22 @@ Sprint-AIC:                100% ██████████ DONE — merged 4
 Sprint-EMB:                100% ██████████ DONE — merged eee13f2
 Sprint-FE:                 100% ██████████ DONE — merged a526bab
 Sprint-WORK-02/03:         100% ██████████ DONE — merged 34bdcb1
-TPL-05 smoke test:           0% ░░░░░░░░░░ NEXT
 Sprint-CONV-02:            100% ██████████ DONE — merged 4315d2a
 KL-02 / ACT-02 / ACT-03:  100% ██████████ DONE — merged dfe9d65
+Sprint-TPL (TPL-01..05):   100% ██████████ DONE — merged Session 035
+Sprint-FE-TRIAGE:            0% ░░░░░░░░░░ NEXT (~2026-05-05)
 ```
 
-**OVERALL: ~92% complete by task count (~99% by functional value)**
+**OVERALL: ~93% complete by task count (~99% by functional value)**
 
 ## CARRY_FORWARD_CONTEXT
-Session 033 built Sprint-EMB + Sprint-FE on separate feature branches:
-- Sprint-EMB: EmbeddingEngine (ChromaDB + sentence-transformers), DocumentManager wire, Workspace semantic search, Orchestrator context injection
-- Sprint-FE: ai_questions stage on 10 pages (one-at-a-time, case_intake.md), Settings template selector, FRM xlsx download, Sanctions per_hit_review, DD intake extensions + routing, Workspace conditional panels (DD/San/TT), Case Tracker Previous Versions
-Session 034 added the final `TPL-05` acceptance criteria and corrected the stale handoff so the next build session does not reopen already-finished work.
+Session 035 built TPL-05:
+- Wired TemplateManager into write_final_report (replaced dead firm.json["templates"] lookup)
+- Added template_resolved audit event (fallback: false = workflow base; fallback: true = generic/absent)
+- BaseReportBuilder now prefers GW_ styles (GW_Heading1/2, GW_Body, GW_Title) when template defines them
+- Smoke test at scripts/smoke_test_tpl05.py — all 7 ACs pass
+- Session also planned Sprint-FE-TRIAGE after AK reported crashes on pages 00/01/16
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- sentence-transformers not installed in dev env — EMB tests use code-inspection path; live embedding requires: `pip install sentence-transformers chromadb`
-- TPL-05 requires FRM pipeline to run end-to-end (needs ANTHROPIC_API_KEY + RESEARCH_MODE=knowledge_only)
+- FE-TRIAGE requires streamlit run app.py (RESEARCH_MODE=knowledge_only is fine — no API calls needed for triage)
+- sentence-transformers not installed in dev env — EMB tests use code-inspection path

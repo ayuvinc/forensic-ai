@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-20 17:33:20 UTC — Session 034 closed by session-close
-- Session summary: Session 034 — interim QA/planning closeout only. TPL-05 acceptance criteria expanded in `tasks/todo.md`, stale `tasks/next-action.md` options removed because WORK-02/03, CONV-02, KL-02, ACT-02, and ACT-03 were already completed in earlier sessions, and repo session state returned to CLOSED. Next: TPL-05 end-to-end smoke test.
+- Last updated: 2026-04-21 01:45:00 UTC — Session 035 closed by architect
+- Session summary: Session 035 — TPL-05 completed and merged. Wired TemplateManager into write_final_report, added template_resolved audit event, updated BaseReportBuilder to prefer GW_ styles; all 7 ACs pass (scripts/smoke_test_tpl05.py). Also planned Sprint-FE-TRIAGE (~2026-05-05) after AK reported crashes on pages 00/01/16. Sprint-TPL fully complete. Next: FE-TRIAGE-01 triage pass.
 
 ## Use Case Note
 

@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
 Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-21T01:12:32Z — state transition by MCP server
+Last updated:   2026-04-21T01:26:12Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -549,21 +549,7 @@ RD-04 ──── independent (called by RD-03)
 
 ---
 
-### Sprint-TPL — Report Template System (Session 024)
-
-**BA:** BA-TPL-01, BA-TPL-02
-**Note:** TPL-01 through TPL-04 DONE (merged Phase C + Phase D). TPL-05 is the remaining AC smoke test (Session 034 target).
-
-- [x] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx` ← deps: TPL-01, TPL-02, TPL-03, TPL-04 — READY_FOR_REVIEW
-
-#### AC — TPL-05
-- [x] Smoke test script runs without exception (no uncaught Python error, exit code 0)
-- [x] Output file `cases/{case_id}/F_Final/final_report.en.docx` exists after the run
-- [x] `python-docx` opens the output file and finds ≥1 paragraph whose `.style.name` starts with `GW_`
-- [x] `cases/{case_id}/audit_log.jsonl` contains a `template_resolved` event with `fallback: false`
-- [x] `firm_profile/templates/templates.json` entry for `frm_risk_register` has `base` key equal to `"frm_risk_register_base.docx"` (not a fallback path)
-- [x] Template file `firm_profile/templates/frm_risk_register_base.docx` exists before the run (pre-condition; test should skip with clear message if absent)
-- [x] Error state: if `frm_risk_register_base.docx` is absent, pipeline falls back gracefully (no crash) and `template_resolved` event has `fallback: true`
+~~Sprint-TPL — DONE. TPL-01..05 all merged. Archived to releases/completed-tasks.md (Session 035).~~
 
 ---
 
