@@ -31,7 +31,7 @@ Features that must ship for the product to have value for Maher:
 - [x] Evidence chat — conversational document review and evidence extraction
 - [ ] Expert Witness Report — full pipeline workflow; model routing exists, page and knowledge file pending
 - [ ] Hybrid intake — structured dropdowns + remarks-triggered conversation; replaces fully conversational intake across all workflows (Sprint-IA-02)
-- [ ] Product IA redesign — two-arc navigation (Sprint-IA-01), project/engagement model enforced in UI
+- [x] Product IA redesign — two-arc navigation (Sprint-IA-01), project/engagement model enforced in UI
 - [ ] Historical knowledge library — firm_profile/historical_registers/ and historical_reports/; sanitised ingestion
 
 ## Should-Have
