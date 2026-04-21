@@ -445,8 +445,16 @@ def write_final_report(
     try:
         from tools.report_builder import BaseReportBuilder
 
-        # Load template from firm.json["templates"][workflow] if available
-        template_path = _resolve_template(workflow)
+        # Resolve template via TemplateManager (firm_profile/templates/templates.json)
+        template_path, tpl_fallback = _resolve_template(workflow)
+
+        # Emit template_resolved audit event so TPL-05 AC can verify resolution path
+        append_audit_event(case_id, {
+            "event": "template_resolved",
+            "workflow": workflow,
+            "template": str(template_path) if template_path else None,
+            "fallback": tpl_fallback,
+        })
 
         builder = BaseReportBuilder(template_path=template_path)
         docx_path = final_dir / f"final_report.{language}.docx"
@@ -496,20 +504,24 @@ def write_final_report(
     return target
 
 
-def _resolve_template(workflow: str) -> Optional[Path]:
-    """Return template path from firm.json["templates"][workflow], or None."""
+def _resolve_template(workflow: str) -> tuple[Optional[Path], bool]:
+    """Return (template_path, fallback) for the given workflow using TemplateManager.
+
+    fallback=False means the workflow-specific base template was found.
+    fallback=True means we fell back to the generic template or found nothing.
+    """
     try:
+        from tools.template_manager import TemplateManager, TEMPLATES_JSON
         import json as _json
-        from config import FIRM_PROFILE_DIR
-        firm_json = FIRM_PROFILE_DIR / "firm.json"
-        if not firm_json.exists():
-            return None
-        data = _json.loads(firm_json.read_text(encoding="utf-8"))
-        tpl_name = data.get("templates", {}).get(workflow)
-        if not tpl_name:
-            return None
-        from config import BASE_DIR
-        tpl_path = BASE_DIR / "templates" / tpl_name
-        return tpl_path if tpl_path.exists() else None
+
+        tm = TemplateManager()
+        resolved = tm.resolve(workflow)
+
+        # Determine whether we used the workflow-specific base or a generic fallback
+        registry = tm.list_templates()
+        entry = registry.get(workflow, {})
+        expected_base = entry.get("base")
+        is_fallback = (expected_base is None) or (resolved.name != expected_base)
+        return resolved, is_fallback
     except Exception:
-        return None
+        return None, True

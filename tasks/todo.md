@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
-Active persona: none
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-20T17:33:20Z — Session 034 close by session-close
+Last updated:   2026-04-21T01:12:32Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -554,16 +554,30 @@ RD-04 ──── independent (called by RD-03)
 **BA:** BA-TPL-01, BA-TPL-02
 **Note:** TPL-01 through TPL-04 DONE (merged Phase C + Phase D). TPL-05 is the remaining AC smoke test (Session 034 target).
 
-- [ ] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx` ← deps: TPL-01, TPL-02, TPL-03, TPL-04
+- [x] **[TPL-05]** AC smoke test — FRM pipeline generates `F_Final/final_report.docx` using `frm_risk_register_base.docx` ← deps: TPL-01, TPL-02, TPL-03, TPL-04 — READY_FOR_REVIEW
 
 #### AC — TPL-05
-- [ ] Smoke test script runs without exception (no uncaught Python error, exit code 0)
-- [ ] Output file `cases/{case_id}/F_Final/final_report.docx` exists after the run
-- [ ] `python-docx` opens the output file and finds ≥1 paragraph whose `.style.name` starts with `GW_`
-- [ ] `cases/{case_id}/audit_log.jsonl` contains a `template_resolved` event with `fallback: false`
-- [ ] `firm_profile/templates/templates.json` entry for `frm_risk_register` has `base` key equal to `"frm_risk_register_base.docx"` (not a fallback path)
-- [ ] Template file `firm_profile/templates/frm_risk_register_base.docx` exists before the run (pre-condition; test should skip with clear message if absent)
-- [ ] Error state: if `frm_risk_register_base.docx` is absent, pipeline falls back gracefully (no crash) and `template_resolved` event has `fallback: true`
+- [x] Smoke test script runs without exception (no uncaught Python error, exit code 0)
+- [x] Output file `cases/{case_id}/F_Final/final_report.en.docx` exists after the run
+- [x] `python-docx` opens the output file and finds ≥1 paragraph whose `.style.name` starts with `GW_`
+- [x] `cases/{case_id}/audit_log.jsonl` contains a `template_resolved` event with `fallback: false`
+- [x] `firm_profile/templates/templates.json` entry for `frm_risk_register` has `base` key equal to `"frm_risk_register_base.docx"` (not a fallback path)
+- [x] Template file `firm_profile/templates/frm_risk_register_base.docx` exists before the run (pre-condition; test should skip with clear message if absent)
+- [x] Error state: if `frm_risk_register_base.docx` is absent, pipeline falls back gracefully (no crash) and `template_resolved` event has `fallback: true`
+
+---
+
+### Sprint-FE-TRIAGE — Frontend Smoke Test + Bug Fix (target: ~2026-05-05)
+
+**Context:** AK ran manual frontend testing (2026-04-21). Pages 00 (Setup), 01 (Engagements/Scope), and 16 (Workspace) showed crashes or errors. Workflow execution was broken. Exact errors not captured — triage session required.
+**Pre-condition:** Run `streamlit run app.py` with `RESEARCH_MODE=knowledge_only` and go through each page in order, capturing exact error messages. No API calls needed for triage.
+**Scope:** All 17 pages (00–16). Triage first, fix second.
+
+- [ ] **[FE-TRIAGE-01]** Triage pass — open each page in order (00→16), capture exact traceback or visible error per page. Record in a triage table: page | error type | crash-on-load vs crash-on-action | severity (P0/P1/P2). No fixes in this task.
+- [ ] **[FE-TRIAGE-02]** Root cause grouping — after triage, architect groups errors by root cause (import failure, missing session key, broken API call, layout bug). Writes fix tasks below, one per root cause group.
+- [ ] **[FE-TRIAGE-03..N]** Fix tasks — written by architect after FE-TRIAGE-02 is complete. Placeholder; will be expanded.
+
+**Note:** FE-TRIAGE-02 and FE-TRIAGE-03..N are blocked on FE-TRIAGE-01 completing. Do not begin fixes before the full triage table exists.
 
 ---
 
