@@ -1,367 +1,309 @@
-# Forensic Consulting Framework
+# GoodWork Forensic AI
 
-A Claude-powered AI system that simulates a full forensic consulting firm — Junior Analyst → Project Manager → Partner — running entirely in your terminal. Every case, draft, and output is saved locally with a full audit trail.
-
----
-
-## What You Can Do With This
-
-| # | Menu Option | What It Produces |
-|---|-------------|-----------------|
-| 1 | New Case Intake | Structured case file from a conversation |
-| 2 | Investigation Report | Full forensic investigation report (English; Arabic generated when Arabic language is selected at intake) |
-| 3 | Persona Review | How a CFO / Lawyer / Regulator / Insurer would challenge your report |
-| 4 | Policy / SOP Generator | Internal compliance policy or procedure document |
-| 5 | Training Material | Staff training content from a case or topic |
-| **6** | **FRM Risk Register** | **Fraud Risk Register mapped to UAE regulations — flagship feature** |
-| 7 | Client Proposal | Engagement letter / proposal document |
-| 8 | PPT Prompt Pack | Slide-by-slide prompt kit to build a PowerPoint in Claude |
-| 9 | Case Tracker | View status of all open and closed cases |
-| 10 | Browse SOPs | Read saved policies and procedures |
-
-### Workflow Modes
-
-The framework has two workflow modes:
-
-**Full Pipeline (Options 2, 6)** — Multi-agent review: Junior Analyst drafts, Project Manager reviews and may request revisions, Partner gives final approval. Includes state machine tracking, revision loops, evidence-chain validation, artifact versioning, and full audit trail. Supports resume if interrupted.
-
-**Assisted Generation (Options 4, 5, 7, 8)** — Single-model generation with regulatory citations where applicable. Produces a complete deliverable in one pass. Includes artifact persistence and audit trail. No multi-agent review or revision loops.
-
-Options 1, 9, 10 are utilities. Option 3 (Persona Review) is a standalone review tool that can be applied to any deliverable.
+A private, local AI system that runs the full internal operations of a forensic consulting firm — from first client conversation to signed deliverable — on a single consultant's laptop. No cloud. No team. No data leaves your machine.
 
 ---
 
-## Before You Start — What You Need
+## What It Does
 
-### 1. A computer running macOS or Windows
-- macOS: Terminal (built in) or iTerm2
-- Windows: Windows Terminal or PowerShell (not Command Prompt)
+GoodWork Forensic AI gives a solo forensic consultant the output capacity of a staffed firm. It simulates a three-level internal review hierarchy — Junior Analyst, Project Manager, Partner — and produces structured, audit-trailed, CXO-grade deliverables across all major forensic service lines.
 
-### 2. Python 3.11 or later
+You organise all work into **Projects**. Each Project is a client engagement. Each Project can run one or more independent **workstreams** (Investigation Report, FRM Risk Register, Due Diligence, and more). All outputs accumulate under the same Project. You assemble the final client document yourself.
 
-**Check if you have it:**
-```
+---
+
+## Service Lines
+
+| Workstream | Pipeline | What It Produces |
+|---|---|---|
+| **Investigation Report** | Full (3-agent) | Forensic investigation report — 9 types including AUP and Custom, 4 audience versions, ACFE-standard evidence chain |
+| **FRM Risk Register** | Full (3-agent) | Fraud Risk Management Register — 8 modules, risk-rated, mapped to COSO / ISO 37001 / ACFE, UAE regulatory citations |
+| **Due Diligence** | Assisted | DD screening memo — individual or entity, enhanced or standard depth |
+| **Sanctions Screening** | Assisted | Sanctions screening report — OFAC, UN, EU lists |
+| **Transaction Testing** | Assisted | Testing plan and findings — risk-based, random, or full population |
+| **Policy / SOP** | Assisted | Internal compliance policy or procedure document, jurisdiction-aware |
+| **Training Material** | Assisted | Staff training content from a case or compliance topic |
+| **Client Proposal** | Assisted | 7-section engagement proposal with firm branding, credentials, and fee structure |
+| **Proposal Deck** | Assisted | Slide-by-slide prompt kit to build the proposal PowerPoint |
+| **Engagement Scoping** | Assisted | Scope of work document for ambiguous engagements |
+| **Persona Review** | Standalone | How a CFO / Lawyer / UAE Regulator / Insurance Adjuster would challenge your report |
+
+**Full pipeline** workflows run through Junior Analyst → Project Manager → Partner with revision loops, evidence chain enforcement, and full audit trail. **Assisted** workflows generate a complete deliverable in one AI pass with audit trail. Both produce .md and .docx output.
+
+---
+
+## The Two Arcs
+
+**Arc 1 — Proposal** (before you are retained)
+Use the Scope page to define the engagement, then generate a proposal deck. Once the client signs, you create a Project and work begins.
+
+**Arc 2 — Engagement** (once you are retained)
+Create a Project. Run as many workstreams as the engagement requires. All outputs live under the same Project. You decide what goes into the final client document.
+
+---
+
+## Before You Start
+
+### What you need
+
+**1. A computer running macOS or Windows**
+- macOS: Terminal or iTerm2
+- Windows: Windows Terminal or PowerShell
+
+**2. Python 3.11 or later**
+```bash
 python3 --version
 ```
-If the output says `Python 3.11.x` or higher, you're good.
+If not installed: download from [python.org](https://python.org). On Windows, tick "Add Python to PATH" during install.
 
-**If not installed:**
-- macOS: Go to [python.org/downloads](https://python.org/downloads) and download the latest installer
-- Windows: Same — download from python.org, and tick "Add Python to PATH" during install
+**3. Two API keys**
 
-### 3. Two API keys (free accounts available)
-
-| Key | Where to get it | Free tier |
-|-----|----------------|-----------|
-| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) → API Keys → Create | Pay-per-use (very low cost) |
-| `TAVILY_API_KEY` | [app.tavily.com](https://app.tavily.com) → Sign up → API Keys | 1,000 searches/month free |
-
-**Getting your Anthropic key (step by step):**
-1. Go to [console.anthropic.com](https://console.anthropic.com)
-2. Sign up or log in
-3. Click your name in the top right → **API Keys**
-4. Click **Create Key** — give it a name like "forensic-ai"
-5. Copy the key (starts with `sk-ant-...`) — **you won't see it again**
-
-**Getting your Tavily key:**
-1. Go to [app.tavily.com](https://app.tavily.com)
-2. Sign up (free)
-3. Your API key is on the dashboard (starts with `tvly-...`)
+| Key | Where to get it | Cost |
+|---|---|---|
+| `ANTHROPIC_API_KEY` | [console.anthropic.com](https://console.anthropic.com) → API Keys → Create | Pay-per-use (see cost guide below) |
+| `TAVILY_API_KEY` | [app.tavily.com](https://app.tavily.com) → Sign up | 1,000 searches/month free |
 
 ---
 
-## Installation — Step by Step
+## Installation
 
-### Step 1: Open your terminal
-
-- **macOS**: Press `Cmd + Space`, type `Terminal`, press Enter
-- **Windows**: Press `Win + X`, click **Windows Terminal**
-
-### Step 2: Go to the project folder
-
-If someone sent you a zip file, unzip it first, then:
-
+### Step 1 — Get the project folder
 ```bash
 cd ~/forensic-ai
 ```
 
-If you put it somewhere else, replace `~/forensic-ai` with the actual path. For example:
-- macOS: `cd ~/Downloads/forensic-ai`
-- Windows: `cd C:\Users\YourName\Downloads\forensic-ai`
-
-### Step 3: Create a virtual environment (keeps everything clean)
-
+### Step 2 — Create a virtual environment
 ```bash
 python3 -m venv venv
 ```
-
-Then activate it:
-
-**macOS / Linux:**
+Activate it:
 ```bash
+# macOS / Linux
 source venv/bin/activate
-```
 
-**Windows:**
-```bash
+# Windows
 venv\Scripts\activate
 ```
+You will see `(venv)` at the start of your prompt. This is correct.
 
-You'll see `(venv)` appear at the start of your terminal prompt. This is correct.
-
-### Step 4: Install dependencies
-
+### Step 3 — Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
+Takes 2–3 minutes.
 
-This installs all required libraries. It takes about 1–2 minutes.
-
-### Step 5: Set up your API keys
-
-Copy the example file:
-
-**macOS / Linux:**
+### Step 4 — Configure your API keys
 ```bash
+# macOS / Linux
 cp .env.example .env
-```
 
-**Windows:**
-```bash
+# Windows
 copy .env.example .env
 ```
-
-Now open the `.env` file in any text editor (Notepad, TextEdit, VS Code) and fill in your keys:
-
+Open `.env` in any text editor and fill in:
 ```
 ANTHROPIC_API_KEY=sk-ant-your-key-here
 TAVILY_API_KEY=tvly-your-key-here
 ```
 
-Save the file.
-
-### Step 6: Verify the installation
-
+### Step 5 — Verify
 ```bash
-python3 -c "import anthropic, tavily, rich, pydantic; print('All dependencies OK')"
+python3 -c "import anthropic, tavily, rich, pydantic, streamlit; print('All dependencies OK')"
 ```
-
-You should see: `All dependencies OK`
 
 ---
 
 ## Running the App
 
-Every time you want to use the tool:
-
 ```bash
 cd ~/forensic-ai
-source venv/bin/activate    # macOS/Linux (skip this line on Windows: run venv\Scripts\activate instead)
-python run.py
+source venv/bin/activate       # macOS/Linux
+# venv\Scripts\activate        # Windows
+
+streamlit run app.py
 ```
 
-You'll see the main menu:
+Your browser opens automatically at `http://localhost:8501`.
 
-```
-╔══════════════════════════════════════════╗
-║   Forensic Consulting           ║
-║   AI-Powered Case Management             ║
-╠══════════════════════════════════════════╣
-║  [INVESTIGATION]                         ║
-║   1. New Case Intake                     ║
-║   2. Investigation Report                ║
-║   3. Persona Review                      ║
-║                                          ║
-║  [COMPLIANCE]                            ║
-║   4. Policy / SOP Generator              ║
-║   5. Training Material                   ║
-║   6. FRM Risk Register                   ║
-║                                          ║
-║  [BUSINESS]                              ║
-║   7. Create Client Proposal              ║
-║   8. Build Proposal PPT Prompt Pack      ║
-║   9. Case Tracker                        ║
-║  10. Browse SOPs                         ║
-╚══════════════════════════════════════════╝
-```
+On first launch, the setup wizard walks you through:
+- Firm name and logo
+- Team member bios and credentials
+- Pricing model and rates
+- Standard terms and conditions
 
-Type a number and press Enter.
+This is stored locally in `firm_profile/` and used in every proposal and report header.
 
 ---
 
-## Walkthrough: Your First FRM Risk Register (Option 6)
+## Sidebar Navigation
 
-This is the flagship feature. Here's exactly what happens:
+```
+MAIN
+  Engagements    ← create and manage Projects; launch workstreams
+  Workspace      ← view all outputs under the active Project
 
-1. **Type `6` and press Enter**
+PROPOSALS
+  Scope          ← Arc 1 step 1: define the engagement scope
+  Proposals      ← Arc 1 step 2: generate the proposal deck
 
-2. **Claude asks you questions one at a time:**
-   ```
-   What industry is your client in?
-   > construction and real estate, based in Dubai
+MONITOR
+  Case Tracker   ← status of all open and closed cases
+  Activity Log   ← timestamped log of all actions
 
-   How large is the company — roughly how many employees?
-   > around 800 people
+SETTINGS
+  Team           ← manage firm profile and team credentials
+  Settings       ← API keys, model tier, research mode
 
-   What is the main concern or trigger for this review?
-   > recent staff turnover in finance and procurement
-   ```
+WORKFLOWS        ← direct access to any workstream
+  Investigation Report
+  FRM Risk Register
+  Due Diligence
+  Sanctions Screening
+  Transaction Testing
+  Policy / SOP
+  Training Material
+  Proposal Deck
+  Persona Review
+```
 
-3. **The pipeline runs automatically — you'll see progress:**
-   ```
-   [Junior Analyst]  Researching construction fraud patterns in UAE...  ✓
-   [Project Manager] Reviewing risk coverage and regulatory gaps...     ✓
-   [Partner]         Finalising regulatory alignment (CBUAE, DFSA)...   ✓
-   ```
-
-4. **Output is saved to:**
-   ```
-   cases/20260101-A3B4C5/final_report.en.md   ← English report (always generated)
-   cases/20260101-A3B4C5/final_report.ar.md   ← Arabic version (generated when language = ar)
-   cases/20260101-A3B4C5/audit_log.jsonl      ← Full audit trail
-   ```
-   *(Case ID format: `{YYYYMMDD}-{6-char ID}`, e.g. `20260101-A3B4C5`)*
-
-The whole process takes 2–4 minutes.
+The normal path is: **Engagements → select or create a Project → Run Workflow**. The WORKFLOWS section gives direct access for power users.
 
 ---
 
-## Understanding Your Output Files
+## Your First FRM Risk Register
 
-Every case gets its own folder under `cases/`. The folder name is your case ID (format: `{YYYYMMDD}-{6-char ID}`):
+1. Open **Engagements** → create a new Project (give it a name, select FRM as a workstream)
+2. From the Project detail panel, click **Run Workflow → FRM Risk Register**
+3. Answer the intake questions: client industry, jurisdictions, modules in scope
+4. The pipeline runs automatically:
+   ```
+   Junior Analyst   Researching fraud patterns and regulatory baseline...  ✓
+   Project Manager  Reviewing risk coverage and citation quality...         ✓
+   Partner          Validating UAE regulatory alignment...                  ✓
+   ```
+5. Output saved to the Project's workspace:
+   ```
+   F_Final/final_report.en.md
+   F_Final/final_report.en.docx
+   ```
 
-```
-cases/
-└── 20260101-A3B4C5/
-    ├── state.json              ← Current status of the case pipeline
-    ├── audit_log.jsonl         ← Every event, timestamped (immutable)
-    ├── intake.json             ← Case intake data
-    ├── citations_index.json    ← All research sources cited (Full Pipeline only)
-    ├── junior_output.v1.json   ← Junior Analyst draft (Full Pipeline: Options 2, 6)
-    ├── pm_review.v1.json       ← Project Manager review (Full Pipeline: Options 2, 6)
-    ├── partner_approval.v1.json← Partner approval (Full Pipeline: Options 2, 6)
-    ├── final_report.en.md      ← Final English report (all workflows)
-    └── final_report.ar.md      ← Arabic report (generated when language = ar selected)
-```
-
-*Assisted Generation workflows (Options 4, 5, 7, 8) produce `final_report.en.md`, `state.json`, `audit_log.jsonl`, and a `{workflow}_deliverable.v1.json` metadata file. The multi-agent artifacts (`junior_output`, `pm_review`, `partner_approval`) are only present for Full Pipeline workflows.*
-
-**Opening a report:**
-- macOS: `open cases/0001/final_report.en.md` (opens in default app)
-- Windows: `notepad cases\0001\final_report.en.md`
-- Or drag the file into VS Code, Word, or any Markdown viewer
+The whole process takes 3–5 minutes.
 
 ---
 
-## If Something Gets Interrupted
+## Output Files
 
-**Resume is available for Options 2 (Investigation Report) and 6 (FRM Risk Register) only.** These run a multi-agent pipeline that checkpoints its state after each stage.
-
-If one of these closes mid-run (power cut, accidental close, etc.), re-run the same option and it will detect the unfinished case and ask:
+Each workstream gets its own case folder under `cases/`. The folder follows an A–F structure:
 
 ```
-Case 0001 is in progress (status: pm_review_complete).
-Resume from where it stopped? [Y/n]
+cases/{case_id}/
+  A_Engagement_Management/   intake.json, state.json, audit_log.jsonl
+  B_Planning/                research plan, scope notes
+  C_Fieldwork/               workpapers, interview notes
+  D_Evidence/                indexed documents, evidence register
+  E_Drafts/                  agent outputs (versioned: .v1, .v2, .v3)
+  F_Final/                   final_report.en.md
+                             final_report.en.docx
+                             final_report.ar.md  (if Arabic selected)
 ```
 
-Press `Y` to continue from where it left off.
-
-**Options 4, 5, 7, and 8** (Assisted Generation — single-pass) do not support resume. If interrupted, re-run the option from the beginning — the previous incomplete run is discarded.
+The Workspace page shows all workstream outputs under the active Project with download links.
 
 ---
 
-## Budget and Cost Guide
+## Resume — If Something Is Interrupted
 
-| Mode | Junior Analyst | Project Manager | Partner | Typical cost per FRM |
-|------|---------------|-----------------|---------|---------------------|
+Full pipeline workstreams (Investigation Report, FRM Risk Register) checkpoint their state after each agent stage. If the run is interrupted, open the same workstream from Engagements and it will detect the unfinished state and offer to resume.
+
+Assisted workstreams (DD, Sanctions, TT, Policy, Training, Proposal) complete in one pass. If interrupted, restart the workstream from the beginning.
+
+---
+
+## Cost Guide
+
+| Mode | Junior | Project Manager | Partner | Typical cost per FRM |
+|---|---|---|---|---|
 | Economy | Haiku | Haiku | Sonnet | ~$0.05–0.15 |
 | Balanced (default) | Haiku | Sonnet | Sonnet | ~$0.20–0.50 |
 | Premium | Sonnet | Sonnet | Opus | ~$1.00–2.50 |
 
-Set the mode in your `.env` file:
+Set in Settings → Model Tier. FRM Risk Register and Expert Witness always use Opus for Partner regardless of tier.
+
+Research mode: `knowledge_only` (default, no API calls to Tavily) or `live` (full web research). Set in Settings.
+
+---
+
+## CLI Mode (Advanced)
+
+The original terminal interface is still available:
+```bash
+python run.py
 ```
-BUDGET_MODE=balanced
-```
+This gives a 10-item numbered menu with the same workflows. Use it for scripting or if you prefer the terminal over the browser.
 
 ---
 
 ## Troubleshooting
 
-### "command not found: python3"
-- macOS: Install Python from [python.org](https://python.org)
-- Try `python` instead of `python3`
+**Browser does not open automatically**
+Navigate to `http://localhost:8501` manually.
 
-### "ModuleNotFoundError: No module named 'anthropic'"
-You're not in the virtual environment. Run:
+**"command not found: python3"**
+Try `python` instead of `python3`. If neither works, install Python from [python.org](https://python.org).
+
+**"ModuleNotFoundError"**
+You are not in the virtual environment. Run:
 ```bash
 source venv/bin/activate    # macOS/Linux
 venv\Scripts\activate       # Windows
 ```
-Then try again.
 
-### "AuthenticationError" or "Invalid API key"
-- Open your `.env` file and check the key has no extra spaces or quotes
-- Make sure the file is named exactly `.env` (not `env.txt` or `.env.txt`)
+**"AuthenticationError" or "Invalid API key"**
+Open `.env` and verify the key has no extra spaces or quotes. The file must be named exactly `.env`.
 
-### "Error: Tavily quota exceeded"
-You've used your 1,000 free searches. Either:
-- Upgrade your Tavily plan at app.tavily.com
-- Set `USE_CACHED_RESEARCH=true` in `.env` to reuse previous research results
+**"Tavily quota exceeded"**
+You have used your 1,000 free monthly searches. Either upgrade at app.tavily.com or switch to `RESEARCH_MODE=knowledge_only` in Settings.
 
-### Arabic text shows as boxes or question marks
-Your terminal doesn't support Arabic. The Arabic report is still saved correctly to `cases/*/final_report.ar.md` — open it in VS Code or a browser instead.
+**Page shows an error panel instead of loading**
+Check the error message. Most common cause: setup wizard was not completed. Go to Settings → Setup and complete it.
 
-### "Case stuck / pipeline didn't finish"
-**Options 2 and 6:** Re-run the same option. The orchestrator will detect the partial state and offer to resume from where it stopped.
-
-**Options 4, 5, 7, 8:** These complete in one pass — no resume. Re-run the option from the beginning.
+**Pipeline stopped mid-run**
+For full pipeline workstreams, re-open the workstream from Engagements. It will offer to resume.
 
 ---
 
 ## Frequently Asked Questions
 
-**Q: Is my data sent anywhere?**
-Only your prompts and research queries go to Anthropic (Claude API) and Tavily (search). Your case files stay on your computer in the `cases/` folder. Nothing is stored by the app on any server.
+**Is my data sent anywhere?**
+Only your prompts and research queries go to Anthropic (Claude API) and Tavily (search). All case files, project data, and firm credentials stay on your computer. Nothing is stored by the app on any server.
 
-**Q: Can I use this without the Tavily key?**
-The regulatory and sanctions lookups will not work without it. Basic report generation may still work with reduced research quality. Set `TAVILY_API_KEY=` empty in `.env` to try.
+**Can I run multiple workstreams at the same time?**
+Run one at a time to avoid API rate limits.
 
-**Q: Can I edit the reports after they're generated?**
-Yes — they're plain Markdown files. Open them in VS Code, Typora, or Word (File → Open → select the .md file). Or copy-paste into Google Docs.
+**Can I edit the reports after they are generated?**
+Yes. The `.md` files are plain text. The `.docx` files open in Word. Edit freely — the original agent outputs are preserved separately in E_Drafts/.
 
-**Q: Can I run multiple cases at the same time?**
-Not recommended. Run one case at a time to avoid API rate limits.
+**Can I use this without the Tavily key?**
+Yes, with `RESEARCH_MODE=knowledge_only`. The regulatory and sanctions lookups use cached knowledge instead of live web calls. Research quality is reduced but the tool runs fully.
 
-**Q: How do I add a new client persona or workflow?**
-Advanced feature — see the developer notes in `CLAUDE.md` under "Phase 5 — Personas" and "Plugin Manifest Format".
-
-**Q: Where are the SOPs stored?**
-In the `sops/` folder. Browse them via Option 10 in the menu, or open the files directly.
+**How do I add a new client?**
+Create a new Project in Engagements. Each Project is independent — different client, different folder, different audit trail.
 
 ---
 
-## Getting Help
+## Quick Reference
 
-- Re-read this guide from the top
-- Check the `cases/{id}/audit_log.jsonl` for a detailed event log of what went wrong
-- Open an issue on the GitHub repository (link in your purchase confirmation)
+```bash
+# Start the app
+cd ~/forensic-ai && source venv/bin/activate && streamlit run app.py
+
+# CLI mode
+cd ~/forensic-ai && source venv/bin/activate && python run.py
+
+# Check API connectivity
+python3 -c "import anthropic; anthropic.Anthropic().models.list(); print('Anthropic OK')"
+```
 
 ---
 
-## Quick Reference Card
-
-```
-Start the app:
-  cd ~/forensic-ai && source venv/bin/activate && python run.py
-
-Check your API keys work:
-  python3 -c "import anthropic; anthropic.Anthropic().models.list(); print('Anthropic OK')"
-
-View a report (replace CASE-ID with your actual case ID, e.g. 20260101-A3B4C5):
-  open cases/CASE-ID/final_report.en.md        (macOS)
-  start cases\CASE-ID\final_report.en.md       (Windows)
-
-Reset a broken case (delete and restart):
-  rm -rf cases/CASE-ID    (macOS/Linux)
-  rmdir /s cases\CASE-ID  (Windows)
-```
+*Built for GoodWork LLC — white-label distribution available*

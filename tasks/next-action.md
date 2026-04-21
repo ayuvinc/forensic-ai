@@ -7,23 +7,31 @@ OPEN
 junior-dev
 
 ## NEXT_TASK
-**Session 036 (continued): Sprint-FE-TRIAGE — begin Phase B structural fixes**
+**Session 036 (continued): Sprint-IA-01 Phase 0 → Phase A — ARCH-DOC-01 first, then build tasks**
 
-Sprint-FE-TRIAGE plan approved (Session 036). Task decomposition complete.
+Sprint-FE-TRIAGE Phase B complete (FE-TRIAGE-03/04/05 done). Product IA redesign approved (Session 036). BA decisions written to ba-logic.md. LLD written: docs/lld/product-ia-design.md.
 
-**Immediate tasks (no FE-TRIAGE-01 dependency):**
+**ARCH-DOC-01 blocks merge to main — not individual build tasks. Coding can start immediately.**
 
-1. `FE-TRIAGE-03` — Rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar shows both pages.
-2. `FE-TRIAGE-04` — Replace private Streamlit API in `streamlit_app/shared/session.py:156-179`. Add `caller_file` param to `bootstrap()`, update all 17 call sites.
+**Task order:**
+1. `IA-00` — Seed test data script (scripts/seed_test_engagement.py) — run before testing IA-04
+2. `IA-01` — Fix app.py bootstrap: add try/except + caller_file=__file__
+3. `IA-02` — Navigation restructure: use st.navigation() in app.py with 5-section grouping (see docs/lld/product-ia-design.md) ← deps: IA-01
+4. `IA-03` — Verify multi-workflow in 01_Engagements.py + add project_name field to ProjectState
+5. `IA-04` — Workspace multi-workflow outputs ← run IA-00 seed script first
+6. `IA-05` — Proposal arc v1 navigation positioning ← deps: IA-02
+7. `IA-VERIFY` — Full page walk confirmation ← deps: IA-00..05
+8. `ARCH-DOC-01` — HLD refresh (must complete before merge to main — not before coding)
 
-**After FE-TRIAGE-04 complete:**
-3. `FE-TRIAGE-05` — Wrap `bootstrap()` call sites in try/except with degraded-mode error panel.
+**Branch:** `feature/sprint-fe-triage` (continuing)
+**LLD:** docs/lld/product-ia-design.md (written Session 036)
+**ACs:** see Sprint-IA-01 block in tasks/todo.md
 
-**After Phase B complete:**
-4. `FE-TRIAGE-01` — Triage pass: run `streamlit run app.py`, walk pages 00→16, populate `tasks/fe-triage-table.md`.
-
-**Branch:** `feature/sprint-fe-triage`
-**ACs:** see Sprint-FE-TRIAGE block in tasks/todo.md
+## CARRY_FORWARD_CONTEXT
+- FE-TRIAGE-03/04/05 complete: naming collision fixed, private Streamlit API replaced, bootstrap hardened
+- FE-TRIAGE-01 (triage pass) paused — superseded by IA redesign; resume after Sprint-IA-01 for any remaining unknown crashes
+- Product model: Engagement = root, two arcs (Proposal → Engagement), workflows are sub-items not top-level nav
+- Streamlit version: 1.56.0 — supports st.navigation() and st.Page(title=...)
 
 ## COMPLETION STATUS
 

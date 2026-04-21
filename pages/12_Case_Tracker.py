@@ -15,7 +15,11 @@ from config import CASES_DIR
 from streamlit_app.shared.session import bootstrap
 from tools.file_tools import build_case_index
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 _INDEX_PATH = CASES_DIR / "index.json"
 

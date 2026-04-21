@@ -86,7 +86,11 @@ def _render_ai_review_badges(st, case_id: str, risk_items) -> None:
                 st.markdown(ann["rewritten_text"])
 
 # ── Session bootstrap ─────────────────────────────────────────────────────────
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("FRM Risk Register")
 st.caption("Fraud Risk Management — multi-module assessment pipeline")

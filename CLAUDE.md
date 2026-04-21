@@ -106,7 +106,7 @@ RETRY_BACKOFF_SECONDS = [1, 3, 10]
 | `sanctions_check.py` | **Authoritative only**: ofac.treas.gov, un.org/securitycouncil, sanctions.ec.europa.eu | Return "no authoritative match identified" — never infer |
 | `company_lookup.py` | UAE registries, Zawya, official filings | Flag as "unverified" if not from official registry |
 
-**Rule:** Final deliverables may only cite from `authoritative_citations`. Regulatory claims without authoritative sources must carry a disclaimer.
+**Rule:** Final deliverables prefer `authoritative_citations`. Regulatory claims without authoritative sources must carry a disclaimer. The Partner always signs off — it never blocks delivery. Where standards are not fully met, the Partner appends specific disclaimers to the affected sections so Maher can decide whether to address them or proceed.
 
 ---
 
@@ -149,7 +149,11 @@ TIMEOUT      = manifest.timeout_seconds    # Hard timeout per agent run
 
 # After each tool result: validate against ResearchResult schema
 # Strip script/HTML from web content, truncate to 2000 chars (anti prompt-injection)
-# Block approval if workflow requires citations but output has 0 authoritative_citations
+# Partner NEVER blocks sign-off — always approves with explicit disclaimers when standards not met.
+# If 0 authoritative_citations: sign off + append disclaimer "Research limitations: no authoritative
+# sources were identified for [topic]. Findings in this section are based on [general sources /
+# knowledge base only] and should be independently verified before reliance."
+# Blocking stalls the engagement. Disclaimers preserve transparency without stopping delivery.
 ```
 
 ---

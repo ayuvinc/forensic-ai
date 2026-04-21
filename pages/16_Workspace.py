@@ -20,7 +20,11 @@ from config import CASES_DIR, CONTEXT_BUDGET_CHARS
 from streamlit_app.shared.session import bootstrap
 from tools.project_manager import ProjectManager
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 pm = ProjectManager()
 
 

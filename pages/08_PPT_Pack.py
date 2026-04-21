@@ -9,7 +9,11 @@ from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("PPT Prompt Pack")
 st.caption("Generate a DeckStoryboard and per-slide prompt pack for presentation tools")

@@ -5,7 +5,7 @@ Status:         OPEN
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-21T02:31:32Z — state transition by MCP server
+Last updated:   2026-04-21T02:42:16Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -553,6 +553,56 @@ RD-04 ──── independent (called by RD-03)
 
 ---
 
+### Sprint-IA-01 — Product IA Redesign Phase 1: Navigation + Multi-Workflow (Session 036)
+
+**BA sign-off:** BA-IA-01, BA-IA-02, BA-IA-03 — confirmed AK 2026-04-21
+**Branch:** `feature/sprint-fe-triage` (continuing on same branch — no new branch needed)
+**Context:** AK identified fundamental IA issue during FE-TRIAGE-01 pass. Engagement must be root entity. Two arcs: Proposal (Arc 1) and Engagement (Arc 2). Workflow pages demoted from primary nav to secondary. Full design in ba-logic.md Session 036 section.
+**LLD:** `docs/lld/product-ia-design.md` — authority for all navigation and arc decisions.
+
+#### Phase 0 — Doc updates (all BLOCK MERGE TO MAIN — do not block individual build tasks)
+
+- [ ] **[ARCH-DOC-01]** HLD refresh — update `docs/hld.md` to reflect post-Phase 8/9 state: (a) System Overview: add Streamlit as primary entry point, (b) Major Components: add streamlit_app/, ProjectManager, EmbeddingEngine, TemplateManager, ActivityLogger, schemas/project.py, (c) Architecture/Data Flow: add Phase 9 engagement flow + Proposal arc + two-arc model, (d) Deployment Model: Streamlit replaces run.py as primary UI (run.py remains for CLI mode), (e) Phase 10-13 section: add Phase 9 decisions. LLD `docs/lld/product-ia-design.md` already written (Session 036). ← no deps | P0 | **BLOCKS MERGE TO MAIN** | AC: hld.md Status = `active`; Major Components includes all Phase 8/9 additions; Architecture/Data Flow shows two arcs; Deployment Model reflects Streamlit as primary.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [ ] **[ARCH-DOC-02]** README.md full rewrite — current README describes the old `python run.py` CLI with a 10-item terminal menu. Must be completely rewritten to reflect: (a) Streamlit as primary entry point (`streamlit run app.py`), (b) project/engagement model (Projects with 1–N workstreams), (c) two-arc flow (Proposal arc → Engagement arc), (d) full service line list including DD, Sanctions, TT, AUP, and new investigation types (8 types including AUP + Custom), (e) updated output folder structure (A–F per engagement), (f) updated cost guide, (g) updated troubleshooting for Streamlit. Audience: white-label customer reading for the first time. ← no deps | P0 | **BLOCKS MERGE TO MAIN** | AC: README describes Streamlit entry point; lists all current service lines; project/engagement model explained; no mention of `python run.py` as primary path.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [ ] **[ARCH-DOC-03]** Framework brief + scope brief update — (a) `docs/GoodWork_AI_Framework_Brief.md`: update to reflect Streamlit UI, full service line list, two-arc model, project/engagement structure — this is the white-label pitch/executive doc; (b) `docs/scope-brief.md`: move Streamlit from should-have to done; add AUP and Expert Witness to must-have; update Cut-for-Now list to reflect Session 036 decisions. ← no deps | P1 | **BLOCKS MERGE TO MAIN** | AC: Framework Brief mentions Streamlit and all service lines; scope-brief.md reflects current product state accurately.
+  - **Auth:** none (doc-only) | **Data:** none | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase A — App-level fixes (no deps on ARCH-DOC-01 — coding can start immediately)
+
+- [ ] **[IA-00]** Seed test data script — create `scripts/seed_test_engagement.py`. Writes a mock `ProjectState` with `project_name="ABC Corp Test Engagement"`, `client="ABC Corp"`, and 3 entries in `cases`: `{"investigation_report": "case_test_001", "frm_risk_register": "case_test_002", "due_diligence": "case_test_003"}`. For each case_id: create `cases/{case_id}/state.json` (status=DELIVERABLE_WRITTEN), `cases/{case_id}/F_Final/final_report.en.md` (3-line placeholder), `cases/{case_id}/F_Final/final_report.en.docx` (empty docx via python-docx). No API calls. Run once before testing IA-04. ← no deps | P0 | AC: script runs without error; `streamlit run app.py` → Workspace shows 3 workflow sections under the test engagement; each section shows a download link.
+  - **Auth:** local only | **Data:** writes to cases/ (test data only — gitignored) | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [ ] **[IA-01]** Fix `app.py` bootstrap — add `try/except` + `caller_file=__file__` to `session = bootstrap(st)` call on line 25. Same pattern applied to all pages in FE-TRIAGE-05. ← no deps | P0 | AC: app.py bootstrap failure renders error panel, not blank crash; `bootstrap(st, caller_file=__file__)` called in app.py.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+- [ ] **[IA-02]** Navigation restructure — replace pages/ directory convention with `st.navigation()` in `app.py`. Group pages into sections per `docs/lld/product-ia-design.md` (MAIN: Engagements, Workspace; PROPOSALS: Scope, Proposals; MONITOR: Case Tracker, Activity Log; SETTINGS: Team, Settings; WORKFLOWS: all workflow pages). 00_Setup not in nav (redirect-only). Use `st.Page(title=...)` to set display names — fixes "b Scope" → "Scope" without file rename. ← deps: IA-01 | P0 | AC: sidebar shows exactly 5 sections (MAIN, PROPOSALS, MONITOR, SETTINGS, WORKFLOWS); "b Scope" gone, replaced by "Scope" in PROPOSALS; 00_Setup not visible in sidebar; all workflow pages still reachable; existing `st.switch_page()` calls still work.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase B — Engagement multi-workflow
+
+- [ ] **[IA-03]** Verify multi-workflow in `01_Engagements.py` — confirm "Run Workflow" selectbox (line ~199) allows ALL workflow types regardless of engagement's primary `service_type`. If any restriction exists, remove it. ← no deps | P1 | AC: an engagement created with service_type "Investigation Report" can also launch FRM, DD, or any other workflow from the Engagements detail panel without error.
+  - **Auth:** local only | **Data:** reads ProjectState; writes active_project to session_state | **PII:** none | **Audit:** none | **Abuse:** service_type is read from state.json, not user input at this point
+
+- [ ] **[IA-04]** Workspace multi-workflow outputs — update `16_Workspace.py` to show all workflow runs under the active engagement, not just the primary. Read `ProjectState.cases` dict (all workflow_type → case_id entries) and render a section per workflow with links to its outputs in E_Drafts/ and F_Final/. ← no deps | P1 | AC: an engagement with 2+ workflow runs shows a section per workflow in Workspace; each section shows latest draft/final report download link; engagement with 0 runs shows "No workflows run yet."
+  - **Auth:** local only | **Data:** reads cases/{slug}/; no writes | **PII:** report content is Maher's work product, stored locally | **Audit:** none | **Abuse:** slug validated by ProjectManager._safe_slug()
+
+#### Phase C — Proposal arc v1 (navigation only — no new functionality)
+
+- [ ] **[IA-05]** Reposition Proposal arc in navigation — in the `st.navigation()` config, move `07_Proposal.py` into a "Proposals" section with title "Proposals". Move `01b_Scope.py` (display title: "Scope") into same section as step 1 of Arc 1. Add a static info panel at top of 07_Proposal.py: "Arc 1 — Proposal: Step 2 of 3 (Proposal Deck). Complete Scope first, then upload signed letter to create an Engagement." ← deps: IA-02 | P2 | AC: sidebar shows "Proposals" section with "Scope" and "Proposals" entries; 07_Proposal.py renders info banner at top; no other page content changes.
+  - **Auth:** local only | **Data:** no change | **PII:** none | **Audit:** none | **Abuse:** none
+
+#### Phase D — Verification
+
+- [ ] **[IA-VERIFY]** Full page walk — run `streamlit run app.py`, confirm new sidebar structure, confirm all pages still load, confirm multi-workflow launch from Engagements, confirm Workspace shows workflow outputs. ← deps: IA-01..05 | AC: sidebar matches 4-section design; all 17 pages render; no new crashes introduced.
+
+**Note:** IA-06 (full Proposal arc with scoping conversation + engagement letter generation) is Sprint-IA-02 — separate session. This sprint is navigation and multi-workflow only.
+
+---
+
 ### Sprint-FE-TRIAGE — Frontend Smoke Test + Bug Fix (target: ~2026-05-05)
 
 **Context:** AK ran manual frontend testing (2026-04-21). Pages 00 (Setup), 01 (Engagements/Scope), and 16 (Workspace) showed crashes or errors. Workflow execution was broken. Exact errors not captured — triage session required.
@@ -572,21 +622,21 @@ RD-04 ──── independent (called by RD-03)
 
 #### Phase B — Pre-defined structural fixes (parallel with Phase A)
 
-- [ ] **[FE-TRIAGE-03]** Fix naming collision — rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar renders both pages without duplication or shadowing. ← no deps | P0 | AC: `streamlit run app.py` sidebar shows both Scope and Engagements pages; no 404 on either; no duplicate entries.
+- [x] **[FE-TRIAGE-03]** Fix naming collision — rename `pages/01_Scope.py` to `pages/01b_Scope.py`. Verify sidebar renders both pages without duplication or shadowing. ← no deps | P0 | AC: `streamlit run app.py` sidebar shows both Scope and Engagements pages; no 404 on either; no duplicate entries.
   - **Auth:** local only
   - **Data boundaries:** pages/ rename only; no schema or state change
   - **PII:** none
   - **Audit:** none required (structural rename)
   - **Abuse surface:** none
 
-- [ ] **[FE-TRIAGE-04]** Replace private Streamlit API in `_maybe_redirect_to_setup` — `streamlit_app/shared/session.py:156-179`. Remove `get_script_run_ctx`, `ctx.page_script_hash`, `ctx.script_path`. Replace with caller-filename detection: add optional `caller_file: str = ""` param to `bootstrap(st, caller_file=__file__)` and check `"00_Setup" in caller_file` instead. Update all 17 `bootstrap(st)` call sites to pass `__file__`. ← no deps | P0 | AC: `bootstrap(st, caller_file=__file__)` called on all pages; `_maybe_redirect_to_setup` contains no Streamlit runtime imports; 00_Setup.py does not redirect to itself; any other page redirects to setup when readiness check fails.
+- [x] **[FE-TRIAGE-04]** Replace private Streamlit API in `_maybe_redirect_to_setup` — `streamlit_app/shared/session.py:156-179`. Remove `get_script_run_ctx`, `ctx.page_script_hash`, `ctx.script_path`. Replace with caller-filename detection: add optional `caller_file: str = ""` param to `bootstrap(st, caller_file=__file__)` and check `"00_Setup" in caller_file` instead. Update all 17 `bootstrap(st)` call sites to pass `__file__`. ← no deps | P0 | AC: `bootstrap(st, caller_file=__file__)` called on all pages; `_maybe_redirect_to_setup` contains no Streamlit runtime imports; 00_Setup.py does not redirect to itself; any other page redirects to setup when readiness check fails.
   - **Auth:** local only
   - **Data boundaries:** session.py only; no state change
   - **PII:** none
   - **Audit:** none required
   - **Abuse surface:** caller_file is a string passed from `__file__` — not user-controlled
 
-- [ ] **[FE-TRIAGE-05]** Harden bootstrap call sites — wrap `session = bootstrap(st, caller_file=__file__)` in try/except at all 17 page call sites. On exception: render `st.error(f"Page failed to load: {e}")` + `st.stop()`. Prevents blank crash; gives Maher a readable error and a path to report it. ← deps: FE-TRIAGE-04 | P1 | AC: artificially break one import in bootstrap, confirm the page renders an error panel instead of a blank crash; restore import; confirm normal page renders correctly.
+- [x] **[FE-TRIAGE-05]** Harden bootstrap call sites — wrap `session = bootstrap(st, caller_file=__file__)` in try/except at all 17 page call sites. On exception: render `st.error(f"Page failed to load: {e}")` + `st.stop()`. Prevents blank crash; gives Maher a readable error and a path to report it. ← deps: FE-TRIAGE-04 | P1 | AC: artificially break one import in bootstrap, confirm the page renders an error panel instead of a blank crash; restore import; confirm normal page renders correctly.
   - **Auth:** local only
   - **Data boundaries:** pages/ only; no state mutation on failure path
   - **PII:** exception message must not include file contents or case data — verify error string is safe before rendering

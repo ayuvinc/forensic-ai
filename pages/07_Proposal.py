@@ -9,7 +9,11 @@ from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir, get_final_report_path
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("Client Proposal")
 st.caption("Generate a full 7-section forensic consulting proposal with team selection and fee structure")

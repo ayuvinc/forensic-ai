@@ -19,7 +19,11 @@ def _infer_doc_type(filename: str) -> str:
     ext = Path(filename).suffix.lower()
     return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("Transaction Testing")
 st.caption("Fraud quantification, procurement fraud testing, AML transaction analysis, and audit compliance")

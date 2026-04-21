@@ -15,7 +15,11 @@ from pathlib import Path
 import streamlit as st
 from streamlit_app.shared.session import bootstrap
 
-bootstrap(st)
+try:
+    bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 _LOG_FILE = Path(__file__).parent.parent / "logs" / "activity.jsonl"
 _PAGE_SIZE = 50

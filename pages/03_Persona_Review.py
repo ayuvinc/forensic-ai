@@ -8,7 +8,11 @@ from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import generic_intake_form
 from streamlit_app.shared.pipeline import run_in_status
 
-session = bootstrap(st)
+try:
+    session = bootstrap(st, caller_file=__file__)
+except Exception as _bootstrap_err:
+    st.error(f"Page failed to load: {_bootstrap_err}")
+    st.stop()
 
 st.title("Persona Review")
 st.caption("Review a deliverable from CFO, Legal Counsel, UAE Regulator, and Insurance Adjuster perspectives")
