@@ -11,11 +11,11 @@ The Architect and skill agents own the write gate.
 ## Current Status
 
 ```
-session:        034
-sprint:         TPL-05
-active_persona: none
-last_skill_run: session-close (interim closeout)
-last_updated:   2026-04-20 UTC
+session:        037
+sprint:         Sprint-IA-01 (build complete, IA-VERIFY pending)
+active_persona: architect
+last_skill_run: smoke-test (skill created, not yet run)
+last_updated:   2026-04-21 UTC
 ```
 
 ---
@@ -64,6 +64,20 @@ runtime_impact: none
 ## Queued Messages
 
 <!-- Agents append messages here. Architect clears at session close. -->
+
+### architect — Session037 Sprint-IA-01 build complete — 2026-04-21T14:30:00Z
+```yaml
+run_id: "architect-037-sprint-ia-01-build-complete-20260421"
+agent: "architect"
+status: COMPLETE — awaiting IA-VERIFY
+message: |
+  Sprint-REM-01..04 + Sprint-IA-01 built and committed (2d68014, 1fa615e).
+  131 tests pass. /smoke-test skill created.
+  Gate: AK runs /smoke-test sprint_id=sprint-ia-01 (17 steps, 14 P0).
+  If QA_APPROVED: architect merges feature/sprint-fe-triage → main, closes sprint.
+  If QA_REJECTED: junior-dev fixes P0 failures, re-run smoke-test.
+next_action: "/smoke-test sprint_id=sprint-ia-01"
+```
 
 ### qa — Session034 AC — 2026-04-20T00:00:00Z
 ```yaml
