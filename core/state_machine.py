@@ -14,6 +14,7 @@ class CaseStatus(str, Enum):
     PIPELINE_ERROR          = "pipeline_error"
     DELIVERABLE_WRITTEN     = "deliverable_written"   # Mode B (Assisted) terminal status
     SCOPE_CONFIRMED         = "scope_confirmed"        # Transaction Testing: testing plan locked before document ingestion
+    CLOSED_WITH_OBJECTIONS  = "closed_with_objections"  # Consultant closed after Partner raised objections
 
 
 VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
@@ -22,7 +23,8 @@ VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.JUNIOR_DRAFT_COMPLETE:   [CaseStatus.PM_REVIEW_COMPLETE, CaseStatus.PM_REVISION_REQUESTED],
     CaseStatus.PM_REVISION_REQUESTED:   [CaseStatus.JUNIOR_DRAFT_COMPLETE],
     CaseStatus.PM_REVIEW_COMPLETE:      [CaseStatus.PARTNER_REVIEW_COMPLETE, CaseStatus.PARTNER_REVISION_REQ],
-    CaseStatus.PARTNER_REVISION_REQ:    [CaseStatus.PM_REVIEW_COMPLETE, CaseStatus.JUNIOR_DRAFT_COMPLETE],
+    CaseStatus.PARTNER_REVISION_REQ:    [CaseStatus.PM_REVIEW_COMPLETE, CaseStatus.JUNIOR_DRAFT_COMPLETE,
+                                         CaseStatus.CLOSED_WITH_OBJECTIONS],
     CaseStatus.PARTNER_REVIEW_COMPLETE: [CaseStatus.OWNER_READY],
     CaseStatus.OWNER_READY:             [CaseStatus.OWNER_APPROVED, CaseStatus.OWNER_REJECTED],
     CaseStatus.OWNER_REJECTED:          [CaseStatus.JUNIOR_DRAFT_COMPLETE],
@@ -30,7 +32,12 @@ VALID_TRANSITIONS: dict[CaseStatus, list[CaseStatus]] = {
     CaseStatus.SCOPE_CONFIRMED:         [CaseStatus.DELIVERABLE_WRITTEN],
 }
 
-TERMINAL_STATUSES = {CaseStatus.OWNER_APPROVED, CaseStatus.PIPELINE_ERROR, CaseStatus.DELIVERABLE_WRITTEN}
+TERMINAL_STATUSES = {
+    CaseStatus.OWNER_APPROVED,
+    CaseStatus.PIPELINE_ERROR,
+    CaseStatus.DELIVERABLE_WRITTEN,
+    CaseStatus.CLOSED_WITH_OBJECTIONS,
+}
 
 MAX_REVISION_ROUNDS = {"junior": 3, "pm": 2}
 

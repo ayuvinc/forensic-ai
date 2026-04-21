@@ -249,6 +249,7 @@ def read_state(case_id: str) -> dict | None:
 def append_audit_event(case_id: str, event: dict) -> None:
     """Append one JSON line to audit_log.jsonl (append-only, never mutate)."""
     log_path = case_dir(case_id) / "audit_log.jsonl"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
     event.setdefault("timestamp", datetime.now(timezone.utc).isoformat())
     with open(log_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(event, default=str) + "\n")

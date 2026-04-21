@@ -13,7 +13,7 @@ import streamlit as st
 
 from config import CASES_DIR
 from streamlit_app.shared.session import bootstrap
-from tools.file_tools import build_case_index
+from tools.file_tools import build_case_index, read_state, write_state
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -50,16 +50,17 @@ _PIPELINE_ERROR_GUIDANCE = (
 
 
 _STATUS_LABELS: dict[str, str] = {
-    "OWNER_APPROVED":         "Approved",
-    "DELIVERABLE_WRITTEN":    "Complete",
-    "PM_REVISION_REQUESTED":  "Revision (PM)",
-    "PARTNER_REVISION_REQ":   "Revision (Partner)",
-    "PIPELINE_ERROR":         "Error",
-    "INTAKE_CREATED":         "Intake",
-    "JUNIOR_DRAFT_COMPLETE":  "Draft",
-    "PM_REVIEW_COMPLETE":     "PM Review",
-    "PARTNER_REVIEW_COMPLETE":"Partner Review",
-    "OWNER_READY":            "Ready",
+    "OWNER_APPROVED":          "Approved",
+    "DELIVERABLE_WRITTEN":     "Complete",
+    "PM_REVISION_REQUESTED":   "Revision (PM)",
+    "PARTNER_REVISION_REQ":    "Partner Review — Action Required",
+    "CLOSED_WITH_OBJECTIONS":  "Closed (Partner Objections)",
+    "PIPELINE_ERROR":          "Error",
+    "INTAKE_CREATED":          "Intake",
+    "JUNIOR_DRAFT_COMPLETE":   "Draft",
+    "PM_REVIEW_COMPLETE":      "PM Review",
+    "PARTNER_REVIEW_COMPLETE": "Partner Review",
+    "OWNER_READY":             "Ready",
     "OWNER_REJECTED":         "Rejected",
 }
 
@@ -244,6 +245,52 @@ def _render_workpaper_button(case_id: str, status: str, cdir) -> None:
                 st.error(f"Workpaper generation failed: {e}")
 
 
+def _render_partner_decision_gate(case_id: str) -> None:
+    """Show Partner's objections and give the consultant two resolution options."""
+    state = read_state(case_id)
+    if not state:
+        st.warning("State file not found for this case.")
+        return
+
+    feedback   = state.get("partner_feedback", "No feedback recorded.")
+    objections = state.get("partner_objections", [])
+
+    st.error("Partner review — action required")
+    st.markdown(
+        "The Partner reviewed this case and raised objections before signing off. "
+        "Review the notes below and choose how to proceed."
+    )
+
+    with st.expander("Partner Objections", expanded=True):
+        st.markdown(f"**Summary:** {feedback}")
+        if objections:
+            st.markdown("**Specific objections:**")
+            for obj in objections:
+                st.markdown(f"- {obj}")
+
+    col_restart, col_close = st.columns(2)
+
+    with col_restart:
+        if st.button("Restart from PM Stage", key=f"partner_restart_{case_id}",
+                     type="primary", use_container_width=True):
+            new_state = {**state,
+                         "status":             "pm_review_complete",
+                         "partner_feedback":   None,
+                         "partner_objections": []}
+            write_state(case_id, new_state)
+            st.success("Status reset to PM Review Complete. Open the workflow to re-run from PM stage.")
+            st.rerun()
+
+    with col_close:
+        if st.button("Close Case — Accept Partner Notes as Record",
+                     key=f"partner_close_{case_id}",
+                     use_container_width=True):
+            new_state = {**state, "status": "closed_with_objections"}
+            write_state(case_id, new_state)
+            st.info("Case closed. Partner objections are preserved in state.json and the audit log.")
+            st.rerun()
+
+
 def _render_case_detail(case_id: str, status: str) -> None:
     """Render deliverables, document badges, audit log, and error guidance."""
     cdir = CASES_DIR / case_id
@@ -299,6 +346,11 @@ def _render_case_detail(case_id: str, status: str) -> None:
                         file_name=vf.name,
                         key=f"prev_ver_{case_id}_{vf.name}",
                     )
+
+    # Partner revision decision gate — show objections + action buttons (FUT-06)
+    if status == "PARTNER_REVISION_REQ":
+        st.divider()
+        _render_partner_decision_gate(case_id)
 
     # PIPELINE_ERROR guidance — human-readable, no raw traceback (UX-004)
     if status == "PIPELINE_ERROR":

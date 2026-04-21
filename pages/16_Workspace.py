@@ -136,6 +136,57 @@ with col_h2:
 
 st.divider()
 
+# ── IA-04: Workflow Outputs — all runs under this engagement ──────────────────
+_WORKFLOW_LABELS: dict[str, str] = {
+    "investigation_report": "Investigation Report",
+    "frm_risk_register":    "FRM Risk Register",
+    "due_diligence":        "Due Diligence",
+    "sanctions_screening":  "Sanctions Screening",
+    "transaction_testing":  "Transaction Testing",
+    "policy_sop":           "Policy / SOP",
+    "training_material":    "Training Material",
+    "client_proposal":      "Client Proposal",
+    "persona_review":       "Persona Review",
+}
+
+cases_dict = state.cases if state else {}
+with st.expander(
+    f"Workflow Outputs ({len(cases_dict)} run{'s' if len(cases_dict) != 1 else ''})",
+    expanded=bool(cases_dict),
+):
+    if not cases_dict:
+        st.caption("No workflows run yet for this engagement.")
+    else:
+        for wf_type, case_id in cases_dict.items():
+            wf_label = _WORKFLOW_LABELS.get(wf_type, wf_type.replace("_", " ").title())
+            st.markdown(f"**{wf_label}** — case `{case_id}`")
+            wf_cdir = CASES_DIR / case_id
+            # F_Final outputs
+            final_files = []
+            for search in (wf_cdir / "F_Final", wf_cdir):
+                if search.exists():
+                    final_files = sorted(search.glob("final_report.*.*"))
+                    if final_files:
+                        break
+            if final_files:
+                for f in final_files:
+                    st.download_button(
+                        label=f"Download {f.name}",
+                        data=f.read_bytes(),
+                        file_name=f.name,
+                        key=f"ws_dl_{case_id}_{f.name}",
+                    )
+            else:
+                # E_Drafts fallback
+                draft_files = sorted((wf_cdir / "E_Drafts").glob("*.json")) if (wf_cdir / "E_Drafts").exists() else []
+                if draft_files:
+                    st.caption(f"  Draft: `{draft_files[-1].name}`")
+                else:
+                    st.caption("  No outputs yet.")
+            st.divider()
+
+st.divider()
+
 # ── P9-05c: Mode selector ──────────────────────────────────────────────────────
 mode = st.radio(
     "Session mode",

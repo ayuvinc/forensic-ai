@@ -15,6 +15,12 @@ except Exception as _bootstrap_err:
     st.error(f"Page failed to load: {_bootstrap_err}")
     st.stop()
 
+st.info(
+    "**Arc 1 — Proposal: Step 2 of 3 (Proposal Deck).** "
+    "Complete Scope first (Scope page), then upload the signed engagement letter "
+    "on the Engagements page to create a Project."
+)
+
 st.title("Client Proposal")
 st.caption("Generate a full 7-section forensic consulting proposal with team selection and fee structure")
 
