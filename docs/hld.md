@@ -1,7 +1,7 @@
 ---
 Status: active
 Source: code-observed + user-confirmed
-Last confirmed with user: 2026-04-21
+Last confirmed with user: 2026-04-22
 Owner: Architect
 Open questions: 0
 ---
@@ -30,6 +30,7 @@ The consultant (Maher) organises all work into **Projects**. Each Project maps t
 | `streamlit_app/shared/session.py` | Bootstrap: readiness check, session state init, setup redirect | streamlit_app/shared/readiness.py |
 | `streamlit_app/shared/pipeline.py` | Streamlit-side pipeline runner; connects pages to orchestrator | core/orchestrator.py |
 | `streamlit_app/shared/intake.py` | Guided intake conversation panel (Streamlit) | schemas/ |
+| `streamlit_app/shared/hybrid_intake.py` | HybridIntakeEngine: structured fields + Remarks-triggered Claude Haiku conversation (BA-IA-07); WorkflowFieldConfig, RemarksResult; investigation wired in Sprint-IA-02; remaining workflows in Sprint-IA-03 | streamlit_app/shared/intake.py, anthropic SDK |
 | `streamlit_app/shared/aic.py` | AI-assisted intake completion | core/orchestrator.py |
 | `streamlit_app/shared/done_zone.py` | Deliverable display and download panel | tools/file_tools.py |
 | `streamlit_app/shared/evidence_chat_panel.py` | Conversational evidence review panel | workflows/evidence_chat.py |
@@ -49,7 +50,7 @@ The consultant (Maher) organises all work into **Projects**. Each Project maps t
 | `core/report_builder.py` | BaseReportBuilder: .md + .docx generation, GW_ style preference | python-docx, core/template_manager.py |
 | `core/knowledge_library.py` | Historical report/register ingestion; SanitisationError HARD GATE | firm_profile/historical_*/ |
 | `core/knowledge_retriever.py` | Retrieves relevant knowledge from knowledge/ and case history | core/embedding_engine.py |
-| `schemas/project.py` | ProjectState: project_name, slug, client, cases dict (workflow→case_id) | pydantic |
+| `schemas/project.py` | ProjectState: project_name, slug, client, initial_workstreams (declared at creation, rendered in Workspace even before run), cases dict (workflow→case_id) | pydantic |
 | `schemas/case.py` | CaseStatus enum, CaseIntake, per-case state | pydantic |
 | `schemas/artifacts.py` | All artifact models: junior output, PM review, partner approval, SanitisedIndexEntry | pydantic |
 | `schemas/research.py` | ResearchResult, CitationsIndex, trust levels | pydantic |
