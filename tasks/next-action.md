@@ -1,22 +1,27 @@
 # NEXT ACTION
 
 ## SESSION
-OPEN
+CLOSED
 
 ## NEXT_PERSONA
-session-close
+architect
 
 ## NEXT_TASK
-**Session 039: Close — Sprint-IA-02 merged, doc freshness confirmed**
+**Session 041: Sprint-IA-03 — Wire HybridIntakeEngine to remaining workflow pages**
 
-Sprint-IA-02 is QA_APPROVED, merged to main, tasks archived.
-Session 039 is complete. Close the session.
+AK approval required before build starts. Architect to decompose tasks, then junior-dev executes.
 
-The next session (040) will begin Sprint-IA-03: wire HybridIntakeEngine to remaining workflows.
+Sprint-IA-03 scope (confirmed in next-action.md carry-forward, Session 039):
+- Wire HybridIntakeEngine to: 06_FRM.py, 09_Due_Diligence.py, 10_Sanctions.py,
+  11_Transaction_Testing.py, 04_Policy_SOP.py, 05_Training.py
+- Each workflow needs its own _FIELD_CONFIG (WorkflowFieldConfig list)
+- Engine infrastructure already built (streamlit_app/shared/hybrid_intake.py)
+- This is wiring-only — mechanical, low risk
+- No new BA decisions required: BA-IA-07 covers all workflows
 
 ## COMMAND
 ```
-/session-close
+/architect sprint_id=sprint-ia-03
 ```
 
 ## COMPLETION STATUS
@@ -39,19 +44,15 @@ Sprint-IA-03 (remaining workflows hybrid intake): 0% ░░░░░░░░░
 **OVERALL: ~98% complete by task count**
 
 ## CARRY_FORWARD_CONTEXT
-Sprint-IA-02 complete (Session 039):
-- HybridIntakeEngine built: streamlit_app/shared/hybrid_intake.py
-- Investigation workflow wired to engine (02_Investigation.py)
-- Multi-workstream engagements: initial_workstreams in ProjectState, multiselect in 01_Engagements.py, declared sections in 16_Workspace.py
-- AUP (type 8) + Custom/Other (type 9) investigation types: intake branches + Partner AUP hard rules
-- Docs updated: hld.md (hybrid_intake.py added), scope-brief.md (3 items ticked)
-- 131 tests pass; manual smoke STEP-A..F pending AK live run
+Session 040 was a demo/walkthrough session — no sprint work executed.
+App demo guidance given; session lifecycle completed cleanly.
 
-Sprint-IA-03 scope (next session — AK must approve before build):
-- Wire HybridIntakeEngine to: 06_FRM.py, 09_Due_Diligence.py, 10_Sanctions.py, 11_Transaction_Testing.py, 04_Policy_SOP.py, 05_Training.py
-- Each workflow needs its own _FIELD_CONFIG (WorkflowFieldConfig list)
-- Engine infrastructure already built — this is wiring-only (mechanical, low risk)
-- No new BA decisions required: BA-IA-07 covers all workflows
+Sprint-IA-03 context (unchanged from Session 039 handoff):
+- HybridIntakeEngine built: streamlit_app/shared/hybrid_intake.py
+- Investigation workflow wired (02_Investigation.py) — reference implementation
+- Multi-workstream engagements: initial_workstreams in ProjectState, multiselect in 01_Engagements.py
+- AUP (type 8) + Custom/Other (type 9) investigation types live
+- 131 tests pass; manual smoke STEP-A..F pending Maher live run
 
 Open carry-forward observations:
 - OBS-02: "Investigation Report" sidebar label → AK preference is "Investigation" (deferred)
@@ -59,5 +60,5 @@ Open carry-forward observations:
 - Manual smoke: STEP-A..F of tasks/smoke-tests/sprint-ia-02.md pending Maher live run
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- None blocking for session close
-- Sprint-IA-03 Architect design needed before junior-dev starts (session 040)
+- None blocking
+- Watch: R-NEW-10 (HybridIntake API timeout), R-NEW-11 (mid-intake session state), R-NEW-12 (investigation_type side-effects)

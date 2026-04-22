@@ -132,3 +132,4 @@
 | 2026-04-22T05:30:00Z | qa-run | QA_APPROVED | qa-run-039-sprint-ia-02-20260422 | Sprint-IA-02 QA_APPROVED — all automated AC criteria pass; 131 tests pass; 1 warning fixed (dead generic_intake_form import removed); STEP-A..F require live streamlit run (manual QA) |
 | 2026-04-22T06:00:00Z | architect | COMPLETE | architect-039-sprint-ia-02-merge-20260422 | Sprint-IA-02 merged to main (QA_APPROVED); doc freshness complete (hld.md + scope-brief.md updated); tasks archived to releases/; next-action points to session-close |
 | 2026-04-22T06:30:00Z | session-close | COMPLETE | session-close-039-sprint-ia-02-20260422 | Session 039 CLOSED — Sprint-IA-02 QA_APPROVED, merged, archived; docs fresh; state machine CLOSED; next: Session 040 Sprint-IA-03 |
+| 2026-04-22T17:36:01Z | session-open | COMPLETE | session-open-040-sprint-ia-03-20260422T173601Z | Session 040 opened — MCP transition CLOSED→OPEN, persona set to architect, Sprint-IA-03 queued for AK approval |

@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: session-close
+Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-22T06:00:00Z — Sprint-IA-02 merged; Architect gate complete
+Last updated:   2026-04-22T17:36:01Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
