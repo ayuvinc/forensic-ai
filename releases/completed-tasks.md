@@ -408,3 +408,35 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 
 17/17 smoke test steps PASS. 131 tests PASS. QA_APPROVED (Session 038).
 ARCH-DOC-IA-01: `docs/lld/product-ia-design.md` navigation table + app.py code block updated to reflect as-built state (Session 039).
+
+---
+
+## Sprint-IA-02 — Hybrid Intake + AUP + Custom + Multi-Workstream (Session 039 — merged main)
+
+**BA decisions:** BA-IA-04, BA-IA-05, BA-IA-06, BA-IA-07
+
+### Stream A — BA-IA-04: Project Name + Multi-Workstream
+- [x] IA-02-A1: `project_name: str` + `initial_workstreams: list[str]` added to `ProjectState`; `project_name` defaults to `project_slug` via `model_validator` (backward compat with existing state.json files)
+- [x] IA-02-A2: `ProjectIntake` extended with `initial_workstreams: list[str] = []`; `create_project()` guards `len(initial_workstreams) >= 1` with ValueError (constraint in method, not schema, to preserve 131 existing tests); both fields persisted to state.json; `PROJECT_CREATED` audit event includes `initial_workstreams`
+- [x] IA-02-A3: `01_Engagements.py` — `st.selectbox("Service type")` replaced with `st.multiselect("Workstreams *")`; ≥1 required; `service_type = selected_workstreams[0]` for backward compat; `initial_workstreams=selected_workstreams` passed to `ProjectIntake`
+- [x] IA-02-A4: `16_Workspace.py` — Workflow Outputs section renders declared-but-unrun workstream sections; label→page dict maps each workstream to its page; "Workstream added — not yet run." card + "Run Now" button; legacy fallback (`initial_workstreams=[]` → show `cases.keys()`)
+
+### Stream B — BA-IA-05/06: AUP + Custom Investigation Types
+- [x] IA-02-B1: `knowledge/investigation/investigation_framework.md` already had AUP (Type 8) + Custom (Type 9) — no changes needed
+- [x] IA-02-B2: `02_Investigation.py` INVESTIGATION_TYPES dict extended: `"agreed_upon_procedures"` + `"other_custom"` entries
+- [x] IA-02-B3: AUP intake branch — `_AUP_MAX_PROCEDURES = 20`; numbered `st.text_input` per procedure; AUP info banner; at-least-1-procedure validation disables Run button; description prefixed `"AUP SCOPE — Procedures agreed with client:\n{numbered list}"`
+- [x] IA-02-B4: Custom intake branch — st.info notice "Custom type: model will propose structure..."; description prefixed `"CUSTOM INVESTIGATION — Structure to be proposed before drafting:\n"`
+- [x] IA-02-B5: `agents/partner/prompts.py` — `_build_aup_block(description)` added; detects `description.startswith("AUP SCOPE")`; injects AUP hard rules (strip conclusions, verify procedure list, append AICPA/IAASB disclaimer); non-AUP intakes receive empty string
+
+### Stream C — BA-IA-07: HybridIntakeEngine (Investigation)
+- [x] IA-02-C1: `streamlit_app/shared/hybrid_intake.py` (new file) — `WorkflowFieldConfig` dataclass; `RemarksResult` dataclass
+- [x] IA-02-C2: `HybridIntakeEngine` class — 4-step state machine (fields → remarks → confirmation → done); `run()` dispatcher; `reset()`; `_render_structured_fields()`; `_render_widget()`; `_scan_remarks()`; `_render_remarks_conversation()` (max 2 rounds); `_get_ai_question()` (Claude Haiku, knowledge_only fallback); `_render_confirmation()`; `_build_result()`
+- [x] IA-02-C3: `_INVESTIGATION_FIELD_CONFIG` — 7 fields; jurisdiction + investigation_type + regulators_implicated + evidence_available have `has_remarks=True`; audience + industry + description have `has_remarks=False`
+- [x] IA-02-C4: `02_Investigation.py` — `generic_intake_form` import removed; `HybridIntakeEngine` instantiated at module level; intake stage replaced with engine step rendering; client_name from engagement banner + fallback; AIC stage preserved
+- [x] IA-02-C5: `tasks/smoke-tests/sprint-ia-02.md` written — 7 STEP scenarios (A through G)
+
+**ARCH-DOC-IA-01 (continued):** `docs/hld.md` updated — `hybrid_intake.py` added to components table; `schemas/project.py` row updated with `initial_workstreams`. `docs/scope-brief.md` updated — Hybrid intake, AUP, Custom/Other ticked.
+
+AUTOMATED: 7/7 AC blocks PASS. 131 tests PASS. 1 QA defect fixed in-session (dead `generic_intake_form` import removed).
+MANUAL: STEP-A..F pending Maher live run (`tasks/smoke-tests/sprint-ia-02.md`).
+QA_APPROVED automated (qa-run-039-sprint-ia-02-20260422). Merged to main (Session 039).

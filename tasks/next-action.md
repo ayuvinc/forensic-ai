@@ -4,25 +4,19 @@
 OPEN
 
 ## NEXT_PERSONA
-junior-dev
+session-close
 
 ## NEXT_TASK
-**Session 039: Sprint-IA-02 — Hybrid Intake — Stream A first**
+**Session 039: Close — Sprint-IA-02 merged, doc freshness confirmed**
 
-Sprint-IA-02 is designed and tasks written to `tasks/todo.md`. AK has approved scope.
+Sprint-IA-02 is QA_APPROVED, merged to main, tasks archived.
+Session 039 is complete. Close the session.
 
-Start with Stream A (BA-IA-04 — schema changes, safest first):
-1. **IA-02-A1** — Add `project_name: str` + `initial_workstreams: list[str]` to `ProjectState` (`schemas/project.py`)
-2. **IA-02-A2** — Update `ProjectIntake` + `ProjectManager.create_project()` to persist both fields
-3. **IA-02-A3** — Update `01_Engagements.py`: multiselect workstream picker, ≥1 validation
-4. **IA-02-A4** — Update `16_Workspace.py`: show initial_workstreams + "Run Now" cards
-
-Then Stream B (IA-02-B1..B5 — knowledge file + intake branches for AUP/Custom).
-Then Stream C (IA-02-C1..C5 — HybridIntakeEngine for Investigation).
+The next session (040) will begin Sprint-IA-03: wire HybridIntakeEngine to remaining workflows.
 
 ## COMMAND
 ```
-/junior-dev
+/session-close
 ```
 
 ## COMPLETION STATUS
@@ -38,28 +32,32 @@ Sprint-TPL (TPL-01..05):   100% ██████████ DONE — merged S
 Sprint-FE-TRIAGE-03/04/05: 100% ██████████ DONE — merged Session 038
 Sprint-REM-01..04:         100% ██████████ DONE — merged Session 038
 Sprint-IA-01:              100% ██████████ DONE — merged Session 038 (9d0aa49)
-Sprint-IA-02 (hybrid intake): 0% ░░░░░░░░░░ IN PROGRESS (Session 039)
+Sprint-IA-02 (hybrid intake): 100% ██████████ DONE — merged Session 039
 Sprint-IA-03 (remaining workflows hybrid intake): 0% ░░░░░░░░░░ NEXT SPRINT
 ```
 
-**OVERALL: ~97% complete by task count**
+**OVERALL: ~98% complete by task count**
 
 ## CARRY_FORWARD_CONTEXT
-Sprint-IA-01 doc debt resolved:
-- `docs/lld/product-ia-design.md` navigation table + app.py code block updated to reflect as-built state
-- FIX-01/02/03, CR-01 archived to releases/completed-tasks.md
+Sprint-IA-02 complete (Session 039):
+- HybridIntakeEngine built: streamlit_app/shared/hybrid_intake.py
+- Investigation workflow wired to engine (02_Investigation.py)
+- Multi-workstream engagements: initial_workstreams in ProjectState, multiselect in 01_Engagements.py, declared sections in 16_Workspace.py
+- AUP (type 8) + Custom/Other (type 9) investigation types: intake branches + Partner AUP hard rules
+- Docs updated: hld.md (hybrid_intake.py added), scope-brief.md (3 items ticked)
+- 131 tests pass; manual smoke STEP-A..F pending AK live run
 
-Sprint-IA-02 scope (confirmed by Architect Session 039):
-- Stream A: BA-IA-04 — `project_name` + `initial_workstreams` in `ProjectState`; multi-workstream UI in `01_Engagements.py`; "Not yet run" cards in `16_Workspace.py`
-- Stream B: BA-IA-05/06 — AUP (type 8) + Custom (type 9) investigation intake branches; Partner AUP hard rule
-- Stream C: BA-IA-07 — `HybridIntakeEngine` infrastructure + Investigation wiring only
-- Sprint-IA-03: HybridIntakeEngine wiring for FRM, DD, Sanctions, TT, Policy/SOP, Training
+Sprint-IA-03 scope (next session — AK must approve before build):
+- Wire HybridIntakeEngine to: 06_FRM.py, 09_Due_Diligence.py, 10_Sanctions.py, 11_Transaction_Testing.py, 04_Policy_SOP.py, 05_Training.py
+- Each workflow needs its own _FIELD_CONFIG (WorkflowFieldConfig list)
+- Engine infrastructure already built — this is wiring-only (mechanical, low risk)
+- No new BA decisions required: BA-IA-07 covers all workflows
 
-Open observations (carry from Sprint-IA-01):
+Open carry-forward observations:
 - OBS-02: "Investigation Report" sidebar label → AK preference is "Investigation" (deferred)
 - OBS-03: No back/home navigation on Workspace error state (deferred)
+- Manual smoke: STEP-A..F of tasks/smoke-tests/sprint-ia-02.md pending Maher live run
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- AK must approve Sprint-IA-02 task plan before Junior Dev starts building
-- HybridIntakeEngine targeted conversation (IA-02-C2d) makes Claude API call during intake — ensure RESEARCH_MODE check gated before build begins
-- investigation_type field addition to CaseIntake (IA-02-B2b) is a schema touch — run 131 tests after this task before proceeding
+- None blocking for session close
+- Sprint-IA-03 Architect design needed before junior-dev starts (session 040)
