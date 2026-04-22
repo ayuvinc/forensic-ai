@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-21 04:10:00 UTC — Session 036 closed by session-close
-- Session summary: Session 036 — ARCH-DOC-01/02/03 complete (hld.md, README, GoodWork Brief, scope-brief all fully rewritten). New: docs/lld/product-ia-design.md (Sprint-IA-01 LLD), docs/product-packaging.md (6 shipping models). BA-IA-04..08 confirmed (project_name, min workstream, AUP type 8, Custom type 9, hybrid intake, Partner never blocks). architect.md + session-close.md updated with doc freshness enforcement + epiphany rule. FE-TRIAGE-03/04/05 committed. Sprint-IA-01 fully designed — coding begins Session 037.
+- Last updated: 2026-04-22 06:30:00 UTC — Session 039 closed by session-close
+- Session summary: Session 039 — Sprint-IA-02 complete and merged. HybridIntakeEngine built (streamlit_app/shared/hybrid_intake.py): structured fields + Remarks-triggered Haiku conversation + confirmation step machine. Investigation workflow wired (02_Investigation.py). Multi-workstream engagements: initial_workstreams in ProjectState + multiselect in 01_Engagements.py + declared-but-unrun sections with Run Now buttons in 16_Workspace.py. AUP investigation type (BA-IA-05): numbered procedures intake, Partner no-conclusions hard rules (AICPA/IAASB). Custom/Other type (BA-IA-06): description prefix + structure notice. hld.md + scope-brief.md updated. 131 tests pass. Next: Session 040 — Sprint-IA-03 (wire HybridIntakeEngine to FRM, DD, Sanctions, TT, Policy/SOP, Training).
 
 ## Use Case Note
 
