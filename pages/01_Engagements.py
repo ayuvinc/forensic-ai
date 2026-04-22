@@ -84,7 +84,19 @@ def _render_wizard() -> None:
 
     client_name = st.text_input("Client name *", key="new_eng_client")
 
-    service_type = st.selectbox("Service type *", _SERVICE_TYPES, key="new_eng_svc")
+    # BA-IA-04: multi-workstream selector; ≥1 required at creation
+    selected_workstreams = st.multiselect(
+        "Workstreams *",
+        options=_SERVICE_TYPES,
+        default=[],
+        key="new_eng_workstreams",
+        help="Select all service types for this engagement. At least one is required.",
+    )
+    if not selected_workstreams:
+        st.caption("Select at least one workstream to create an engagement.")
+
+    # Primary workstream = first selected (stored as service_type for backward compat)
+    service_type = selected_workstreams[0] if selected_workstreams else _SERVICE_TYPES[0]
 
     lang_std = st.selectbox(
         "Language standard *",
@@ -109,7 +121,12 @@ def _render_wizard() -> None:
             st.rerun()
         return
 
-    can_create = bool(project_name.strip() and client_name.strip() and preview_slug)
+    can_create = bool(
+        project_name.strip()
+        and client_name.strip()
+        and preview_slug
+        and selected_workstreams  # BA-IA-04: ≥1 workstream required
+    )
 
     if st.button("Create Engagement", type="primary", disabled=not can_create, key="create_btn"):
         try:
@@ -117,6 +134,7 @@ def _render_wizard() -> None:
                 project_name=project_name.strip(),
                 client_name=client_name.strip(),
                 service_type=service_type,
+                initial_workstreams=selected_workstreams,
                 language_standard=lang_std,
                 naming_convention=st.session_state.get("new_eng_naming", "").strip() or "acfe",
             )

@@ -68,71 +68,89 @@ A Project is the root entity. It maps to one `ProjectState` on disk. A Project c
 
 Uses `st.navigation()` (supported since 1.29.0) with `st.Page(title=...)` for display name control. Pages/ directory convention is replaced — Streamlit no longer auto-registers all files in pages/ as sidebar entries.
 
-### Four-Section Sidebar Layout
+### Five-Section Sidebar Layout
+
+*Updated Sprint-IA-01 (merged Session 038, commit 9d0aa49) — reflects actual app.py.*
 
 | Section | Pages | Display Title |
 |---------|-------|---------------|
 | `MAIN` | 01_Engagements.py | "Engagements" |
 | | 16_Workspace.py | "Workspace" |
-| `PROPOSALS` | 01b_Scope.py | "Scope" |
+| `PROPOSALS` | 01_Scope.py | "Scope" |
 | | 07_Proposal.py | "Proposals" |
-| `MONITOR` | 09_Case_Tracker.py | "Case Tracker" |
+| `MONITOR` | 12_Case_Tracker.py | "Case Tracker" |
 | | 15_Activity_Log.py | "Activity Log" |
-| `SETTINGS` | 12_Team.py | "Team" |
+| `SETTINGS` | 13_Team.py | "Team" |
+| | 14_Settings.py | "Settings" |
 | | 00_Setup.py | — NOT in sidebar (redirect-only) |
 | `WORKFLOWS` | 02_Investigation.py | "Investigation Report" |
-| | 03_FRM_Risk.py | "FRM Risk Register" |
-| | 04_DD.py | "Due Diligence" |
-| | 05_Sanctions.py | "Sanctions Screening" |
-| | 06_Transaction.py | "Transaction Testing" |
-| | 08_Policy_SOP.py | "Policy / SOP" |
-| | 10_Training.py | "Training Material" |
-| | 11_PPT_Pack.py | "Proposal Deck" |
-| | 13_Persona_Review.py | "Persona Review" |
-| | 14_Settings.py | "Settings" |
+| | 06_FRM.py | "FRM Risk Register" |
+| | 09_Due_Diligence.py | "Due Diligence" |
+| | 10_Sanctions.py | "Sanctions Screening" |
+| | 11_Transaction_Testing.py | "Transaction Testing" |
+| | 04_Policy_SOP.py | "Policy / SOP" |
+| | 05_Training.py | "Training Material" |
+| | 08_PPT_Pack.py | "PPT Pack" |
+| | 03_Persona_Review.py | "Individual Due Diligence - Background checks" |
 
 **00_Setup.py:** Not registered in `st.navigation()`. Only reachable via `st.switch_page("pages/00_Setup.py")` from the bootstrap redirect. This prevents it appearing in the sidebar after setup is complete.
 
-### app.py Structure (post-IA-02)
+### app.py Structure (as-built — Sprint-IA-01)
+
+*Updated Sprint-IA-01 (merged Session 038, commit 9d0aa49). Sprint-IA-02 does not change app.py navigation.*
 
 ```python
-# app.py
+# app.py — actual as-built (Sprint-IA-01)
+import os
 import streamlit as st
-from streamlit_app.shared.session import bootstrap
+
+st.set_page_config(page_title="GoodWork Forensic AI", page_icon="⚖", layout="wide", initial_sidebar_state="expanded")
 
 try:
+    from streamlit_app.shared.session import bootstrap
     session = bootstrap(st, caller_file=__file__)
 except Exception as _bootstrap_err:
-    st.error(f"App failed to load: {_bootstrap_err}")
+    st.error(f"First-time setup required: {_bootstrap_err}")
+    st.info("Open **00 Setup** in the sidebar to configure your firm profile and API keys.")
     st.stop()
+
+# Sidebar: logo / firm name + research mode badge
+with st.sidebar:
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+    if os.path.exists(logo_path):
+        st.image(logo_path, width=180)
+    else:
+        st.markdown(f"### {session.firm_name}")
+    # research mode warning/success badge
+    st.divider()
 
 pg = st.navigation({
     "MAIN": [
         st.Page("pages/01_Engagements.py", title="Engagements"),
-        st.Page("pages/16_Workspace.py", title="Workspace"),
+        st.Page("pages/16_Workspace.py",   title="Workspace"),
     ],
     "PROPOSALS": [
-        st.Page("pages/01b_Scope.py", title="Scope"),
+        st.Page("pages/01_Scope.py",    title="Scope"),
         st.Page("pages/07_Proposal.py", title="Proposals"),
     ],
     "MONITOR": [
-        st.Page("pages/09_Case_Tracker.py", title="Case Tracker"),
+        st.Page("pages/12_Case_Tracker.py", title="Case Tracker"),
         st.Page("pages/15_Activity_Log.py", title="Activity Log"),
     ],
     "SETTINGS": [
-        st.Page("pages/12_Team.py", title="Team"),
+        st.Page("pages/13_Team.py",     title="Team"),
         st.Page("pages/14_Settings.py", title="Settings"),
     ],
     "WORKFLOWS": [
-        st.Page("pages/02_Investigation.py", title="Investigation Report"),
-        st.Page("pages/03_FRM_Risk.py", title="FRM Risk Register"),
-        st.Page("pages/04_DD.py", title="Due Diligence"),
-        st.Page("pages/05_Sanctions.py", title="Sanctions Screening"),
-        st.Page("pages/06_Transaction.py", title="Transaction Testing"),
-        st.Page("pages/08_Policy_SOP.py", title="Policy / SOP"),
-        st.Page("pages/10_Training.py", title="Training Material"),
-        st.Page("pages/11_PPT_Pack.py", title="Proposal Deck"),
-        st.Page("pages/13_Persona_Review.py", title="Persona Review"),
+        st.Page("pages/02_Investigation.py",       title="Investigation Report"),
+        st.Page("pages/06_FRM.py",                 title="FRM Risk Register"),
+        st.Page("pages/09_Due_Diligence.py",       title="Due Diligence"),
+        st.Page("pages/10_Sanctions.py",           title="Sanctions Screening"),
+        st.Page("pages/11_Transaction_Testing.py", title="Transaction Testing"),
+        st.Page("pages/04_Policy_SOP.py",          title="Policy / SOP"),
+        st.Page("pages/05_Training.py",            title="Training Material"),
+        st.Page("pages/08_PPT_Pack.py",            title="PPT Pack"),
+        st.Page("pages/03_Persona_Review.py",      title="Individual Due Diligence - Background checks"),
     ],
 })
 pg.run()

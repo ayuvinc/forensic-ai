@@ -141,7 +141,7 @@ with col_h2:
 
 st.divider()
 
-# ── IA-04: Workflow Outputs — all runs under this engagement ──────────────────
+# ── IA-04 / BA-IA-04: Workflow Outputs — all declared + run workstreams ───────
 _WORKFLOW_LABELS: dict[str, str] = {
     "investigation_report": "Investigation Report",
     "frm_risk_register":    "FRM Risk Register",
@@ -154,40 +154,92 @@ _WORKFLOW_LABELS: dict[str, str] = {
     "persona_review":       "Individual Due Diligence - Background checks",
 }
 
+# Maps display label (stored in initial_workstreams) → workflow_type key (used in cases dict)
+_LABEL_TO_WORKFLOW_TYPE: dict[str, str] = {v: k for k, v in _WORKFLOW_LABELS.items()}
+
+# Maps display label → page path for "Run Now" navigation (BA-IA-04)
+_LABEL_TO_PAGE: dict[str, str] = {
+    "Investigation Report":                        "pages/02_Investigation.py",
+    "FRM Risk Register":                           "pages/06_FRM.py",
+    "Due Diligence":                               "pages/09_Due_Diligence.py",
+    "Sanctions Screening":                         "pages/10_Sanctions.py",
+    "Transaction Testing":                         "pages/11_Transaction_Testing.py",
+    "Policy / SOP":                                "pages/04_Policy_SOP.py",
+    "Training Material":                           "pages/05_Training.py",
+    "Client Proposal":                             "pages/07_Proposal.py",
+    "Individual Due Diligence - Background checks":"pages/03_Persona_Review.py",
+}
+
 cases_dict = state.cases if state else {}
-with st.expander(
-    f"Workflow Outputs ({len(cases_dict)} run{'s' if len(cases_dict) != 1 else ''})",
-    expanded=bool(cases_dict),
-):
-    if not cases_dict:
-        st.caption("No workflows run yet for this engagement.")
+
+# BA-IA-04: union of declared workstreams and run workstreams.
+# initial_workstreams stores display labels; cases.keys() stores workflow_type keys.
+# Legacy engagements (initial_workstreams=[]) fall back to cases.keys() only.
+declared_labels: list[str] = list(state.initial_workstreams) if state else []
+run_type_keys: set[str] = set(cases_dict.keys())
+
+# Build a deduplicated ordered display list: declared first, then any run
+# workstreams not already in declared (handles legacy + mid-sprint adds).
+display_sections: list[str] = list(declared_labels)
+for wf_type in cases_dict:
+    label = _WORKFLOW_LABELS.get(wf_type, wf_type.replace("_", " ").title())
+    if label not in display_sections:
+        display_sections.append(label)
+
+n_declared  = len(display_sections)
+n_run       = len(cases_dict)
+expander_title = (
+    f"Workflow Outputs ({n_run} run{'s' if n_run != 1 else ''}"
+    + (f" of {n_declared} declared" if n_declared > n_run else "")
+    + ")"
+)
+
+with st.expander(expander_title, expanded=bool(display_sections)):
+    if not display_sections:
+        st.caption("No workflows declared for this engagement.")
     else:
-        for wf_type, case_id in cases_dict.items():
-            wf_label = _WORKFLOW_LABELS.get(wf_type, wf_type.replace("_", " ").title())
-            st.markdown(f"**{wf_label}** — case `{case_id}`")
-            wf_cdir = CASES_DIR / case_id
-            # F_Final outputs
-            final_files = []
-            for search in (wf_cdir / "F_Final", wf_cdir):
-                if search.exists():
-                    final_files = sorted(search.glob("final_report.*.*"))
-                    if final_files:
-                        break
-            if final_files:
-                for f in final_files:
-                    st.download_button(
-                        label=f"Download {f.name}",
-                        data=f.read_bytes(),
-                        file_name=f.name,
-                        key=f"ws_dl_{case_id}_{f.name}",
-                    )
-            else:
-                # E_Drafts fallback
-                draft_files = sorted((wf_cdir / "E_Drafts").glob("*.json")) if (wf_cdir / "E_Drafts").exists() else []
-                if draft_files:
-                    st.caption(f"  Draft: `{draft_files[-1].name}`")
+        for wf_label in display_sections:
+            wf_type = _LABEL_TO_WORKFLOW_TYPE.get(wf_label, wf_label.lower().replace(" ", "_").replace("/", "").replace("-", "_"))
+            case_id = cases_dict.get(wf_type)
+
+            st.markdown(f"**{wf_label}**")
+
+            if case_id:
+                # Workflow has been run — show outputs
+                st.caption(f"case `{case_id}`")
+                wf_cdir = CASES_DIR / case_id
+                final_files = []
+                for search in (wf_cdir / "F_Final", wf_cdir):
+                    if search.exists():
+                        final_files = sorted(search.glob("final_report.*.*"))
+                        if final_files:
+                            break
+                if final_files:
+                    for f in final_files:
+                        st.download_button(
+                            label=f"Download {f.name}",
+                            data=f.read_bytes(),
+                            file_name=f.name,
+                            key=f"ws_dl_{case_id}_{f.name}",
+                        )
                 else:
-                    st.caption("  No outputs yet.")
+                    draft_files = (
+                        sorted((wf_cdir / "E_Drafts").glob("*.json"))
+                        if (wf_cdir / "E_Drafts").exists() else []
+                    )
+                    if draft_files:
+                        st.caption(f"  Draft: `{draft_files[-1].name}`")
+                    else:
+                        st.caption("  No outputs yet.")
+            else:
+                # Declared but not yet run (BA-IA-04)
+                st.caption("Workstream added — not yet run.")
+                page_path = _LABEL_TO_PAGE.get(wf_label)
+                if page_path:
+                    if st.button(f"Run Now", key=f"ws_run_{wf_type}"):
+                        st.session_state.active_project = slug
+                        st.switch_page(page_path)
+
             st.divider()
 
 st.divider()

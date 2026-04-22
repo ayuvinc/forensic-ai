@@ -75,9 +75,17 @@ class ProjectManager:
                     pass
             raise exc
 
+        # BA-IA-04: ≥1 workstream required at creation
+        if not intake.initial_workstreams:
+            raise ValueError(
+                "At least one workstream must be selected when creating an engagement."
+            )
+
         # Initial state
         state = ProjectState(
             project_slug=intake.project_slug,
+            project_name=intake.project_name,
+            initial_workstreams=intake.initial_workstreams,
             status=CaseStatus.INTAKE_CREATED,
             language_standard=intake.language_standard,
         )
@@ -89,7 +97,11 @@ class ProjectManager:
         # Audit event
         self._append_audit(
             intake.project_slug,
-            {"event": "PROJECT_CREATED", "service_type": intake.service_type},
+            {
+                "event": "PROJECT_CREATED",
+                "service_type": intake.service_type,
+                "initial_workstreams": intake.initial_workstreams,
+            },
         )
 
         return project_dir
@@ -353,9 +365,10 @@ class ProjectManager:
             "last_updated":  state.last_updated.isoformat() if state.last_updated else "",
             "project_name":  intake.project_name,
             "service_type":  intake.service_type,
-            "language_standard": intake.language_standard,
-            "is_af_project": True,
-            "legacy":        False,
+            "language_standard":    intake.language_standard,
+            "initial_workstreams":  intake.initial_workstreams,
+            "is_af_project":        True,
+            "legacy":               False,
         }
         entries = [e for e in entries if e.get("case_id") != intake.project_slug]
         entries.append(entry)

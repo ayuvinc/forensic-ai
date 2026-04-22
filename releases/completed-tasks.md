@@ -395,3 +395,16 @@ All tasks below are QA_APPROVED and committed. AC criteria omitted for brevity.
 - [x] TPL-05: Wired `TemplateManager.resolve()` into `write_final_report` (replaced dead `firm.json["templates"]` lookup). Emits `template_resolved` audit event with `fallback: false` (workflow base found) or `fallback: true` (generic fallback or template absent). `BaseReportBuilder._resolve_style` updated to prefer GW_ equivalents (`GW_Heading1`, `GW_Heading2`, `GW_Body`, `GW_Title`) when template defines them — ensures ≥1 GW_-prefixed paragraph in every branded output docx. Smoke test at `scripts/smoke_test_tpl05.py` covers all 7 ACs.
 
 7/7 ACs PASS. QA_APPROVED (qa-run-035-tpl-05-2026-04-21).
+
+---
+
+## Sprint-IA-01 — 5-Section Navigation + IDD Rename + Workspace Fixes (Session 038 — merged 9d0aa49)
+
+- [x] FIX-01: Renamed `pages/01b_Scope.py` → `pages/01_Scope.py` to fix URL slug `/b_Scope` → `/Scope`. Updated `app.py:53` reference.
+- [x] FIX-02: Fixed `build_case_index()` in `tools/file_tools.py` to write `is_af_project` + `legacy` flags per entry. `pages/16_Workspace.py` picker now filters to A-F projects only. `scripts/seed_test_engagement.py` creates A-F format engagement correctly.
+- [x] FIX-03: `16_Workspace.py` reads `client_name` and `service_type` from index entry via `pm.list_projects()` lookup (not from `ProjectState` attributes that do not exist). Fallback to `"—"` when not found.
+- [x] CR-01: All 14 user-facing "Persona Review" labels renamed to "Individual Due Diligence - Background checks" across `app.py`, `pages/03_Persona_Review.py`, `pages/01_Engagements.py`, `pages/12_Case_Tracker.py`, `pages/16_Workspace.py`, `streamlit_app/shared/intake.py`, `ui/menu.py`. Internal key `persona_review` and filename `03_Persona_Review.py` unchanged.
+- [x] IA-01 navigation: `app.py` rebuilt with `st.navigation()` 5-section sidebar (MAIN / PROPOSALS / MONITOR / SETTINGS / WORKFLOWS). Sidebar logo/firm badge + research mode badge added.
+
+17/17 smoke test steps PASS. 131 tests PASS. QA_APPROVED (Session 038).
+ARCH-DOC-IA-01: `docs/lld/product-ia-design.md` navigation table + app.py code block updated to reflect as-built state (Session 039).
