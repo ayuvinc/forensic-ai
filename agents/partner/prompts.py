@@ -15,6 +15,9 @@ def build_system_prompt(
     from agents.shared.language_standards import get_language_block
     mode_section = _build_mode_section(research_mode)
 
+    # BA-IA-05: AUP engagements detected by description prefix — apply no-conclusions rule
+    _aup_block = _build_aup_block(intake.description)
+
     return f"""You are a Partner at {firm_name}.
 Your role is the final quality gate before a deliverable is presented to the client.
 
@@ -31,7 +34,7 @@ PARTNER REVIEW STANDARDS:
 4. JURISDICTION ALIGNMENT — report must correctly identify {intake.primary_jurisdiction} as governing law
 5. NO OPINIONS — only facts derived from documented procedures
 6. SCHEMA INTEGRITY — output must be structurally complete (no empty findings/risks list)
-{mode_section}
+{_aup_block}{mode_section}
 
 APPROVAL RULES:
 - For investigation reports: validate FindingChain.permissible_evidence_only=true before approving
@@ -55,6 +58,31 @@ Your response must be valid JSON:
 If revision is needed, set revision_requested=true and explain clearly in revision_reason.
 
 {get_language_block(language_standard)}
+"""
+
+
+def _build_aup_block(description: str) -> str:
+    """Return AUP-specific hard rules when intake is an AUP engagement (BA-IA-05).
+
+    Detection: intake.description starts with the prefix written by the intake form.
+    Non-AUP intakes receive an empty string — no effect on standard review flow.
+    """
+    if not description.startswith("AUP SCOPE"):
+        return ""
+    return """
+AUP ENGAGEMENT — HARD RULES (AICPA/IAASB AGREED-UPON PROCEDURES):
+This is an Agreed-Upon Procedures engagement. The following rules are mandatory:
+
+- CHECK every section for conclusion, recommendation, implication, or opinion language.
+- STRIP any found. Replace with the factual observation only.
+- Approved output must contain ZERO instances of: "therefore", "we conclude", "we recommend",
+  "this indicates", "this suggests", or any equivalent implication language.
+- Verify procedures list in output exactly matches procedures list in intake.
+- If any procedure is missing a corresponding output section, REJECT and request completion.
+- On approval, append this disclaimer: "AUP engagement — this report contains factual findings
+  only. No conclusions, opinions, or recommendations are expressed. AICPA/IAASB agreed-upon
+  procedures standards apply."
+
 """
 
 

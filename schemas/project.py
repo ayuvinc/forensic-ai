@@ -72,12 +72,16 @@ class ProjectIntake(BaseModel):
     """Immutable creation record for a new engagement.
 
     project_slug is always derived from project_name — never set directly.
+    initial_workstreams: all workflow types selected at creation (≥1 required,
+    enforced by ProjectManager.create_project — not the schema, to preserve
+    backward compatibility with existing ProjectIntake usages in tests).
     """
 
     project_name: str
     project_slug: str = ""          # populated by validator below
     client_name: str
     service_type: str
+    initial_workstreams: list[str] = []   # BA-IA-04: ≥1 enforced by create_project()
     language_standard: Literal["acfe", "expert_witness", "regulatory", "board_pack"] = "acfe"
     created_at: datetime = None     # defaulted by validator below
     naming_convention: str = "acfe"
@@ -132,17 +136,26 @@ class ProjectState(BaseModel):
 
     last_updated is automatically set to utcnow() by the model validator so
     callers do not need to supply it.
+
+    project_name: human-readable display name (BA-IA-04). Defaults to
+    project_slug when absent so existing state.json files load cleanly.
+
+    initial_workstreams: workflow types selected at engagement creation (BA-IA-04).
+    Workspace shows one section per entry even before the workflow has been run.
+    Empty list in legacy engagements — Workspace falls back to cases.keys().
     """
 
     project_slug: str
     status: CaseStatus
+    project_name: str = ""                # BA-IA-04; defaulted to slug by validator
+    initial_workstreams: list[str] = []   # BA-IA-04; union with cases.keys() in Workspace
     project_health: Literal["green", "amber", "red"] = "green"
-    cases: dict[str, str] = {}          # workflow_type → case_id
+    cases: dict[str, str] = {}            # workflow_type → case_id
     sessions: list[InputSession] = []
     language_standard: str = "acfe"
     context_budget_used_pct: float = 0.0
     interim_context_written: bool = False
-    last_updated: datetime = None       # auto-set below
+    last_updated: datetime = None         # auto-set below
     is_legacy: bool = False
 
     @model_validator(mode="before")
@@ -150,4 +163,8 @@ class ProjectState(BaseModel):
     def stamp_last_updated(cls, values: dict) -> dict:
         if not values.get("last_updated"):
             values["last_updated"] = datetime.utcnow()
+        # Default project_name to project_slug when absent (backward compat with
+        # existing state.json files written before BA-IA-04 was implemented).
+        if not values.get("project_name"):
+            values["project_name"] = values.get("project_slug", "")
         return values

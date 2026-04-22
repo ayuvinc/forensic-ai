@@ -30,7 +30,7 @@ Features that must ship for the product to have value for Maher:
 - [x] Workpaper generator — interim workpaper generation during active engagement
 - [x] Evidence chat — conversational document review and evidence extraction
 - [ ] Expert Witness Report — full pipeline workflow; model routing exists, page and knowledge file pending
-- [ ] Hybrid intake — structured dropdowns + remarks-triggered conversation; replaces fully conversational intake across all workflows (Sprint-IA-02)
+- [x] Hybrid intake — structured dropdowns + remarks-triggered conversation; Investigation wired Sprint-IA-02; remaining workflows (FRM, DD, Sanctions, TT, Policy, Training) deferred to Sprint-IA-03
 - [x] Product IA redesign — two-arc navigation (Sprint-IA-01), project/engagement model enforced in UI
 - [ ] Historical knowledge library — firm_profile/historical_registers/ and historical_reports/; sanitised ingestion
 
@@ -38,8 +38,8 @@ Features that must ship for the product to have value for Maher:
 
 Features important but can ship in a fast-follow release:
 
-- [ ] AUP investigation mode — intake captures procedures list; no-conclusions enforcement on agent output (type 8 designed, Sprint-IA-02)
-- [ ] Custom / Other investigation type — free-text description, structure-confirmed by Maher before drafting (type 9 designed, Sprint-IA-02)
+- [x] AUP investigation mode — intake captures procedures list; no-conclusions enforcement on agent output; Partner AUP hard rules (AICPA/IAASB) — Sprint-IA-02 DONE
+- [x] Custom / Other investigation type — free-text description, structure-confirmed by Maher before drafting — Sprint-IA-02 DONE
 - [ ] FRM guided exercise redesign — Step 1–5 co-creation loop, per-risk approve/edit/skip (Sprint-10D)
 - [ ] Workflow chaining — compatible follow-on workflows on same project (11 valid chains)
 - [ ] Privilege mode flag — investigation intake question: under legal professional privilege? Affects report language and structure

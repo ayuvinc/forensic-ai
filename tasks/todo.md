@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         OPEN
 Active task:    none
-Active persona: manual-verify
+Active persona: session-close
 Blocking issue: none
-Last updated:   2026-04-21T16:26:30Z — state transition by MCP server
+Last updated:   2026-04-22T02:30:00Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -69,110 +69,295 @@ Sprint-01, Sprint-02, QR-01..16, Sprint-03, Sprint-04 AKR, Sprint-06, Sprint-09,
 
 ## PENDING TASKS
 
+FIX-01, FIX-02, FIX-03, CR-01 — ARCHIVED to releases/completed-tasks.md (Sprint-IA-01, merged Session 038, QA_APPROVED 17/17 smoke steps). Removed from PENDING.
 
 ---
 
-### FIX-03 — Fix Workspace header: state.client_name missing from ProjectState [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+### Sprint-IA-02 — Hybrid Intake (Session 039)
 
-**Root cause:** `16_Workspace.py:129` accesses `state.client_name` and `state.service_type`, but `ProjectState` has neither field — they live on `ProjectIntake` which is not stored in `ProjectState`. Fix: read `client_name` and `service_type` from the index entry (`pm.list_projects()`) using the active slug as the lookup key.
-**Source:** Smoke test run 2 STEP-16 failure (2026-04-21). AttributeError confirmed in screenshot.
-
-- [ ] FIX-03a In `16_Workspace.py`, before line 129: look up the index entry for `slug` via `pm.list_projects()` and extract `client_name` and `service_type`
-- [ ] FIX-03b Replace `state.client_name` and `state.service_type` in line 129 with the index-sourced values; fall back to `"—"` if not found
-- [ ] FIX-03c Confirm no other lines in `16_Workspace.py` access undefined `ProjectState` attributes
-
-#### AC — FIX-03
-- [ ] Workspace page loads `abc-corp-test-engagement` without AttributeError
-- [ ] Header caption shows: `Client: ABC Corp  |  Service: Investigation Report  |  Last session: —` (or actual session date)
-- [ ] If index entry has no `client_name`, caption shows `Client: —` (no crash)
-- [ ] If engagement has no sessions, `Last session: —` is shown (not an exception)
-- [ ] 131 tests still pass after change
+**Branch:** `feature/sprint-ia-02-hybrid-intake`
+**BA decisions covered:** BA-IA-04, BA-IA-05, BA-IA-06, BA-IA-07 (all confirmed Session 036)
+**Scope:** Stream A (project_name + min workstream) + Stream B (AUP + Custom investigation types) + Stream C (HybridIntakeEngine for Investigation workflow). FRM/DD/Sanctions/TT hybrid wiring deferred to Sprint-IA-03.
+**Dependencies:** ARCH-DOC-IA-01 DONE (Session 039 — product-ia-design.md updated).
+**Status:** READY_FOR_REVIEW
 
 ---
 
-### CR-01 — Rename "Persona Review" → "Individual Due Diligence - Background checks" (user-facing labels only) [P1, Sprint-IA-01] — READY_FOR_REVIEW
+#### Stream A — BA-IA-04: Project Name in State + Multi-Workstream UI
 
-**Scope:** Rename ALL user-facing display labels only. The internal workflow key `persona_review` must NOT change — it is stored in state.json, audit logs, and index entries. Only string literals shown in the UI or CLI.
-**Source:** AK instruction during smoke test run 2 (2026-04-21).
+##### IA-02-A1 — Add `project_name` + `initial_workstreams` to `ProjectState` [P0, Schema]
 
-Files with user-facing labels to update:
-- `app.py:73` — sidebar title
-- `pages/03_Persona_Review.py:17` — page `st.title()`
-- `pages/03_Persona_Review.py:18` — `st.caption()` description
-- `pages/03_Persona_Review.py:38` — intake form title string
-- `pages/03_Persona_Review.py:54` — "Run Persona Review" button label
-- `pages/03_Persona_Review.py:79` — "Running Persona Review..." progress string
-- `pages/03_Persona_Review.py:103` — "Persona Review complete" success message
-- `pages/01_Engagements.py:43` — service type option in list
-- `pages/01_Engagements.py:57` — dict key in `_WORKFLOW_PAGES` (this IS a string match, update the key too but keep the value path intact)
-- `pages/12_Case_Tracker.py:29` — display label dict value
-- `pages/16_Workspace.py:149` — display label dict value
-- `streamlit_app/shared/intake.py:98` — button label value
-- `ui/menu.py:17` — CLI menu label
+**Files:** `schemas/project.py`
+**Constraint:** Backward compatible — `project_name` defaults to `project_slug` if absent in existing state.json; `initial_workstreams` defaults to `[]`.
+**Security:** project_name is user-supplied free text → write path goes through existing `derive_slug()` traversal guard (R-019, 13/13 tests). No new attack surface.
 
-Do NOT rename:
-- Internal key `"persona_review"` (dict keys mapping workflow_type → anything filesystem/state-related)
-- `workflows/persona_review.py` filename
-- `pages/03_Persona_Review.py` filename
-- Any `state.json` field, audit log event, or Python variable/function name
+- [x] IA-02-A1a Add `project_name: str = ""` to `ProjectState` with `@model_validator(mode="before")` that defaults to `project_slug` value when empty
+- [x] IA-02-A1b Add `initial_workstreams: list[str] = []` to `ProjectState`
+- [x] IA-02-A1c Confirm existing state.json files load without error (backward compat: missing fields get defaults)
 
-- [ ] CR-01a Update all 13 user-facing label locations listed above
-- [ ] CR-01b Confirm `persona_review` key is unchanged in: `pages/01_Engagements.py` `_WORKFLOW_PAGES` dict value-side routing, `pages/12_Case_Tracker.py`, `pages/16_Workspace.py`, `streamlit_app/shared/intake.py` key
-
-#### AC — CR-01
-- [ ] Sidebar WORKFLOWS section shows "Individual Due Diligence - Background checks" (not "Persona Review")
-- [ ] `pages/03_Persona_Review.py` page title reads "Individual Due Diligence - Background checks"
-- [ ] Run Workflow selectbox on Engagements page shows "Individual Due Diligence - Background checks" as last option
-- [ ] Case Tracker display label shows "Individual Due Diligence - Background checks" for `persona_review` workflow entries
-- [ ] Workspace Workflow Outputs shows "Individual Due Diligence - Background checks" label
-- [ ] Clicking the sidebar link still navigates to `pages/03_Persona_Review.py` (routing unchanged)
-- [ ] `pages/01_Engagements.py` `_WORKFLOW_PAGES` key is updated so New Engagement service type selectbox shows new label AND still routes to `03_Persona_Review.py`
-- [ ] Internal `persona_review` key unchanged in all Python dicts mapping workflow_type → case data
-- [ ] 131 tests still pass after change
+#### AC — IA-02-A1
+- [x] `ProjectState(project_slug="foo", status=CaseStatus.INTAKE_CREATED)` constructs without error; `project_name == "foo"` (defaulted to slug)
+- [x] `ProjectState(project_slug="foo", project_name="ABC Corp Q1", status=...)` sets `project_name == "ABC Corp Q1"`
+- [x] `ProjectState(project_slug="foo", initial_workstreams=["frm_risk_register","investigation_report"], status=...)` sets list correctly
+- [x] Existing `abc-corp-test-engagement` state.json loads without error (backward compat)
+- [x] 131 tests still pass
 
 ---
 
-### FIX-01 — Rename Scope page file (remove "b_" prefix) [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
+##### IA-02-A2 — Update `ProjectManager.create_project()` to persist `project_name` + `initial_workstreams` [P1, Backend]
 
-**Root cause:** `pages/01b_Scope.py` — filename has "b_" prefix, causing URL slug `/b_Scope` instead of `/Scope`.
-**Source:** Smoke test STEP-10 failure (2026-04-21).
+**Files:** `tools/project_manager.py`
+**Depends:** IA-02-A1
 
-- [x] FIX-01a Rename `pages/01b_Scope.py` to `pages/01_Scope.py`
-- [x] FIX-01b Verify no other file in `pages/` or `app.py` references `01b_Scope` by string — `app.py:53` updated
+- [x] IA-02-A2a Update `ProjectIntake` in `schemas/project.py`: add `initial_workstreams: list[str]` field (min length 1 via `@validator`)
+- [x] IA-02-A2b In `create_project()`: write `ProjectState(project_name=intake.project_name, initial_workstreams=intake.initial_workstreams, ...)`
+- [x] IA-02-A2c Update audit event: include `initial_workstreams` in `PROJECT_CREATED` payload
 
-#### AC — FIX-01
-- [ ] After rename: `streamlit run app.py` — Scope page URL is `localhost:8501/Scope` (not `/b_Scope`)
-- [ ] Sidebar still shows link labelled "Scope" under PROPOSALS section
-- [ ] Scope page loads without error — heading reads "Start here for any new engagement..."
-- [ ] No other page is broken by the rename (sidebar step count unchanged: 5 sections, all links present)
-- [ ] `app.py` or navigation config (if any) does not hardcode the old filename
-
----
-
-### FIX-02 — Fix seed script: create A-F format engagement [P0, Sprint-IA-01 blocker] — READY_FOR_REVIEW
-
-**Root cause:** `build_case_index()` in `tools/file_tools.py` stripped `is_af_project`/`legacy` flags from all index entries → Engagements page put every case in Legacy. Workspace picker showed legacy case IDs; `pm.get_project(legacy_id)` returned None.
-**Fix applied:** `build_case_index()` now writes `is_af_project`/`legacy` per entry. Workspace picker filters to A-F projects only.
-**Source:** Smoke test STEP-13/14/16 failures (2026-04-21).
-
-- [x] FIX-02a Root cause identified: `build_case_index()` did not write `is_af_project` flag
-- [x] FIX-02b `tools/file_tools.py` `build_case_index()` — add `is_af_project` + `legacy` fields per entry
-- [x] FIX-02c `pages/16_Workspace.py` — filter picker to `is_af_project` entries only
-- [x] FIX-02d `state.cases` verified: 3 entries present; all 3 `F_Final/final_report.en.md` files exist
-- [x] FIX-02e `pm.get_project('abc-corp-test-engagement')` loads successfully; index shows af=True
-
-#### AC — FIX-02
-- [ ] `python3 scripts/seed_test_engagement.py` completes with no Python errors; last line: "Seed complete. Run: streamlit run app.py"
-- [ ] After seed + `streamlit run app.py`: "abc-corp-test-engagement" appears in **Active Engagements** section (not Legacy Cases)
-- [ ] Clicking `abc-corp-test-engagement` card on Engagements page loads right panel detail with Run Workflow selectbox
-- [ ] Workspace page: selecting `abc-corp-test-engagement` from picker loads without "not found" error
-- [ ] Workspace page: "Workflow Outputs (3 runs)" expander visible and expanded — 3 sections: Investigation Report, FRM Risk Register, Due Diligence
-- [ ] Each section in Workflow Outputs shows a download button (.md or .docx)
-- [ ] Re-running seed script (second run) does not crash — skips existing engagement, skips existing cases
-- [ ] Legacy Cases count does not increase after seed (seed does not add new legacy cases)
+#### AC — IA-02-A2
+- [x] `pm.create_project(ProjectIntake(project_name="ABC Corp Q1", ..., initial_workstreams=["frm_risk_register"]))` writes `state.json` with `project_name` + `initial_workstreams` fields
+- [x] `ProjectIntake(..., initial_workstreams=[])` raises `ValueError` (min 1 constraint)
+- [x] Audit log entry for `PROJECT_CREATED` includes `initial_workstreams` array
+- [x] 131 tests still pass
 
 ---
 
+##### IA-02-A3 — `01_Engagements.py`: multi-workstream selector (≥1 required) [P1, UI]
+
+**Files:** `pages/01_Engagements.py`
+**Depends:** IA-02-A2
+
+- [x] IA-02-A3a Replace `st.selectbox("Service type *", _SERVICE_TYPES)` with `st.multiselect("Workstreams *", _SERVICE_TYPES)`
+- [x] IA-02-A3b Add validation: if `len(selected_workstreams) < 1` → `st.error("Select at least one workstream")` and block form submit
+- [x] IA-02-A3c Pass `initial_workstreams=selected_workstreams` and `service_type=selected_workstreams[0]` to `ProjectIntake` (primary workstream = first selected, for backward compat)
+- [x] IA-02-A3d Update engagement card display: show all initial_workstreams (comma-separated) instead of single service_type where appropriate
+
+#### AC — IA-02-A3
+- [x] Engagements page shows multiselect for workstreams (not single dropdown)
+- [x] Submitting with 0 workstreams selected shows error, does not create engagement
+- [x] Submitting with 2 workstreams selected creates engagement; both workstreams appear in Workspace
+- [x] Existing single-workstream engagements continue to display correctly (backward compat)
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-A4 — `16_Workspace.py`: render `initial_workstreams` sections [P1, UI]
+
+**Files:** `pages/16_Workspace.py`
+**Depends:** IA-02-A1
+
+- [x] IA-02-A4a Compute display workstreams as `sorted(set(state.initial_workstreams) | set(state.cases.keys()))` — union of declared and run workstreams
+- [x] IA-02-A4b For each workstream in display set: if `state.cases.get(wf)` has a case_id → show existing artifact sections (current behaviour). If not → show "Workstream added — not yet run." card with a "Run Now" button that navigates to the relevant workflow page
+- [x] IA-02-A4c Map workstream workflow_type key → page path for "Run Now" navigation (use `_WORKFLOW_PAGES` dict already in `01_Engagements.py`)
+
+#### AC — IA-02-A4
+- [x] Workspace for a 2-workstream engagement (FRM + Investigation) shows 2 sections before either is run
+- [x] Unrun workstream shows "Workstream added — not yet run." with "Run Now" button
+- [x] "Run Now" navigates to the correct workflow page
+- [x] Workspace for a legacy engagement (no initial_workstreams) still renders its existing cases (backward compat — `initial_workstreams=[]` → display workstreams = `state.cases.keys()`)
+- [x] 131 tests still pass
+
+---
+
+#### Stream B — BA-IA-05/06: AUP + Custom Investigation Types
+
+##### IA-02-B1 — Update `investigation_framework.md`: AUP type 8 + Custom type 9 [P1, Knowledge]
+
+**Files:** `knowledge/investigation/investigation_framework.md`
+**No code dependency.**
+
+- [x] IA-02-B1a Add Type 8 — Agreed-Upon Procedures (AUP): definition, scope lock rule (procedures list = immutable scope), output structure (one section per procedure: procedure stated → what was done → factual finding), no-conclusions constraint (AICPA/IAASB), Partner hard rule
+- [x] IA-02-B1b Add Type 9 — Other / Custom: definition, structure-proposal-before-draft rule (Junior proposes, Maher confirms), all other investigation rules apply (evidence chain, three-agent pipeline, audit trail), Partner review = coherence + defensibility check
+
+#### AC — IA-02-B1
+- [x] `investigation_framework.md` has "Type 8 — Agreed-Upon Procedures" section with agent behavior notes
+- [x] `investigation_framework.md` has "Type 9 — Other / Custom" section with structure-confirmation flow notes
+- [x] No existing type definitions changed
+
+---
+
+##### IA-02-B2 — Add AUP + Custom to investigation intake type dropdown [P1, UI]
+
+**Files:** `streamlit_app/shared/intake.py`
+**Depends:** IA-02-B1
+
+- [x] IA-02-B2a Add `investigation_type` selectbox to the investigation intake form (currently missing from `generic_intake_form` — only collected separately in `02_Investigation.py` ad hoc). Valid values: Investigation types 1–7 (existing) + "Agreed-Upon Procedures" (8) + "Other / Custom" (9)
+- [x] IA-02-B2b Store selected `investigation_type` in `CaseIntake` (use existing `description` field extension or add `investigation_type: str = ""` to `CaseIntake` — decide at build time; note `investigation_type` is already referenced in `02_Investigation.py:128`)
+
+#### AC — IA-02-B2
+- [x] Investigation intake form shows investigation type dropdown before description field
+- [x] "Agreed-Upon Procedures" and "Other / Custom" appear as valid options
+- [x] Selected type is included in the CaseIntake object passed to the pipeline
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-B3 — AUP intake branch: procedures list capture [P1, UI]
+
+**Files:** `streamlit_app/shared/intake.py`
+**Depends:** IA-02-B2
+**Security:** Procedures list is free text per item — strip HTML/script (existing sanitize_pii hook covers CaseIntake fields). Max 20 procedures enforced in UI.
+
+- [x] IA-02-B3a When `investigation_type == "Agreed-Upon Procedures"`: replace free-text description field with numbered procedure entry UI (up to 20 text inputs, labelled "Procedure 1", "Procedure 2", etc.; add more button up to max 20)
+- [x] IA-02-B3b Concatenate procedure list as numbered markdown into `CaseIntake.description` for pipeline consumption: `"1. {proc1}\n2. {proc2}..."`. Prefix with "AUP SCOPE — Procedures agreed with client:\n"
+- [x] IA-02-B3c Show informational notice: "AUP scope is locked at intake. The report will only cover procedures listed here — no additional scope items will be added."
+
+#### AC — IA-02-B3
+- [x] Selecting "Agreed-Upon Procedures" shows numbered procedure input fields (not free-text description)
+- [x] At least 1 procedure required before form submits
+- [x] Max 20 procedures enforced (UI blocks adding beyond 20)
+- [x] Submitted intake has `description` prefixed with "AUP SCOPE — Procedures agreed with client:"
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-B4 — Custom intake branch: free-text description + structure notice [P1, UI]
+
+**Files:** `streamlit_app/shared/intake.py`
+**Depends:** IA-02-B2
+
+- [x] IA-02-B4a When `investigation_type == "Other / Custom"`: show expanded description field with placeholder "Describe the nature, subject, and objectives of this investigation. The model will propose a report structure for your review before drafting begins."
+- [x] IA-02-B4b Show informational notice: "Custom type: the model will propose a report structure based on your description. You will confirm or adjust before drafting begins."
+- [x] IA-02-B4c Prefix `CaseIntake.description` with "CUSTOM INVESTIGATION — Structure to be proposed before drafting:\n" so pipeline can detect and branch
+
+#### AC — IA-02-B4
+- [x] Selecting "Other / Custom" shows expanded description textarea with correct placeholder
+- [x] Informational notice is visible before the submit button
+- [x] Submitted intake description is prefixed with "CUSTOM INVESTIGATION"
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-B5 — Partner prompt: AUP no-conclusions hard rule [P1, Agent Prompt]
+
+**Files:** `agents/partner/prompts.py` (or equivalent partner system prompt file)
+**Depends:** IA-02-B1
+**Security:** No new data surface — prompt change only.
+
+- [x] IA-02-B5a Add AUP mode detection to Partner system prompt: if intake description starts with "AUP SCOPE", activate AUP review mode
+- [x] IA-02-B5b In AUP review mode, Partner must: (1) check every section for conclusion/recommendation/implied-fault language; (2) flag and strip any found; (3) replace with factual observation only; (4) append disclaimer: "AUP engagement — this report contains factual findings only. No conclusions, opinions, or recommendations are expressed. AICPA/IAASB agreed-upon procedures standards apply."
+
+#### AC — IA-02-B5
+- [x] Partner system prompt file contains AUP detection clause
+- [x] AUP disclaimer text matches the prescribed wording above
+- [x] Non-AUP intakes are unaffected (AUP mode only fires when description starts with "AUP SCOPE")
+- [x] 131 tests still pass
+
+---
+
+#### Stream C — BA-IA-07: HybridIntakeEngine (Investigation workflow)
+
+##### IA-02-C1 — `WorkflowFieldConfig` schema in `hybrid_intake.py` [P1, Infrastructure]
+
+**Files:** `streamlit_app/shared/hybrid_intake.py` (new file)
+**Depends:** None (infrastructure task)
+**Security:** No user data at this step — schema definition only.
+
+- [x] IA-02-C1a Create `streamlit_app/shared/hybrid_intake.py` with `@dataclass WorkflowFieldConfig`: fields `id: str`, `label: str`, `field_type: Literal["selectbox","multiselect","radio","text","textarea"]`, `options: list[str] = field(default_factory=list)`, `required: bool = True`, `has_remarks: bool = False`, `remarks_placeholder: str = ""`
+- [x] IA-02-C1b Add `@dataclass RemarksResult`: fields `field_id: str`, `original_value: str`, `remarks: str`, `conversation: list[dict]`, `refined_value: str`
+- [x] IA-02-C1c Confirm dataclasses import cleanly with no circular deps
+
+#### AC — IA-02-C1
+- [x] `from streamlit_app.shared.hybrid_intake import WorkflowFieldConfig, RemarksResult` succeeds
+- [x] `WorkflowFieldConfig(id="jurisdiction", label="Primary jurisdiction", field_type="selectbox", options=["UAE","Saudi Arabia","India","Other"], has_remarks=True)` constructs without error
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-C2 — Build `HybridIntakeEngine` class [P1, Infrastructure]
+
+**Files:** `streamlit_app/shared/hybrid_intake.py`
+**Depends:** IA-02-C1
+**Security:**
+- Auth: single-user local app — no auth required
+- Remarks content → sent to Claude API (same surface as existing agent calls)
+- PII: Remarks fields stripped by existing `sanitize_pii` hook before pipeline; Remarks inputs limited to 500 chars in UI
+- Audit: log `intake_remarks_conversation` event when a targeted conversation fires (new event type, appended to `audit_log.jsonl`)
+- Abuse: Remarks limited to 500 chars in UI; max 2 conversation rounds enforced in engine; Claude response stripped of HTML/script before display
+
+- [x] IA-02-C2a `class HybridIntakeEngine`: `__init__(self, st, fields: list[WorkflowFieldConfig], workflow_id: str)`
+- [x] IA-02-C2b `render_structured_fields(self) -> dict[str, Any]`: renders each field based on field_type using Streamlit widgets; returns dict of field_id → selected value; for `has_remarks=True` fields, shows collapsed `st.expander("Remarks (optional)")` with `st.text_area(max_chars=500)` inside
+- [x] IA-02-C2c `scan_remarks(self, values: dict, remarks: dict) -> list[RemarksResult]`: returns list of RemarksResult for each field where `remarks[field_id]` is non-empty and `len(remarks[field_id]) > 10`
+- [x] IA-02-C2d `run_targeted_conversation(self, result: RemarksResult) -> RemarksResult`: calls Claude API (Haiku) with system prompt "You are assisting with intake clarification. Ask exactly 1–2 targeted questions about the following remark: {remarks}. Context field: {label}. Field value: {value}." Enforces max 2 rounds. Returns updated RemarksResult with `conversation` filled and `refined_value` set. Uses `RESEARCH_MODE`-aware fallback (if knowledge_only: skip API call, return `refined_value = original_value + " [remarks noted: " + remarks + "]"`)
+- [x] IA-02-C2e `render_confirmation(self, values: dict, refined: list[RemarksResult]) -> bool`: renders summary panel of all field values (refined where applicable). "Confirm intake" button returns True; "Edit" button returns False (resets to step 1)
+- [x] IA-02-C2f Engine uses `st.session_state` to track current step: `"fields" → "remarks" → "confirmation" → "done"`. Step key namespaced by `workflow_id` to avoid cross-page collisions.
+
+#### AC — IA-02-C2
+- [x] `HybridIntakeEngine` imports cleanly
+- [x] `render_structured_fields()` renders a selectbox for each `field_type="selectbox"` field
+- [x] `render_structured_fields()` shows Remarks expander for each `has_remarks=True` field
+- [x] `scan_remarks()` returns empty list when all remarks are empty or ≤10 chars
+- [x] `scan_remarks()` returns one RemarksResult per non-empty remark (>10 chars)
+- [x] `run_targeted_conversation()` in knowledge_only mode returns `refined_value` without API call (no crash)
+- [x] `render_confirmation()` renders all field values in a summary panel
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-C3 — Investigation field config (`_INVESTIGATION_FIELD_CONFIG`) [P1, Config]
+
+**Files:** `streamlit_app/shared/hybrid_intake.py`
+**Depends:** IA-02-C2, IA-02-B3, IA-02-B4
+
+- [x] IA-02-C3a Define `_INVESTIGATION_FIELD_CONFIG: list[WorkflowFieldConfig]` with fields from BA-IA-07 table:
+  - `jurisdiction` (selectbox: UAE / Saudi Arabia / India / Other — has_remarks=True, placeholder "e.g. UAE + offshore holding structure")
+  - `investigation_type` (selectbox: types 1–7 + AUP + Other/Custom — has_remarks=True, placeholder "e.g. Type 3 but also involves AML aspects")
+  - `regulators_implicated` (multiselect: known regulators + "None" — has_remarks=True, placeholder "e.g. Possibly DFSA but matter is ongoing")
+  - `evidence_available` (multiselect: Documents / Interviews / Financial records / Digital data / None — has_remarks=True, placeholder "e.g. Some documents withheld by client")
+  - `audience` (selectbox: Management / Board / Legal proceedings / Regulator — required, no remarks)
+  - `industry` (text — required, no remarks — existing field)
+  - `description` (textarea — narrative field, no remarks trigger per BA-IA-07 rule)
+- [x] IA-02-C3b When `investigation_type == "Agreed-Upon Procedures"`: inject AUP procedures list field (up to 20 textarea rows) after investigation_type — behaviour from IA-02-B3
+- [x] IA-02-C3c When `investigation_type == "Other / Custom"`: show custom description textarea — behaviour from IA-02-B4
+
+#### AC — IA-02-C3
+- [x] `_INVESTIGATION_FIELD_CONFIG` has 7 field entries
+- [x] All 4 scope-defining fields (`jurisdiction`, `investigation_type`, `regulators_implicated`, `evidence_available`) have `has_remarks=True`
+- [x] `audience` and `industry` have `has_remarks=False`
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-C4 — Wire `02_Investigation.py` to `HybridIntakeEngine` [P1, UI]
+
+**Files:** `pages/02_Investigation.py`
+**Depends:** IA-02-C3
+
+- [x] IA-02-C4a Import `HybridIntakeEngine`, `_INVESTIGATION_FIELD_CONFIG` from `streamlit_app.shared.hybrid_intake`
+- [x] IA-02-C4b Replace `generic_intake_form(st, "investigation_report", ...)` call with `HybridIntakeEngine(st, _INVESTIGATION_FIELD_CONFIG, "investigation_report")` + engine step rendering
+- [x] IA-02-C4c Map engine output (dict of field values + refined values) to `CaseIntake` construction (same fields as before — client_name from engagement banner, description from engine output, investigation_type from engine output)
+- [x] IA-02-C4d Preserve existing AIC questions stage (`render_intake_questions`) — engine replaces intake form only, not the AIC step
+
+#### AC — IA-02-C4
+- [x] `02_Investigation.py` renders structured intake fields (not the old generic form)
+- [x] Investigation type dropdown appears in the intake step
+- [x] Selecting AUP type shows procedures list fields
+- [x] Selecting Other/Custom shows expanded description textarea
+- [x] Non-empty Remarks (>10 chars) triggers a targeted conversation step before confirmation
+- [x] Confirmation panel shows all values before pipeline runs
+- [x] AIC questions stage still fires after intake confirmation (no regression)
+- [x] 131 tests still pass
+
+---
+
+##### IA-02-C5 — Smoke test spec: `tasks/smoke-tests/sprint-ia-02.md` [P1, QA]
+
+**Files:** `tasks/smoke-tests/sprint-ia-02.md` (new file)
+**Depends:** IA-02-C4, IA-02-A4
+
+- [x] IA-02-C5a Write smoke test spec covering:
+  - STEP-A: Create engagement with 2 workstreams → Workspace shows 2 sections (1 unrun "Run Now" card)
+  - STEP-B: Standard investigation intake (type=Fraud, no Remarks) → confirmation → pipeline runs
+  - STEP-C: AUP investigation intake (type=AUP, 3 procedures entered) → confirmation panel shows procedures list → pipeline runs
+  - STEP-D: Custom investigation intake (type=Other/Custom, description entered) → confirmation → pipeline runs
+  - STEP-E: Investigation intake with Remarks in jurisdiction field (>10 chars) → targeted conversation step fires → max 2 questions rendered
+  - STEP-F: knowledge_only mode — Remarks conversation skips API call, adds remarks note to intake
+  - STEP-G: 131 tests pass (`python3 -m pytest tests/ -q`)
+
+#### AC — IA-02-C5
+- [x] Smoke test spec file exists at `tasks/smoke-tests/sprint-ia-02.md`
+- [x] All 7 STEP labels present with pass/fail binary criteria
+
+---
 
 ### AKR-08b — docs/hld.md architect session [P2, human-input-required]
 
