@@ -10,7 +10,6 @@ from pathlib import Path
 import streamlit as st
 from streamlit_app.shared.session import bootstrap
 from streamlit_app.shared.intake import (
-    generic_intake_form,
     render_engagement_banner,
     get_project_language_standard,
 )
