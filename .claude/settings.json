@@ -131,7 +131,7 @@
   },
   "mcpServers": {
     "ak-state-machine": {
-      "command": "python3",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
       "args": [
         "/Users/akaushal011/forensic-ai/mcp-servers/state_machine_server.py"
       ],
@@ -140,7 +140,7 @@
       }
     },
     "ak-audit-log": {
-      "command": "python3",
+      "command": "/Library/Frameworks/Python.framework/Versions/3.13/bin/python3",
       "args": [
         "/Users/akaushal011/forensic-ai/mcp-servers/audit_log_server.py"
       ],
@@ -149,5 +149,6 @@
         "AUDIT_LOG_PATH": "tasks/audit-log.md"
       }
     }
-  }
+  },
+  "enableAllProjectMcpServers": true
 }
