@@ -1,9 +1,22 @@
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
+
+
+def slugify_project_name(name: str) -> str:
+    """Convert a human project name into a safe filesystem folder name.
+
+    'ABC AML Review 2024' → 'ABC_AML_Review_2024'
+    Strips special chars, collapses whitespace to underscores, caps at 60 chars.
+    """
+    slug = re.sub(r"[^\w\s-]", "", name.strip())
+    slug = re.sub(r"\s+", "_", slug)
+    slug = re.sub(r"-+", "-", slug)
+    return slug[:60] or "untitled"
 
 from config import CASES_DIR
 

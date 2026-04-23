@@ -15,6 +15,35 @@ from pathlib import Path
 
 _CRASH_DIR = Path(__file__).parent.parent.parent / "logs" / "crash_reports"
 _ACTIVITY_LOG = Path(__file__).parent.parent.parent / "logs" / "activity.jsonl"
+_ERROR_LOG = Path(__file__).parent.parent.parent / "logs" / "error_log.jsonl"
+
+_KNOWN_CATEGORIES = {
+    "HookVetoError": {
+        "validate_schema": "schema_validation",
+        "validate_input": "input_validation",
+    },
+    "PipelineError": "pipeline_error",
+    "RevisionLimitError": "revision_limit",
+    "AuthenticationError": "api_auth",
+    "RateLimitError": "api_rate_limit",
+    "APIConnectionError": "api_connection",
+}
+
+
+def _categorise_error(exception: Exception) -> str:
+    cls = type(exception).__name__
+    msg = str(exception)
+    if cls in _KNOWN_CATEGORIES:
+        val = _KNOWN_CATEGORIES[cls]
+        if isinstance(val, dict):
+            for key, cat in val.items():
+                if key in msg:
+                    return cat
+            return "hook_veto_other"
+        return val
+    if "timeout" in msg.lower():
+        return "timeout"
+    return "unknown"
 
 
 def write_crash_report(page_name: str, exception: Exception) -> str:
@@ -48,10 +77,29 @@ def write_crash_report(page_name: str, exception: Exception) -> str:
     try:
         path.write_text(json.dumps(report, indent=2, default=str))
     except Exception:
-        # If we can't write the report, return a best-effort path
         pass
 
+    _append_error_log(page_name, exception, session_context)
     return str(path)
+
+
+def _append_error_log(page_name: str, exception: Exception, session_context: dict) -> None:
+    """Append one structured line to logs/error_log.jsonl for pattern analysis."""
+    try:
+        _ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
+        entry = {
+            "timestamp_utc": datetime.now(timezone.utc).isoformat(),
+            "page": Path(page_name).name,
+            "workflow": session_context.get("active_workflow_type"),
+            "project": session_context.get("active_project"),
+            "error_class": type(exception).__name__,
+            "error_category": _categorise_error(exception),
+            "error_message": str(exception)[:500],
+        }
+        with _ERROR_LOG.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(entry, default=str) + "\n")
+    except Exception:
+        pass
 
 
 def _read_session_context() -> dict:

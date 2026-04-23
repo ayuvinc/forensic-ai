@@ -439,10 +439,10 @@ _INVESTIGATION_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="industry",
         label="Industry / sector",
-        field_type="text",
+        field_type="selectbox",
+        options=INDUSTRY_OPTIONS,
         required=True,
         has_remarks=False,
-        help_text="e.g. Financial services, Real estate, Construction",
     ),
     WorkflowFieldConfig(
         id="description",
@@ -476,6 +476,27 @@ FRM_MODULE_DEPENDENCIES: dict[int, list[int]] = {3: [2], 4: [2], 7: [2, 3]}
 
 COMPANY_SIZE_OPTIONS = ["Small (<50 staff)", "Medium (50–500 staff)", "Large (>500 staff)", "Listed / public"]
 
+INDUSTRY_OPTIONS = [
+    "Banking",
+    "Financial Services (non-bank)",
+    "Insurance",
+    "Real Estate",
+    "Construction",
+    "Retail & Trading",
+    "Manufacturing",
+    "Technology",
+    "Healthcare & Pharmaceuticals",
+    "Oil & Gas / Energy",
+    "Professional Services",
+    "Hospitality & Tourism",
+    "Logistics & Transportation",
+    "Telecommunications",
+    "Government / Public Sector",
+    "Education",
+    "Media & Entertainment",
+    "Other",
+]
+
 _FRM_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="jurisdiction",
@@ -489,10 +510,10 @@ _FRM_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="industry",
         label="Industry / sector",
-        field_type="text",
+        field_type="selectbox",
+        options=INDUSTRY_OPTIONS,
         required=True,
         has_remarks=False,
-        help_text="e.g. Financial services, Real estate, Construction",
     ),
     WorkflowFieldConfig(
         id="company_size",
@@ -630,10 +651,10 @@ _DD_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="industry",
         label="Subject's industry / sector",
-        field_type="text",
+        field_type="selectbox",
+        options=INDUSTRY_OPTIONS,
         required=True,
         has_remarks=False,
-        help_text="e.g. Financial services, Real estate, Construction",
     ),
     WorkflowFieldConfig(
         id="description",
@@ -887,10 +908,10 @@ _POLICY_SOP_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="industry",
         label="Industry / sector",
-        field_type="text",
+        field_type="selectbox",
+        options=INDUSTRY_OPTIONS,
         required=True,
         has_remarks=False,
-        help_text="e.g. Financial services, Real estate, Construction",
     ),
     WorkflowFieldConfig(
         id="description",
@@ -981,10 +1002,10 @@ _TRAINING_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="industry",
         label="Industry / sector",
-        field_type="text",
+        field_type="selectbox",
+        options=INDUSTRY_OPTIONS,
         required=True,
         has_remarks=False,
-        help_text="e.g. Financial services, Real estate, Construction",
     ),
     WorkflowFieldConfig(
         id="description",

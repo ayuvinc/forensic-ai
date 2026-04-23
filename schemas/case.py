@@ -19,6 +19,7 @@ class CaseIntake(BaseModel):
     sample_report_paths: list[str] = []            # investigation style calibration
     engagement_id: Optional[str] = None            # P9 project slug if launched from Engagements page
     recommendation_depth: Optional[str] = None     # FR-03: "structured" | "executive" | "detailed" (FRM only)
+    project_name: Optional[str] = None             # human-readable project name; slugified form used as case folder
 
 
 class CaseState(BaseModel):

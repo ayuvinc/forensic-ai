@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 
 from config import get_model
-from core.hook_engine import HookEngine
+from core.hook_engine import HookEngine, HookVetoError
 from core.orchestrator import Orchestrator, PipelineError, RevisionLimitError
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FRMDeliverable, FRMModuleOutput, RiskItem
@@ -142,7 +142,17 @@ def run_frm_pipeline(
 
         try:
             on_progress(f"  Consultant drafting Module {module_num}...")
-            junior_output = junior(module_intake.model_dump(), {**context, "role": "junior"})
+            try:
+                junior_output = junior(module_intake.model_dump(), {**context, "role": "junior"})
+            except HookVetoError as _schema_err:
+                # validate_schema blocked the draft (e.g. empty findings). Retry once with error injected.
+                on_progress(f"  Schema validation failed — retrying Module {module_num}...")
+                junior_output = junior(module_intake.model_dump(), {
+                    **context,
+                    "role": "junior",
+                    "schema_retry": True,
+                    "schema_error": str(_schema_err),
+                })
 
             on_progress(f"  PM reviewing Module {module_num}...")
             pm_output = pm(junior_output["output"], {**context, "role": "pm"})
