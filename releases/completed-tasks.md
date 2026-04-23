@@ -479,3 +479,19 @@ QA_APPROVED 2026-04-23 · Session 044 · Merged to main
 Design decisions: D1 — workflows/policy_sop.py (single-pass) stays untouched as CLI fallback. D2 — qa-run substituted (not waived) with 131-test regression baseline due to API-wrapper nature of new functions + no API credits. D3 — Codex gate permanently waived per AK order 2026-04-17.
 
 131 tests pass post-merge.
+
+---
+
+## Sprint-QUAL-01 — Pipeline Quality: Junior Floor + Schema Retry (2026-04-23)
+
+QA_APPROVED 2026-04-23 · Session 045 · Merged to main
+
+- [x] QUAL-01 — PM mode-awareness — CONFIRMED ALREADY IMPLEMENTED (Sprint-10L-Phase-A, SRL-01, commit 5b6b0d9). `_build_mode_section()` in `agents/project_manager/prompts.py` correctly prevents citation-based revision in knowledge_only mode. Verification only; no code change.
+- [x] QUAL-02 — Junior findings floor — `agents/junior_analyst/prompts.py`: added FINDINGS FLOOR block after OUTPUT FORMAT. Junior must return ≥3 findings; derives from domain knowledge if no client documents; labels baseline findings.
+- [x] QUAL-03 — schema_retry wiring — `agents/junior_analyst/agent.py` reads `schema_retry`/`schema_error` from orchestrator context and passes to `prompts.build_system_prompt()`; `prompts.py` prepends "SCHEMA RETRY" instruction when `schema_retry=True`.
+
+Root cause analysis: revision loop (PM requests revision 2×) was caused by Junior returning empty findings in knowledge_only mode, not by PM being overly aggressive. QUAL-02 fixes the root cause; QUAL-01 was already correct. QUAL-03 is an independent wiring bug fix.
+
+Design decisions: D1 — `prompts.py` remains a pure function; context reads in `agent.py` only (separation of concerns). D2 — schema_retry instruction prepends prompt (model sees constraint first). D3 — findings floor is mode-agnostic, applies in both knowledge_only and live.
+
+131 tests pass.

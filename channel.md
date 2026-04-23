@@ -7,6 +7,59 @@ Next: /architect sprint_id=sprint-ia-04
 
 
 
+## QA Review — Sprint-QUAL-01
+Agent: qa
+Sprint: Sprint-QUAL-01
+Timestamp: 2026-04-23T13:20:00Z
+Overall: QA_APPROVED
+
+### Codex gate
+Waived per project memory (feedback_codex_gate.md — AK order 2026-04-17).
+
+### QA-Run proxy
+131 tests pass. No formal qa-run entry for Sprint-QUAL-01 — changes are pure prompt text additions and agent context key wiring. No branching logic that unit tests can probe beyond import checks. 131-test regression baseline accepted.
+
+### Criterion Results
+
+#### QUAL-01 — PM mode-awareness (verification only)
+- [PASS] `_build_mode_section("knowledge_only")` at `agents/project_manager/prompts.py:81` contains "DO NOT request revision" — confirmed pre-existing from Sprint-10L-Phase-A (SRL-01)
+- [PASS] `agents/project_manager/agent.py:56` passes `research_mode=config.RESEARCH_MODE` to `build_system_prompt` — pre-existing
+- [PASS] No code change needed or made — verification only; QUAL-01 is complete
+
+#### QUAL-02 — Junior findings floor
+- [PASS] `agents/junior_analyst/prompts.py:110` — "You MUST return at least 3 findings. An empty findings list is never acceptable output."
+- [PASS] `agents/junior_analyst/prompts.py:112` — "Derive findings from your domain knowledge and regulatory baseline for this industry and jurisdiction."
+- [PASS] `agents/junior_analyst/prompts.py:113` — baseline label instruction present
+- [PASS] Block placed inside the OUTPUT FORMAT section — model sees it in context of response requirements, not as a disconnected afterthought
+- [PASS] Applies in all modes (not knowledge_only-gated) — correct per BA-QUAL-02
+
+#### QUAL-03 — schema_retry wiring
+- [PASS] `agents/junior_analyst/agent.py:67` — `context.get("schema_retry", False)` (correct default)
+- [PASS] `agents/junior_analyst/agent.py:68` — `context.get("schema_error", "")` (correct default)
+- [PASS] Both passed to `prompts.build_system_prompt()` at lines 75–76
+- [PASS] `agents/junior_analyst/prompts.py:39–40` — params added with correct defaults
+- [PASS] `agents/junior_analyst/prompts.py:137–142` — prepend logic: `if schema_retry:` guard; `base = retry_prefix + base` (prepend, not append)
+- [PASS] Default call (`schema_retry=False`) — guard does not fire; prompt contains no "SCHEMA RETRY" text
+- [PASS] Architecture contract preserved — `prompts.py` is a pure function; context reads are in `agent.py`
+
+### Security checks
+- [PASS] `schema_error` originates from `str(e)` on internal `HookVetoError` (orchestrator.py:138) — never user-supplied; no injection risk
+- [PASS] `schema_retry` is a bool from context — no injection vector
+- [PASS] No new file reads, writes, or external calls introduced
+- [PASS] No PII exposure; no auth changes; no audit event changes
+
+### Edge cases
+- [NOTE] `schema_error=""` with `schema_retry=True` produces "SCHEMA RETRY — your previous response failed validation: . Fix this..." — grammatically awkward but functionally correct; model receives retry signal. Not a blocker.
+- [NOTE] `schema_error` is not length-capped. Pydantic validation errors are bounded and internal; no risk in practice. Not a blocker.
+
+### Mobile / Auth
+- Not applicable — no UI changes; single-user local install
+
+### Verdict
+QA_APPROVED — all ACs pass; 131 tests pass; no defects found. Sprint-QUAL-01 clear for Architect merge.
+
+---
+
 ## QA Review — Sprint-IA-04
 Agent: qa
 Sprint: Sprint-IA-04

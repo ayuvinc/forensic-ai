@@ -3,9 +3,9 @@
 ## SESSION STATE
 Status:         CLOSED
 Active task:    none
-Active persona: junior-dev
+Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T12:54:22Z — state transition by MCP server
+Last updated:   2026-04-23T13:10:32Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -80,6 +80,8 @@ Sprint-IA-02 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 03
 Sprint-IA-03 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 041, merged main). Removed from PENDING.
 
 Sprint-IA-04 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 044, merged main). Removed from PENDING.
+
+Sprint-QUAL-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 045, merged main). Removed from PENDING.
 
 ---
 
@@ -224,15 +226,6 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 - [ ] (regression) All 17 pages still render without crash; existing workflow end-to-end (FRM knowledge_only) completes — manual smoke check by AK before QA_APPROVED
 
 ---
-
-### Sprint-QUAL-01 — Pipeline Quality: PM Mode-Awareness + Junior Floor [UNBLOCKED]
-
-**Status:** READY — root causes confirmed in Session 042 smoke test.
-**Context:** PM requests revision 2× even in knowledge_only mode (expects citations that don't exist). Junior returns empty findings in knowledge_only mode. `schema_retry` flag added to context but Junior prompt ignores it.
-
-- [ ] QUAL-01 PM prompt mode-aware — in `agents/project_manager/prompts.py`: inject `RESEARCH_MODE` into system prompt. In `knowledge_only` mode: "Accept findings that rely on framework knowledge — do NOT request revision solely due to missing external citations. Citations are unavailable in this mode."
-- [ ] QUAL-02 Junior findings floor — in `agents/junior_analyst/prompts.py`: add to all workflow system prompts: "You MUST return at least 3 findings. If no client documents are available, derive findings from your domain knowledge and framework baseline for this industry and jurisdiction. An empty findings list is never acceptable."
-- [ ] QUAL-03 schema_retry wiring — in `agents/junior_analyst/prompts.py`: read `context.get("schema_retry")` and `context.get("schema_error")`. If set, prepend to system prompt: "SCHEMA RETRY — your previous response failed validation: {schema_error}. Fix this specific issue in your response."
 
 ---
 

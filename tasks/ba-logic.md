@@ -1237,3 +1237,42 @@ STEP 2b — Custom scoping conversation
 **Sprint assignment:** Sprint-IA-04 — to be designed in a dedicated architect session before build starts.
 
 ---
+
+## Session 044–045 BA — Sprint-QUAL-01: Pipeline Quality Fixes (2026-04-23)
+
+### BA-QUAL-01 — PM Review Mode-Awareness
+- Status: CONFIRMED — already implemented (Sprint-10L-Phase-A, SRL-01, commit 5b6b0d9)
+- Root cause: PM requested revision in knowledge_only mode for missing citations. Fixed by `_build_mode_section()` in `agents/project_manager/prompts.py`.
+
+**Business rules (confirmed):**
+- In knowledge_only mode, PM MUST NOT request revision due to: absent citations, empty source_url fields, generic (non-client-specific) output.
+- In knowledge_only mode, PM MAY request revision for: empty findings list, factually wrong regulatory reference, structural schema violation, logical inconsistency.
+- In live mode: authoritative citations are required for all regulatory claims — original enforcement applies.
+- These rules are implemented; no code change required. Verification only.
+
+---
+
+### BA-QUAL-02 — Junior Findings Floor
+- Status: CONFIRMED — 2026-04-23
+- Root cause: Junior returns empty findings list in knowledge_only mode when no client documents are available. PM then correctly requests revision (empty findings is a rejection criterion). This creates a revision loop.
+
+**Business rules:**
+- Junior MUST return at least 3 findings in every response. No exceptions.
+- If no client documents are available AND research mode is knowledge_only: Junior derives findings from domain knowledge and regulatory baseline for the stated industry and jurisdiction. These are explicitly labelled as "baseline findings — not yet verified against client-specific evidence."
+- An empty findings list is never acceptable output. If Junior cannot identify any findings, it must return 3 framework-level findings with risk_level="low" and a note that client-specific evidence is required.
+- This applies to all workflows, not just investigation_report.
+- Scope: `agents/junior_analyst/prompts.py` — `build_system_prompt()`.
+
+---
+
+### BA-QUAL-03 — Schema Retry Wiring
+- Status: CONFIRMED — 2026-04-23
+- Root cause: When Junior returns malformed JSON, `orchestrator.py` sets `context["schema_retry"] = True` and `context["schema_error"] = str(e)` for the next attempt. Junior's `agent.py` does not read these keys; `prompts.build_system_prompt()` has no schema_retry parameter. Junior repeats the same response without knowing it failed validation.
+
+**Business rules:**
+- On schema retry, Junior MUST receive an explicit prepended instruction: "SCHEMA RETRY — your previous response failed validation: {schema_error}. Fix this specific issue in your response before doing anything else."
+- The retry instruction must prepend the full system prompt, not append — so the model sees the constraint first.
+- `schema_retry` and `schema_error` are internal orchestrator context keys — never user-supplied. No injection risk.
+- Scope: `agents/junior_analyst/agent.py` (read from context) + `agents/junior_analyst/prompts.py` (accept params, prepend instruction).
+
+---
