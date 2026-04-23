@@ -91,9 +91,10 @@ def run_frm_pipeline(
     from rich.console import Console as _Console
     _err_console = _Console()
 
-    for module_num in selected_modules:
+    total_modules = len(selected_modules)
+    for module_idx, module_num in enumerate(selected_modules, start=1):
         module_name = FRM_MODULES.get(module_num, f"Module {module_num}")
-        on_progress(f"[Module {module_num}/{len(selected_modules)}] {module_name}...")
+        on_progress(f"[Module {module_idx}/{total_modules}] {module_name}...")
 
         # FR-02: inject stakeholder context when engagement_id is set
         stakeholder_context = ""
@@ -147,12 +148,16 @@ def run_frm_pipeline(
             except HookVetoError as _schema_err:
                 # validate_schema blocked the draft (e.g. empty findings). Retry once with error injected.
                 on_progress(f"  Schema validation failed — retrying Module {module_num}...")
-                junior_output = junior(module_intake.model_dump(), {
-                    **context,
-                    "role": "junior",
-                    "schema_retry": True,
-                    "schema_error": str(_schema_err),
-                })
+                try:
+                    junior_output = junior(module_intake.model_dump(), {
+                        **context,
+                        "role": "junior",
+                        "schema_retry": True,
+                        "schema_error": str(_schema_err),
+                    })
+                except HookVetoError:
+                    on_progress(f"  Skipping Module {module_num} — could not generate findings after retry.")
+                    continue
 
             on_progress(f"  PM reviewing Module {module_num}...")
             pm_output = pm(junior_output["output"], {**context, "role": "pm"})
