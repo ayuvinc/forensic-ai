@@ -7,23 +7,25 @@ CLOSED
 architect
 
 ## NEXT_TASK
-**Session 043: Sprint-KB-01 — Firm Knowledge Base Embedding (after pip install)**
+**Session 045: Choose next sprint**
 
-Session 042 — live smoke testing of investigation report pipeline. 8 bugs fixed. 4 new sprints added to backlog.
+Session 044 — Sprint-IA-04 complete, merged, archived. Docs updated.
 
-AK to run: `pip install sentence-transformers chromadb` before Session 043.
+Three queued sprints, all UNBLOCKED, in recommended priority order:
 
-Next build priority after install:
-1. Sprint-KB-01 (FirmKnowledgeEngine) — highest ROI, fixes context bloat for every agent call
-2. Sprint-QUAL-01 (PM mode-aware + Junior floor) — fixes revision loops found in smoke test
-3. Sprint-UX-STREAM-01 (streaming progress) — UX gap
-4. Sprint-SMOKE-01 (smoke test suite) — test coverage
-5. Sprint-IA-04 (Policy/SOP co-build) — needs /architect session first
+1. **Sprint-QUAL-01** (PM mode-awareness + Junior floor) — fixes revision loops in knowledge_only mode; 3 small prompt edits. Highest ROI per session: unblocks reliable smoke tests.
+2. **Sprint-UX-ERR-01** (crash reporter) — structured crash reports instead of raw tracebacks. Low risk, high usability.
+3. **Sprint-UX-WIRE-01** (interaction sophistication) — @st.fragment, st.toast, multi-step intake, session state namespacing. Larger scope.
+
+Also outstanding:
+- Sprint-KB-01 manual smoke check — DEFERRED (no API credit). Run `python run.py` Option 6, RESEARCH_MODE=knowledge_only when credits restored.
+- Sprint-SMOKE-01 (structured smoke suite) — foundational; consider before Sprint-UX-WIRE-01.
 
 ## COMMAND
 ```
-/junior-dev sprint_id=sprint-kb-01
+/session-open session_id=045
 ```
+Then: AK selects next sprint → /architect
 
 ## COMPLETION STATUS
 
@@ -32,32 +34,26 @@ Phase 1-8 + Sprints A-G:        100% ██████████ DONE — all
 Phase H + Phase I (P9):          100% ██████████ DONE — merged c8ee66f
 Sprint-RD/WF/FR/AIC/EMB/FE:     100% ██████████ DONE
 Sprint-WORK/CONV/KL/ACT/TPL:    100% ██████████ DONE
-Sprint-IA-01/02/03:              100% ██████████ DONE — merged Session 038-041
-Sprint-KB-01 (firm KB embed):      0% ░░░░░░░░░░ NEXT
-Sprint-QUAL-01 (PM/Junior quality): 0% ░░░░░░░░░░ QUEUED
-Sprint-UX-STREAM-01 (streaming):   0% ░░░░░░░░░░ QUEUED
-Sprint-SMOKE-01 (smoke suite):     0% ░░░░░░░░░░ QUEUED
-Sprint-IA-04 (Policy/SOP co-build):0% ░░░░░░░░░░ QUEUED — needs /architect
+Sprint-IA-01/02/03/04:           100% ██████████ DONE — merged Session 038-044
+Sprint-KB-01 (firm KB embed):    100% ██████████ MERGED — smoke check deferred (no API credit)
+Sprint-QUAL-01 (PM/Junior quality): 0% ░░░░░░░░░░ QUEUED — recommended next
+Sprint-UX-ERR-01 (crash reporter):  0% ░░░░░░░░░░ QUEUED
+Sprint-SMOKE-01 (smoke suite):      0% ░░░░░░░░░░ QUEUED
+Sprint-UX-WIRE-01 (interaction):    0% ░░░░░░░░░░ QUEUED — after ERR-01
+Sprint-UX-STREAM-01 (streaming):    0% ░░░░░░░░░░ QUEUED
 ```
 
 ## CARRY_FORWARD_CONTEXT
 
-Session 042 bugs fixed (all in main, no branch — direct fixes during smoke test):
-- BUG-042-01: orchestrator._run_pm revision path passed AgentHandoff as CaseIntake → 5 validation errors
-- BUG-042-02: investigation_report.py rich context never reached agents → generic/unrelated drafts
-- BUG-042-03: register_document() missing provenance arg in 02_Investigation.py
-- BUG-042-04: _infer_doc_type returned raw extensions (pdf/word) not valid DocumentEntry literals — fixed in 4 pages
-- BUG-042-05: validate_schema hook hard-blocked empty findings → _run_junior now retries on HookVetoError
-- BUG-042-06: RevisionLimitError crashed pipeline → _run_pm now promotes to Partner with disclaimer
-- BUG-042-07: UI stuck on "running" after exception → inv_stage = "error" on exception
-- BUG-042-08: Workspace session_note widget state crash → reset-flag pattern
-- BUG-042-09: AIC-01 questions generic ("what aspect is most important") → richer intake_summary + stricter system prompt
+Session 044 work:
+- Sprint-IA-04 built (junior-dev), QA_APPROVED, merged, archived.
+- W5-BUG-01 found in QA (get_all_text DNE) and fixed in-session — no carry-forward defects.
+- qa-run/Codex distinction clarified: Codex = permanently waived (AK order); qa-run for IA-04 = substituted (not waived) due to API-wrapper nature + no credits.
+- Doc freshness: hld.md (updated Session 044), GoodWork_AI_Framework_Brief.md (updated), scope-brief.md (ticked), README.md (updated), lld/policy-sop-cobuild.md (new).
 
-Open carry-forward:
+Open carry-forward from prior sessions:
 - OBS-02: "Investigation Report" sidebar label → AK preference is "Investigation" (deferred)
-- sentence-transformers + chromadb not installed → AK doing pip install after Session 042
 - QUAL-01/02/03 (PM mode-aware, Junior floor, schema_retry wiring) → Sprint-QUAL-01
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- pip install sentence-transformers chromadb required before Sprint-KB-01 can be tested
-- Sprint-IA-04 needs /architect decomposition before build
+- Sprint-KB-01 QA_APPROVED gate: manual smoke check by AK (python run.py Option 6) — DEFERRED (no API credit 2026-04-23); CLI only, RESEARCH_MODE=knowledge_only, Anthropic API required

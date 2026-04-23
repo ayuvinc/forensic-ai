@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
-Active persona: architect
+Active persona: junior-dev
 Blocking issue: none
-Last updated:   2026-04-23T10:12:17Z — state transition by MCP server
+Last updated:   2026-04-23T12:54:22Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -78,6 +78,8 @@ Sprint-IA-02 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 03
 ---
 
 Sprint-IA-03 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 041, merged main). Removed from PENDING.
+
+Sprint-IA-04 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 044, merged main). Removed from PENDING.
 
 ---
 
@@ -270,21 +272,6 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 - [ ] SMOKE-EDGE-03 Legacy UUID case in Tracker — renders, no A-F features shown
 
 ---
-
-### Sprint-IA-04 — Policy/SOP Guided Co-Build Mode [QUEUED — needs architect session before build]
-
-**Status:** QUEUED — BA-IA-09 confirmed (Session 041). Full architect decomposition required before any tasks are written.
-**BA:** BA-IA-09 in tasks/ba-logic.md
-**Product context:** Co-build is the correct model for all Policy/SOP types. See docs/product-packaging.md → "Product Positioning Insight — Co-Build Mode."
-**Prerequisite:** Sprint-IA-03-W5 (intake wiring) must be QA_APPROVED before Sprint-IA-04 build starts.
-**Scope (confirmed):**
-- Co-build mode for all 11 fixed types + Custom
-- Custom type: additional scoping conversation (5 questions) before structure proposal
-- Sync section-by-section loop: approve / edit inline / regenerate
-- Replaces single-pass `run_policy_sop_workflow`
-- Audit trail: section_approved events added
-
-**To activate:** Run `/architect sprint_id=sprint-ia-04` in a dedicated session.
 
 ---
 

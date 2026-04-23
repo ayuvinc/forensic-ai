@@ -458,3 +458,24 @@ QA_APPROVED 2026-04-23 · Session 041 · Merged: 5246ad4 → main
 
 Design decisions confirmed: D1 (FRM 8 individual radios), D2 (Training duration selectbox + radio), D3 (Sanctions subject_name inside engine), D4 (Policy/SOP 11-subtype combined selectbox, no Custom in this sprint).
 BA-IA-09 written for Sprint-IA-04 (Policy/SOP co-build mode — queued).
+
+---
+
+## Sprint-IA-04 — Policy/SOP Guided Co-Build Mode (2026-04-23)
+
+QA_APPROVED 2026-04-23 · Session 044 · Merged to main
+
+- [x] IA-04-S1 — schemas/policy_sop_cobuild.py: CoBuildSection + CoBuildState (Pydantic v2)
+- [x] IA-04-W2 — workflows/policy_sop_cobuild.py: propose_structure (Sonnet), draft_section (Haiku), revise_section (Haiku, HTML-strip+500 char cap), assemble_and_write (no model call), identify_gaps (Sonnet, all-None fallback)
+- [x] IA-04-W3 — Custom scoping: 5 fixed questions, rendered one per rerun as st.form; writes custom_doc_scoping.json to D_Working_Papers/
+- [x] IA-04-W4 — pages/04_Policy_SOP.py full rewrite: 6-stage machine; all helpers at module level; resume-after-refresh from cobuild_progress.json; st.progress section loop; Approve/Edit/Regenerate buttons; audit events per section
+- [x] IA-04-W5 — Gap analysis: identify_gaps + _try_gap_analysis pre-fills sections from uploaded documents; W5-BUG-01 (get_all_text DNE) found and fixed in QA pass (→ has_documents() + get_index().documents iteration + _read_full())
+- [x] IA-04-W6 — docs/lld/policy-sop-cobuild.md: stage machine, session state table, all 5 function signatures, audit event schemas, cobuild_progress.json schema + resume behaviour
+- [x] DOC — docs/hld.md Co-Build Workstream section + Service Lines table updated
+- [x] DOC — docs/GoodWork_AI_Framework_Brief.md: Policy/SOP row updated to Guided co-build; build status entry added; footnote updated
+- [x] DOC — docs/scope-brief.md: Sprint-IA-04 item ticked
+- [x] DOC — README.md: Policy/SOP row updated to Co-Build
+
+Design decisions: D1 — workflows/policy_sop.py (single-pass) stays untouched as CLI fallback. D2 — qa-run substituted (not waived) with 131-test regression baseline due to API-wrapper nature of new functions + no API credits. D3 — Codex gate permanently waived per AK order 2026-04-17.
+
+131 tests pass post-merge.
