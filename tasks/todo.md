@@ -155,6 +155,35 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### Sprint-UX-NAV-01 — Pinned Sidebar Navigation [QUEUED — UX/UI + designer]
+
+**Status:** QUEUED — requires UX design before build.
+**Observation:** Left sidebar restructures on every page navigation. Some pages inject their own sidebar sections (e.g. Persona Review adds MONITOR / SETTINGS / WORKFLOWS blocks); others show a bare nav. The result is a shifting, unpredictable left panel that breaks user orientation.
+**OBS reference:** OBS-04 (smoke test Session 048) + confirmed on all pages Session 049.
+**Goal:** Pinned, consistent sidebar across all 17 pages. Navigation structure never shifts — only the active-page indicator changes.
+
+**Design work needed before build (UX/UI + designer):**
+- Define the canonical sidebar sections and their fixed order (e.g. NAVIGATION / ACTIVE PROJECT / QUICK ACTIONS / SETTINGS)
+- Define what content is always visible vs. context-sensitive (e.g. active engagement banner)
+- Decide how per-page sidebar additions (Persona Review workflow list) are handled — modal, expander, or secondary panel
+- Produce a wireframe / component spec before any code is written
+
+**Build scope (after design approved):**
+
+- [ ] NAV-00 UX spec: produce canonical sidebar layout wireframe. All 17 pages reviewed. Sign-off from AK before build begins.
+
+- [ ] NAV-01 Create `streamlit_app/shared/sidebar.py` — `render_sidebar(st, active_page: str)` renders the full pinned sidebar. Takes `active_page` to highlight the current entry. All sidebar content moves here; individual pages call this function and add nothing directly to `st.sidebar`.
+
+- [ ] NAV-02 Audit all 17 pages — remove any `st.sidebar.*` calls that are not in `render_sidebar()`. Exceptions must be explicitly approved (e.g. "Start New Case" sidebar button — inline or move to main area).
+
+- [ ] NAV-03 Persona Review (03) sidebar restructure: move WORKFLOWS section out of sidebar into main content area (tab or expander). Sidebar returns to standard pinned layout on this page.
+
+- [ ] NAV-04 Regression: all 17 pages render without sidebar shift. Active-page highlight correct on each. No state bleed from sidebar between pages.
+
+**Dependencies:** NAV-00 (design) must be done before NAV-01. Sprint-UX-WIRE-01 can run in parallel (different concern).
+
+---
+
 ### Sprint-UX-WIRE-01 — Interaction Sophistication [UNBLOCKED — after ERR-01]
 
 **Status:** READY. AK decision 2026-04-23: sophistication problem is interaction wiring, not visual design. Colors/fonts stay GoodWork as-is. The root cause of "feels like it'll fall apart" is: (1) every button causes a full page rerun, (2) no inline feedback on saves, (3) forms dump all fields at once, (4) session state bleeds between pages, (5) stage transitions are abrupt jumps.
