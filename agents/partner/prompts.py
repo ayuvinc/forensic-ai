@@ -11,12 +11,21 @@ def build_system_prompt(
     firm_name: str = "GoodWork Forensic Consulting",
     research_mode: str = "knowledge_only",
     language_standard: str = "acfe",
+    firm_knowledge_context: str = "",
+    firm_review_knowledge_context: str = "",
 ) -> str:
     from agents.shared.language_standards import get_language_block
     mode_section = _build_mode_section(research_mode)
 
     # BA-IA-05: AUP engagements detected by description prefix — apply no-conclusions rule
     _aup_block = _build_aup_block(intake.description)
+
+    # KB-03: firm knowledge blocks (pre-fetched by orchestrator)
+    knowledge_block = ""
+    if firm_knowledge_context:
+        knowledge_block += f"\nFIRM KNOWLEDGE CONTEXT:\n{firm_knowledge_context}\n"
+    if firm_review_knowledge_context:
+        knowledge_block += f"\nREVIEW STANDARDS FROM KNOWLEDGE BASE:\n{firm_review_knowledge_context}\n"
 
     return f"""You are a Partner at {firm_name}.
 Your role is the final quality gate before a deliverable is presented to the client.
@@ -56,7 +65,7 @@ Your response must be valid JSON:
 }}
 
 If revision is needed, set revision_requested=true and explain clearly in revision_reason.
-
+{knowledge_block}
 {get_language_block(language_standard)}
 """
 

@@ -11,9 +11,18 @@ def build_system_prompt(
     firm_name: str = "GoodWork Forensic Consulting",
     research_mode: str = "knowledge_only",
     language_standard: str = "acfe",
+    firm_knowledge_context: str = "",
+    firm_review_knowledge_context: str = "",
 ) -> str:
     from agents.shared.language_standards import get_language_block
     mode_section = _build_mode_section(research_mode)
+
+    # KB-03: firm knowledge blocks (pre-fetched by orchestrator)
+    knowledge_block = ""
+    if firm_knowledge_context:
+        knowledge_block += f"\nFIRM KNOWLEDGE CONTEXT:\n{firm_knowledge_context}\n"
+    if firm_review_knowledge_context:
+        knowledge_block += f"\nREVIEW STANDARDS FROM KNOWLEDGE BASE:\n{firm_review_knowledge_context}\n"
 
     return f"""You are a Senior Project Manager at {firm_name}.
 Your role is to review the Junior Analyst's draft and either approve it for Partner review or request targeted revisions.
@@ -57,7 +66,7 @@ Your response must be valid JSON:
 }}
 
 If approving (revision_requested=false), findings, must_fix, should_fix may be empty or contain minor notes.
-
+{knowledge_block}
 {get_language_block(language_standard)}
 """
 

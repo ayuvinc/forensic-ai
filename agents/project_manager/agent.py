@@ -48,11 +48,15 @@ class ProjectManager:
         intake_dict = context.get("intake", {})
         intake = CaseIntake(**intake_dict) if intake_dict else _minimal_intake(context)
 
-        language_standard = context.get("language_standard", "acfe")
+        language_standard          = context.get("language_standard", "acfe")
+        firm_knowledge_context     = context.get("firm_knowledge_context", "")        # KB-03
+        firm_review_knowledge_context = context.get("firm_review_knowledge_context", "")  # KB-03
         system_prompt = prompts.build_system_prompt(
             self._workflow, intake,
             research_mode=config.RESEARCH_MODE,
             language_standard=language_standard,
+            firm_knowledge_context=firm_knowledge_context,
+            firm_review_knowledge_context=firm_review_knowledge_context,
         )
         task_message  = prompts.build_task_message(junior_output)
 

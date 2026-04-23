@@ -44,12 +44,12 @@ The consultant (Maher) organises all work into **Projects**. Each Project maps t
 | `core/plugin_loader.py` | Loads agents/personas from manifest.json files | schemas/plugins.py |
 | `core/setup_wizard.py` | First-time setup: .env creation, firm_profile collection | firm_profile/ |
 | `core/activity_logger.py` | Structured activity log writer; feeds 15_Activity_Log.py | logs/activity/ |
-| `core/embedding_engine.py` | Semantic embedding for case documents and knowledge retrieval | sentence-transformers |
 | `core/project_manager.py` | Project/engagement CRUD: create, load, list, slug generation | schemas/project.py, cases/ |
 | `core/template_manager.py` | .docx template resolution: GW_ styles, fallback chain | firm_profile/templates/ |
 | `core/report_builder.py` | BaseReportBuilder: .md + .docx generation, GW_ style preference | python-docx, core/template_manager.py |
 | `core/knowledge_library.py` | Historical report/register ingestion; SanitisationError HARD GATE | firm_profile/historical_*/ |
-| `core/knowledge_retriever.py` | Retrieves relevant knowledge from knowledge/ and case history | core/embedding_engine.py |
+| `tools/embedding_engine.py` | Per-case semantic embedding and retrieval (Sprint-EMB) | sentence-transformers, chromadb, cases/{id}/.chromadb |
+| `tools/firm_knowledge_engine.py` | Firm-wide knowledge base: indexes knowledge/ .md files once at startup; three-fetch retrieval injected into orchestrator context before each pipeline run (Sprint-KB-01) | sentence-transformers, chromadb, firm_profile/knowledge/.chromadb |
 | `schemas/project.py` | ProjectState: project_name, slug, client, initial_workstreams (declared at creation, rendered in Workspace even before run), cases dict (workflow→case_id) | pydantic |
 | `schemas/case.py` | CaseStatus enum, CaseIntake, per-case state | pydantic |
 | `schemas/artifacts.py` | All artifact models: junior output, PM review, partner approval, SanitisedIndexEntry | pydantic |

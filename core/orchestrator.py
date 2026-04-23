@@ -82,6 +82,9 @@ class Orchestrator:
         status = self._load_or_init_status(intake)
         context = {"case_id": self.case_id, "workflow": self.workflow}
 
+        # KB-03: inject firm knowledge context (three fetches) before any agent runs
+        self._inject_firm_knowledge_context(context, intake)
+
         # EMB-04: inject embedded context when vector index is available
         self._maybe_inject_embedded_context(context, intake)
 
@@ -252,6 +255,86 @@ class Orchestrator:
             return {}
         data = json.loads(open(files[-1], encoding="utf-8").read())
         return data.get("payload", data)  # unwrap envelope if present
+
+    # ── KB-03: Firm knowledge context injection ───────────────────────────────
+
+    def _inject_firm_knowledge_context(self, context: dict, intake: dict) -> None:
+        """Pre-fetch firm knowledge into context before any agent runs.
+
+        Three fetches (all skipped silently if FirmKnowledgeEngine is unavailable):
+          Fetch 1 — workflow-general: broad methodology + standards query.
+          Fetch 2 — intake-derived supplemental: triggered by jurisdiction/industry/regulator
+                    specifics in Maher's intake. Skipped when all fields are defaults.
+          Fetch 3 — review standards: PM and Partner only (firm_review_knowledge_context).
+
+        Keys written to context:
+          firm_knowledge_context      — capped at 3000 chars; all three agents read this.
+          firm_review_knowledge_context — capped at 1500 chars; PM and Partner only.
+        """
+        try:
+            from tools.firm_knowledge_engine import FirmKnowledgeEngine
+            engine = FirmKnowledgeEngine()
+            if not engine.available:
+                return
+
+            # Fetch 1: workflow-general methodology and standards
+            query1 = f"{self.workflow} forensic consulting methodology standards procedures"
+            fetch1 = engine.search(query1, workflow_type=self.workflow, top_k=5)
+            if fetch1:
+                context["firm_knowledge_context"] = fetch1[:3000]
+
+            # Fetch 2: intake-derived supplemental — only when Maher provides specific inputs
+            if self._has_specific_intake_context(intake):
+                query2 = self._build_intake_query(intake)
+                fetch2 = engine.search(query2, top_k=3)
+                if fetch2:
+                    existing = context.get("firm_knowledge_context", "")
+                    combined = (existing + "\n\n" + fetch2).strip() if existing else fetch2
+                    context["firm_knowledge_context"] = combined[:3000]
+
+            # Fetch 3: review standards — PM and Partner receive this; Junior does not
+            query3 = f"review standards quality criteria {self.workflow}"
+            fetch3 = engine.search(query3, workflow_type=self.workflow, top_k=3)
+            if fetch3:
+                context["firm_review_knowledge_context"] = fetch3[:1500]
+
+        except Exception:
+            pass  # never block the pipeline on knowledge injection failure
+
+    @staticmethod
+    def _has_specific_intake_context(intake: dict) -> bool:
+        """Return True when intake has non-default jurisdiction/industry/regulator fields."""
+        primary_j = intake.get("primary_jurisdiction", "UAE")
+        op_j      = intake.get("operating_jurisdictions", ["UAE"])
+        industry  = intake.get("industry", "")
+        regulators = intake.get("regulators_implicated", [])
+        # Skip Fetch 2 when everything is the UAE-only default with no industry or regulator specifics
+        is_default_jurisdiction = (primary_j == "UAE" and op_j == ["UAE"])
+        has_industry = bool(industry and industry.strip() and industry.lower() not in ("unknown", "general"))
+        has_regulators = bool(regulators)
+        return not is_default_jurisdiction or has_industry or has_regulators
+
+    @staticmethod
+    def _build_intake_query(intake: dict) -> str:
+        """Build a targeted knowledge search query from specific intake fields."""
+        parts: list[str] = []
+        industry  = intake.get("industry", "")
+        primary_j = intake.get("primary_jurisdiction", "")
+        op_j      = intake.get("operating_jurisdictions", [])
+        regulators = intake.get("regulators_implicated", [])
+
+        if industry and industry.lower() not in ("unknown", "general"):
+            parts.append(industry)
+        if primary_j and primary_j != "UAE":
+            parts.append(primary_j)
+        for j in (op_j or []):
+            if j != "UAE" and j not in parts:
+                parts.append(j)
+        for r in (regulators or [])[:2]:  # cap at 2 regulator names
+            if r not in parts:
+                parts.append(r)
+
+        return " ".join(parts[:5]) if parts else ""
 
     # ── EMB-04: Semantic context injection ────────────────────────────────────
 
