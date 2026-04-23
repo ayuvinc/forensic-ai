@@ -36,6 +36,8 @@ def build_system_prompt(
     recommendation_instruction: str | None = None,
     stakeholder_context: str | None = None,
     firm_knowledge_context: str = "",
+    schema_retry: bool = False,
+    schema_error: str = "",
 ) -> str:
     """Build the Consultant system prompt for a given workflow and intake."""
     from agents.shared.language_standards import get_language_block
@@ -103,6 +105,13 @@ Your final response must be valid JSON matching this structure:
 }
 
 Produce thorough, professional analysis. Use all available tools before drafting.
+
+FINDINGS FLOOR (mandatory — applies in all modes):
+You MUST return at least 3 findings. An empty findings list is never acceptable output.
+If no client documents are available or research tools return no results:
+- Derive findings from your domain knowledge and regulatory baseline for this industry and jurisdiction.
+- Label each baseline finding: "Baseline finding — not yet verified against client-specific evidence."
+- Use risk_level "low" for baseline findings unless the regulatory framework indicates otherwise.
 """
 
     # KB-03: firm-level knowledge context (pre-fetched by orchestrator)
@@ -122,6 +131,15 @@ Produce thorough, professional analysis. Use all available tools before drafting
         base += f"\nRECOMMENDATION DEPTH INSTRUCTION:\n{recommendation_instruction}\n"
 
     base += f"\n{get_language_block(language_standard)}\n"
+
+    # Prepend schema retry instruction so the model sees the constraint first.
+    # schema_retry is set by the orchestrator when a previous JSON response failed validation.
+    if schema_retry:
+        retry_prefix = (
+            f"SCHEMA RETRY — your previous response failed validation: {schema_error}. "
+            f"Fix this specific issue before drafting your response.\n\n"
+        )
+        base = retry_prefix + base
 
     return base
 
