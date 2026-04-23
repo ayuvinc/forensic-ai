@@ -566,12 +566,23 @@ elif st.session_state.ps_stage == "done":
 
     report_path = get_final_report_path(intake.case_id)
     if report_path.exists():
-        st.download_button(
-            label="Download document (.md)",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=f"PolicySOP_{intake.client_name}_{intake.case_id}.md",
-            mime="text/markdown",
-        )
+        docx_path = report_path.with_suffix(".docx")
+        col_docx, col_md = st.columns(2)
+        if docx_path.exists():
+            with col_docx:
+                st.download_button(
+                    label="Download Word document",
+                    data=docx_path.read_bytes(),
+                    file_name=f"PolicySOP_{intake.client_name}_{intake.case_id}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+        with col_md:
+            st.download_button(
+                label="Download Markdown backup",
+                data=report_path.read_text(encoding="utf-8"),
+                file_name=f"PolicySOP_{intake.client_name}_{intake.case_id}.md",
+                mime="text/markdown",
+            )
     else:
         st.warning("Report file not found. Check the pipeline log.")
 
