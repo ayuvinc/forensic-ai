@@ -242,6 +242,37 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### Sprint-UPLOAD-01 — Document Upload with Type Classification [QUEUED]
+
+**Status:** QUEUED — design needed before build.
+**Context:** Every workflow intake should allow document upload where each file is tagged with its document type. The type label tells the model what it is reading (e.g. "Engagement letter", "Bank statement") rather than leaving it to infer from filename. Currently some pages have untyped bulk uploaders; others have none.
+**BA sign-off needed:** Document type taxonomy per workflow before build begins.
+**Dependencies:** None. Can run in parallel with UX sprints.
+
+**Scope (architect to confirm at session open):**
+
+- [ ] UPLOAD-00 Design: define per-workflow document type lists. Examples:
+  - Investigation: Engagement letter, Bank statement, Audit report, Corporate registry extract, Correspondence, Transaction records, Other
+  - FRM: Engagement letter, Policy document, Org chart, Board minutes, Prior audit report, Regulatory correspondence, Other
+  - DD: Engagement letter, Corporate registry extract, Passport / ID, Financial statements, Legal filings, Media article, Other
+  - Policy/SOP: Existing policy (gap analysis), Regulatory guidance, Industry standard, Other
+  - Sanctions: Engagement letter, Identity document, Corporate registry extract, Other
+  - TT: Bank statement, General ledger, Invoice, Contract, Supporting document, Other
+
+- [ ] UPLOAD-01 Create shared `render_document_uploader(st, workflow_id, session_key)` in `streamlit_app/shared/upload.py`:
+  - `st.file_uploader` for multiple files (pdf, docx, txt, xlsx — existing types)
+  - For each uploaded file: inline `st.selectbox("Document type", DOC_TYPES[workflow_id])` keyed per filename
+  - Returns `list[{file, doc_type, filename}]`
+  - Replaces all existing bare `st.file_uploader` calls across workflow pages
+
+- [ ] UPLOAD-02 Wire type labels into DocumentManager registration — store `doc_type` alongside the file path so agents receive "Bank statement: Q1_2024.xlsx" in context rather than just "Q1_2024.xlsx"
+
+- [ ] UPLOAD-03 Update agent prompts to use doc_type label when referencing uploaded documents
+
+- [ ] UPLOAD-04 Smoke verify: upload a file on Investigation page, confirm type label appears in pipeline log / context passed to junior agent
+
+---
+
 ### Sprint-SMOKE-01 — Multi-Level Smoke Test Suite [UNBLOCKED]
 
 **Status:** READY — spec designed Session 042.
