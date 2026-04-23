@@ -112,6 +112,8 @@ An AI-augmented forensic consulting workbench. Maher runs structured casework (F
 | 17 pages, core workflows functional | BUILT |
 | Crash reporter + structured error log | BUILT |
 | Forensic tip panel during pipeline runs | BUILT — Sprint-UX-WAIT-01 |
+| App startup command not obvious — `app.py` vs `streamlit_app/app.py` confusion | BROKEN — Sprint-STARTUP-01 |
+| Startup health check (missing .env, missing API key) | MISSING — Sprint-STARTUP-01 |
 | Pre-create case folder on Run click | MISSING — Sprint-FOLDER-01 |
 | Progress bar turns red mid-pipeline | BROKEN — Sprint-UX-PROGRESS-01 |
 | Sidebar shifts on page navigation | BROKEN — Sprint-UX-NAV-01 (needs wireframe) |

@@ -115,6 +115,27 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 
 ---
 
+### Sprint-STARTUP-01 — Application Startup Reliability + Discoverability [TIER 1]
+
+**Status:** QUEUED — observation Session 050.
+
+**Observations:**
+1. **Wrong entry point confusion** — `streamlit run app.py` is the correct command but `streamlit_app/app.py` and other paths are easy to try and all fail silently. No README-level discoverability of the correct command.
+2. **Startup reliability unknown** — app may crash on cold start due to missing firm_profile, missing .env, import errors on optional dependencies, or session bootstrap failures. No structured startup health check exists.
+3. **No startup script** — `run.py` exists at root but it launches the CLI, not Streamlit. A consultant opening the product for the first time has no obvious path to the UI.
+
+**Fix options:**
+- Add a `start.sh` (one line: `streamlit run app.py`) at repo root — removes all ambiguity
+- Add startup health check in `app.py` bootstrap: verify .env loaded, API keys present, firm_profile readable; display a clear setup prompt if not
+- Add `Makefile` target: `make run` → `streamlit run app.py`
+
+- [ ] STARTUP-01 Create `start.sh` at repo root: `#!/bin/bash\nstreamlit run app.py`
+- [ ] STARTUP-02 `app.py` bootstrap — add pre-flight check: if `.env` missing or `ANTHROPIC_API_KEY` not set, show `st.error()` with setup instructions before rendering any page
+- [ ] STARTUP-03 Update `README.md` — add one-line "Run the app" section at top: `bash start.sh` or `streamlit run app.py`
+- [ ] STARTUP-04 Smoke verify: cold start from clean terminal, confirm app loads to home page without errors
+
+---
+
 ### Sprint-KB-02 — Knowledge Base Regulatory Expansion [TIER 2]
 
 **Status:** QUEUED — content + prompt wiring. No new code architecture needed. Knowledge files follow existing `knowledge/` pattern.
