@@ -102,14 +102,14 @@ The consultant can accept, override, or reject any agent output at any point. Th
 | **Due Diligence** | Assisted single-pass | DD screening memo — individual or entity |
 | **Sanctions Screening** | Assisted single-pass | Sanctions screening report — OFAC, UN, EU |
 | **Transaction Testing** | Assisted single-pass | Testing plan and findings |
-| **Policy / SOP** | Assisted single-pass | Internal compliance policy or procedure |
+| **Policy / SOP** | Guided co-build | Internal compliance policy or procedure — section-by-section sync loop (Haiku drafts, Maher approves/edits/regenerates per section; Custom type adds 5-question scoping) |
 | **Training Material** | Assisted single-pass | Staff training content |
 | **Client Proposal** | Assisted single-pass | 7-section proposal with firm branding and fee structure |
 | **Proposal Deck** | Assisted single-pass | Slide-by-slide prompt kit for PowerPoint build |
 | **Engagement Scoping** | Assisted single-pass | Scope of work document |
 | **Individual Due Diligence - Background checks** | Standalone | CFO / Lawyer / Regulator / Insurer perspective challenge |
 
-**Full pipeline** workstreams include revision loops, evidence chain validation, and partner sign-off. **Assisted** workstreams produce a complete deliverable in one AI pass. Both produce .docx and .md output with full audit trail.
+**Full pipeline** workstreams include revision loops, evidence chain validation, and partner sign-off. **Assisted** workstreams produce a complete deliverable in one AI pass. **Guided co-build** workstreams step through the document section-by-section with Maher approving each piece before assembly. All produce .docx and .md output with full audit trail.
 
 ---
 
@@ -207,6 +207,7 @@ Stored in `firm_profile/` locally. Loaded automatically into every proposal, rep
 | Streamlit browser UI (18 pages) | Complete — 5-section st.navigation() sidebar |
 | Product IA redesign (two-arc model, st.navigation()) | Complete — Sprint-IA-01 merged 2026-04-21 |
 | Hybrid intake (structured dropdowns + remarks conversation) | Complete — Sprint-IA-02 (Investigation), Sprint-IA-03 (FRM, DD, Sanctions, TT, Policy/SOP, Training) |
+| Policy/SOP guided co-build (section-by-section sync loop + gap analysis mode) | Complete — Sprint-IA-04 merged 2026-04-23 |
 | Expert Witness workflow | Planned |
 | FRM guided exercise redesign | Planned |
 | White-label packaging | Planned — Phase 7 |

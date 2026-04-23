@@ -41,7 +41,7 @@ Features important but can ship in a fast-follow release:
 - [x] AUP investigation mode — intake captures procedures list; no-conclusions enforcement on agent output; Partner AUP hard rules (AICPA/IAASB) — Sprint-IA-02 DONE
 - [x] Custom / Other investigation type — free-text description, structure-confirmed by Maher before drafting — Sprint-IA-02 DONE
 - [ ] FRM guided exercise redesign — Step 1–5 co-creation loop, per-risk approve/edit/skip (Sprint-10D)
-- [ ] Policy/SOP guided co-build — section-by-section sync loop for all fixed types + Custom; replaces single-pass draft; Custom adds 5-question scoping conversation before structure proposal (BA-IA-09, Sprint-IA-04)
+- [x] Policy/SOP guided co-build — section-by-section sync loop for all fixed types + Custom; replaces single-pass draft; Custom adds 5-question scoping conversation before structure proposal (BA-IA-09, Sprint-IA-04) — DONE 2026-04-23
 - [ ] Workflow chaining — compatible follow-on workflows on same project (11 valid chains)
 - [ ] Privilege mode flag — investigation intake question: under legal professional privilege? Affects report language and structure
 - [ ] Conflict of interest check — pre-engagement gate; generates conflict memo

@@ -134,7 +134,7 @@ ARC 2 — ENGAGEMENT (ProjectState, 1–N workstreams)
               → F_Final/final_report.ar.md
 ```
 
-### Mode B Workstreams (Due Diligence, Sanctions, Transaction Testing, Policy/SOP, Training, Proposal)
+### Mode B Workstreams (Due Diligence, Sanctions, Transaction Testing, Training, Proposal)
 
 ```
 [Maher] → [Workflow module]
@@ -147,6 +147,35 @@ ARC 2 — ENGAGEMENT (ProjectState, 1–N workstreams)
               ↓
          [append_audit_event] + [_mark_deliverable_written()] → state.json: DELIVERABLE_WRITTEN
 ```
+
+### Co-Build Workstream (Policy / SOP — Sprint-IA-04)
+
+```
+[Maher] → [04_Policy_SOP.py]
+              ↓
+         [HybridIntakeEngine] → CaseIntake (doc_type, doc_subtype, gap_analysis)
+              ↓
+         [AIC questions stage] → aic_context string
+              ↓  (custom type only)
+         [Custom scoping conversation — 5 questions] → custom_doc_scoping.json
+              ↓
+         [propose_structure() — Sonnet] → locked section list (6–14 titles)
+              ↓  Maher: approve / reorder / add / remove sections → confirm
+         [SECTION LOOP — for each section in order:]
+              ↓
+              [draft_section() — Haiku] → section body draft
+              ↓  Maher: Approve | Edit & Save | Regenerate with instructions
+              [revise_section() — Haiku] (on Regenerate only)
+              → audit event: section_approved / section_edited / section_regenerated
+              ↓  (gap_analysis mode only: existing sections shown read-only, pre-populated)
+         [assemble_and_write()] → F_Final/final_report.en.md + .en.docx
+              ↓
+         [append_audit_event] + [_mark_deliverable_written()] → state.json: DELIVERABLE_WRITTEN
+```
+
+**Co-Build model routing:** `propose_structure` → Sonnet. `draft_section` / `revise_section` → Haiku (Maher is the quality gate; Sonnet review pass per section is an optional upgrade, off by default). `identify_gaps` (gap analysis mode) → Sonnet.
+
+**Session state:** co-build progress persisted to `cases/{id}/E_Drafts/cobuild_progress.json` after each approved section — enables resume on page refresh.
 
 ### AUP Workstream (Agreed-Upon Procedures — Investigation type 8)
 
@@ -193,7 +222,7 @@ Final deliverables prefer `authoritative_citations`. Where authoritative sources
 | Due Diligence | Mode B | Single-pass Sonnet |
 | Sanctions Screening | Mode B | Single-pass Sonnet |
 | Transaction Testing | Mode B | Single-pass Sonnet |
-| Policy / SOP | Mode B | Single-pass Sonnet |
+| Policy / SOP | Co-Build | Multi-step Haiku+Sonnet (Sprint-IA-04) |
 | Training Material | Mode B | Single-pass Sonnet |
 | Client Proposal | Mode B | Single-pass Sonnet |
 | Proposal Deck (PPT) | Mode B | Single-pass Sonnet |

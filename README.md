@@ -21,7 +21,7 @@ You organise all work into **Projects**. Each Project is a client engagement. Ea
 | **Due Diligence** | Assisted | DD screening memo — individual or entity, enhanced or standard depth |
 | **Sanctions Screening** | Assisted | Sanctions screening report — OFAC, UN, EU lists |
 | **Transaction Testing** | Assisted | Testing plan and findings — risk-based, random, or full population |
-| **Policy / SOP** | Assisted | Internal compliance policy or procedure document, jurisdiction-aware |
+| **Policy / SOP** | Co-Build | Section-by-section guided build — Haiku drafts each section, Maher approves / edits / regenerates; gap analysis mode pre-fills from existing documents |
 | **Training Material** | Assisted | Staff training content from a case or compliance topic |
 | **Client Proposal** | Assisted | 7-section engagement proposal with firm branding, credentials, and fee structure |
 | **Proposal Deck** | Assisted | Slide-by-slide prompt kit to build the proposal PowerPoint |
