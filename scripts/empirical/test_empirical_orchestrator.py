@@ -252,34 +252,43 @@ def run_e3_revision_limit_exhaustion() -> OrchestratorTestResult:
 
             orch.run(make_intake(workflow="investigation_report", case_id=case_id))
 
+            # Correct behavior (post G-13/G-14 fix): PM revision limit hit →
+            # best-effort draft promoted to Partner, no exception raised.
+            # Call counts must match: pm_calls == MAX_REVISION_ROUNDS["pm"],
+            # junior_calls == pm_limit + 1 (1 initial + pm_limit revisions).
+            from config import MAX_REVISION_ROUNDS as MRR
+            expected_pm = MRR["pm"]
+            expected_junior = MRR["pm"] + 1
+            counts_correct = (
+                call_counts["pm"] == expected_pm
+                and call_counts["junior"] == expected_junior
+            )
             detail = (
-                f"NO EXCEPTION RAISED — junior_calls={call_counts['junior']}, "
-                f"pm_calls={call_counts['pm']} — MAX_REVISION_ROUNDS not enforced"
+                f"No exception — junior_calls={call_counts['junior']} "
+                f"(expected {expected_junior}), pm_calls={call_counts['pm']} "
+                f"(expected {expected_pm})"
+            )
+            detail += (
+                " — PASS: best-effort draft promoted, limit enforced"
+                if counts_correct else " — FAIL: unexpected call counts"
             )
             return OrchestratorTestResult(
-                "E3.3", "Revision limit exhaustion",
-                "FAIL", detail, "SIM-02",
+                "E3.3", "Revision limit exhaustion — promote best-effort draft",
+                "PASS" if counts_correct else "FAIL",
+                detail, "SIM-02",
                 call_counts["junior"], call_counts["pm"], None,
             )
 
         except Exception as e:
             error_type = type(e).__name__
             detail = (
-                f"Raised {error_type} after junior_calls={call_counts['junior']}, "
+                f"UNEXPECTED exception {error_type} after "
+                f"junior_calls={call_counts['junior']}, "
                 f"pm_calls={call_counts['pm']} — {str(e)[:80]}"
             )
-            expected_types = {"RevisionLimitError", "PipelineError"}
-            passed = error_type in expected_types
-
-            if passed:
-                detail += " — MAX_REVISION_ROUNDS CONFIRMED ENFORCED"
-            else:
-                detail += f" — unexpected exception type: {error_type}"
-
             return OrchestratorTestResult(
-                "E3.3", "Revision limit exhaustion",
-                "PASS" if passed else "FAIL",
-                detail, "SIM-02",
+                "E3.3", "Revision limit exhaustion — promote best-effort draft",
+                "FAIL", detail, "SIM-02",
                 call_counts["junior"], call_counts["pm"], None,
             )
 
