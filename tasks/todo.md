@@ -89,6 +89,90 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 
 ---
 
+---
+
+> **AUTHORITATIVE SPRINT ORDER — see `docs/app-plan.md` for full plan.**
+> Tier 0: DOCX-01 merge. Tier 1: PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01.
+> Tier 2: INDEX-01, PROCESS-01, KB-02. Tier 3: CHECKPOINT-01, CLOSE-01, EVIDENCE-01.
+> Tier 4: UX polish. Tier 5: Quality gates. Tier 6: Advanced features.
+
+---
+
+### Sprint-PARTNER-FIX-01 — Fix Partner Prompt to Never Block [TIER 1 — build first]
+
+**Status:** QUEUED — 2 tasks. BA-IA-08 (confirmed Session 022) and CLAUDE.md both specify Partner never blocks. Current Partner prompts reject drafts and set `revision_requested=True`, causing pipelines to exit with no final report.
+
+**Root cause:** Partner prompts across all workflows contain blocking language ("reject if X") that overrides the CLAUDE.md constraint.
+
+**Fix:** Partner prompt must approve with explicit, itemised disclaimers when standards are not met. Citation errors → disclaimer appended. Incomplete sections → disclaimer appended. Never `revision_requested=True` from Partner except for structural incompleteness that prevents any assessment (< 1 finding). PM can still request revisions. Partner never does after the first attempt.
+
+- [ ] PFIX-01 `agents/partner_agent.py` — update system prompt: remove all blocking/rejection language; replace with "approve with conditions" logic; itemised disclaimer format: "CONDITION [n]: [section] — [issue] — [required action before client presentation]"
+- [ ] PFIX-02 `workflows/frm_risk_register.py` — update Partner call handling: `revision_requested=False` path always proceeds to final report; conditions stored in pipeline artifact
+- [ ] PFIX-03 Smoke verify: run FRM knowledge_only — confirm Partner output has `approved: True`, conditions listed, final report generated
+
+**Security model:** No auth impact. Prompt change only.
+**Dependencies:** None. Build immediately.
+
+---
+
+### Sprint-KB-02 — Knowledge Base Regulatory Expansion [TIER 2]
+
+**Status:** QUEUED — content + prompt wiring. No new code architecture needed. Knowledge files follow existing `knowledge/` pattern.
+
+**Context:** The AI currently fetches regulatory content via live Tavily lookups. This is unreliable — the Project_FRM_test run cited the wrong UAE AML law because the model confused two laws in a live search result. Embedded regulatory understanding is more durable than citation lookup. Citation lookup becomes a verification step, not the analytical foundation.
+
+**Files to create:**
+- [ ] KB2-01 `knowledge/regulatory/uae_aml.md` — UAE Federal Decree-Law No. 20 of 2018 + Cabinet Decision No. 10 of 2019: what it requires, expected controls, evidence of non-compliance, goAML obligations, DFSA AML Module, ADGM FSRA rules
+- [ ] KB2-02 `knowledge/regulatory/india_pmla.md` — PMLA 2002, PML Rules 2005, FIU-IND obligations: CDD/EDD requirements, STR/CTR/PTR reporting, RBI Master Directions on KYC, sectoral regulator matrix
+- [ ] KB2-03 `knowledge/regulatory/coso_framework.md` — COSO 2013 components, 17 principles, common control gaps by component, evidence of control failure per principle
+- [ ] KB2-04 `knowledge/fraud/acfe_typologies.md` — ACFE fraud tree: 90 schemes, red flags per scheme, evidence patterns, typical concealment methods, detection procedures
+- [ ] KB2-05 Inject into FRM and Investigation agent prompts: load relevant knowledge files into system prompt based on workflow + jurisdiction + industry
+- [ ] KB2-06 Smoke verify: FRM UAE run — confirm output cites Federal Decree-Law No. 20 of 2018 without a live lookup
+
+**Note:** Content for KB2-01 through KB2-04 should be written by an AI pass in a knowledge-building session, not manually. Budget one session for KB2-01/02 (regulatory) and one for KB2-03/04 (frameworks).
+
+---
+
+### Sprint-PROCESS-01 — Process Understanding Stage [TIER 2 — needs BA logic before build]
+
+**Status:** QUEUED — BA logic required before any code. See BA-REQ-PROCESS-01 in tasks/ba-logic.md.
+
+**Design confirmed Session 050.** Every forensic/risk workflow requires process context before analysis can produce case-specific findings. Without it, output is generic industry-level analysis. With it, findings are client-specific: "Client's documented procurement SOP section 4.3 requires dual approval above AED 50,000 — Vendor 0247's POs bypassed this control."
+
+**What it is:** A structured intake stage added to each workflow, populated before the pipeline runs. Output is `process_context.json` in the case folder, injected into every agent call.
+
+**Three input modes:**
+1. Document upload (richest) — client uploads procurement policy, AML framework, org chart → AI extracts structured process understanding
+2. Guided intake form — structured questions specific to the workflow type
+3. Stakeholder notes — interview transcripts or meeting notes uploaded → AI extracts key statements and process admissions
+
+**Workflows in scope:** FRM, Investigation, Transaction Testing, Due Diligence.
+**Not in scope for this sprint:** Policy/SOP, Training, Proposal (no process context required for those).
+
+**Pre-build gate:** BA-REQ-PROCESS-01 must be written in tasks/ba-logic.md specifying exact questions per workflow before Junior Dev writes any intake code.
+
+**Tasks (written after BA logic confirmed):** TBD — estimated ~12 tasks across intake, schema, prompts, document extraction.
+
+---
+
+### Sprint-CLOSE-01 — Engagement Mark Complete / Close [TIER 3 — needs BA design]
+
+**Status:** QUEUED — BA-REQ-CLOSE-01 confirmed Session 049. BA design of closure state machine required before build.
+
+**What's missing:** No UI trigger to move a case or engagement to a terminal state. The state machine has `OWNER_APPROVED` but Maher has no button to press. Cases stay "running" indefinitely.
+
+**Design needed:** What does close mean for each workflow? What gets locked on close? Does closure require a final download? Can a closed case be reopened?
+
+---
+
+### Sprint-EVIDENCE-01 — Sanctions Per-Hit Evidence Capture [TIER 3 — needs BA design]
+
+**Status:** QUEUED — BA-REQ-SANCTIONS-EVIDENCE-01 confirmed Session 049. Schema design required.
+
+**What's missing:** Sanctions hits have no per-hit evidence attachment. Required fields per hit: copy/screenshot of source record, URL + access timestamp, reviewer determination (confirmed / false positive / inconclusive). Knowledge_only hits must be labelled "model-generated baseline — not verified."
+
+---
+
 ### Sprint-KB-01 — Firm Knowledge Base Embedding [READY_FOR_REVIEW]
 
 **Status:** READY_FOR_REVIEW — Session 043. All tasks KB-01..04 complete. 131 tests pass.
