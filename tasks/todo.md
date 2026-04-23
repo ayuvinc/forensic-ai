@@ -5,7 +5,7 @@ Status:         OPEN
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T07:37:22Z — state transition by MCP server
+Last updated:   2026-04-23T10:12:17Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -81,16 +81,145 @@ Sprint-IA-03 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 04
 
 ---
 
-### Sprint-KB-01 — Firm Knowledge Base Embedding [UNBLOCKED — do after pip install]
+### Sprint-KB-01 — Firm Knowledge Base Embedding [READY_FOR_REVIEW]
 
-**Status:** READY — sentence-transformers + chromadb installed (Session 042).
+**Status:** READY_FOR_REVIEW — Session 043. All tasks KB-01..04 complete. 131 tests pass.
 **Context:** 14 knowledge/ markdown files (~10k+ lines) currently loaded as raw full text into every agent system prompt. No retrieval — agents get everything whether relevant or not. FirmKnowledgeEngine indexes all knowledge/ files once into a firm-level persistent ChromaDB at `firm_profile/knowledge/.chromadb`. Agents then retrieve only relevant sections per query.
 **Separate from per-case EmbeddingEngine** (Sprint-EMB) which handles uploaded case documents.
 
-- [ ] KB-01 Create `tools/firm_knowledge_engine.py` — `FirmKnowledgeEngine` class. `__init__`: loads from `firm_profile/knowledge/.chromadb` (PersistentClient). `index_all()`: walks `knowledge/` recursively, chunks each .md file (chunk size 500 chars, 50 overlap), embeds with sentence-transformers, upserts to ChromaDB with metadata `{workflow_type, filename, chunk_idx}`. `search(query, workflow_type=None, top_k=5)`: retrieves relevant chunks, optionally filtered by workflow_type. `needs_reindex()`: returns True if any .md file mtime > last index timestamp. Auto-fallback: if unavailable, `search()` returns `""`.
-- [ ] KB-02 Wire into app.py bootstrap — call `FirmKnowledgeEngine().index_all()` on startup if `needs_reindex()`. Show `st.toast("Knowledge base indexed.")` on completion. Non-blocking — run in background thread.
-- [ ] KB-03 Wire into agent system prompts — in `agents/junior_analyst/prompts.py` and `agents/partner/prompts.py`: replace full knowledge file injection with `FirmKnowledgeEngine().search(workflow_relevant_query, workflow_type=workflow)`. Cap at 3000 chars.
-- [ ] KB-04 CLI path — in `workflows/investigation_report.py` and `frm_risk_register.py`: same search() call replaces raw `open(knowledge_file).read()` patterns.
+**Knowledge-sharing design (AK decision 2026-04-23, revised):** Three deterministic fetches in `core/orchestrator.py` before any agent runs — no agent ever calls FirmKnowledgeEngine directly.
+
+```
+Fetch 1 — workflow-general (pre-pipeline):
+  FirmKnowledgeEngine().search(workflow_generic_query, workflow_type=workflow_id)
+  → context["firm_knowledge_context"]   (cap: 3000 chars)
+  → passes to: Junior, PM, Partner
+
+Fetch 2 — intake-derived supplemental (post-intake, pre-Junior):
+  Extract jurisdiction / operating_jurisdictions / industry / regulators_implicated
+  from resolved CaseIntake object (Maher's input, including remarks resolutions).
+  Construct targeted query, e.g. "DFSA enforcement investigation UAE" from those fields.
+  Skip if all intake fields are defaults (no supplemental needed).
+  FirmKnowledgeEngine().search(intake_derived_query, workflow_type=workflow_id)
+  → appended to context["firm_knowledge_context"]   (combined cap: 3000 chars)
+
+Fetch 3 — review standards (pre-PM/Partner):
+  FirmKnowledgeEngine().search("review standards quality criteria " + workflow_type)
+  → context["firm_review_knowledge_context"]   (cap: 1500 chars)
+  → passes to: PM and Partner only (not Junior)
+```
+
+PM prompt instruction: "Firm knowledge and review standards are provided above. Use them as-is — do not re-query. Identify gaps in Junior's coverage of these standards."
+No `FirmKnowledgeEngine` calls inside any agent prompt builder.
+
+- [x] KB-01 Create `tools/firm_knowledge_engine.py` — `FirmKnowledgeEngine` class. `__init__`: loads from `firm_profile/knowledge/.chromadb` (PersistentClient). `index_all()`: walks `knowledge/` recursively, chunks each .md file (chunk size 500 chars, 50 overlap), embeds with sentence-transformers, upserts to ChromaDB with metadata `{workflow_type, filename, chunk_idx}`. `search(query, workflow_type=None, top_k=5)`: retrieves relevant chunks, optionally filtered by workflow_type. `needs_reindex()`: returns True if any .md file mtime > last index timestamp. Auto-fallback: if unavailable, `search()` returns `""`.
+- [x] KB-02 Wire into app.py bootstrap — call `FirmKnowledgeEngine().index_all()` on startup if `needs_reindex()`. Show `st.toast("Knowledge base indexed.")` on completion. Non-blocking — run in background thread.
+- [x] KB-03 Wire all three fetches into orchestrator — in `core/orchestrator.py`: implement Fetch 1 (workflow-general), Fetch 2 (intake-derived, using `CaseIntake` fields: `primary_jurisdiction`, `operating_jurisdictions`, `industry`, any `regulators_implicated` field — skip fetch if all are defaults), Fetch 3 (review standards). Store results as `context["firm_knowledge_context"]` and `context["firm_review_knowledge_context"]`. In agent prompts: Junior reads `firm_knowledge_context` only; PM and Partner read both. No direct `open()` calls to `knowledge/` files in any agent prompt file.
+- [x] KB-04 CLI path — grep confirmed zero raw `open(knowledge_file)` patterns in workflow files. No changes needed.
+
+#### AC — Sprint-KB-01
+
+- [x] KB-01: `FirmKnowledgeEngine` class exists in `tools/firm_knowledge_engine.py` with public methods `index_all()`, `search(query, workflow_type=None, top_k=5)`, and `needs_reindex()` — code inspection
+- [x] KB-01: When `sentence-transformers` or `chromadb` is not importable, `FirmKnowledgeEngine().search("any query")` returns `""` without raising an `ImportError` — code inspection of fallback path
+- [x] KB-01: `needs_reindex()` returns `True` when a `knowledge/` .md file has mtime newer than last index timestamp, or when no index exists — code inspection
+- [x] KB-01: `search("AML risk", workflow_type="frm_risk_register", top_k=5)` returns a non-empty string when `knowledge/frm/frm_framework.md` is indexed — smoke-tested in Session 043, returned 1559 chars
+- [x] KB-01: `firm_profile/knowledge/.chromadb/` directory is created by `index_all()` when it does not yet exist — confirmed in smoke test
+- [x] KB-02: `app.py` bootstrap calls `FirmKnowledgeEngine().index_all()` in a background thread when `needs_reindex()` is True — code inspection
+- [x] KB-02: `st.toast("Knowledge base indexed.")` is called on thread completion — code inspection
+- [x] KB-02: If `FirmKnowledgeEngine` is unavailable (fallback), no exception is raised during bootstrap — code inspection of try/except guard
+- [x] KB-03: `core/orchestrator.py` performs Fetch 1 (workflow-general) before Junior runs and stores result as `context["firm_knowledge_context"]` — code inspection
+- [x] KB-03: `core/orchestrator.py` performs Fetch 2 (intake-derived) after intake resolves and appends to `context["firm_knowledge_context"]`; Fetch 2 is skipped when jurisdiction/industry are all defaults — smoke-tested: `_has_specific_intake_context(default_intake)` returns False
+- [x] KB-03: `core/orchestrator.py` performs Fetch 3 (review-standards) and stores result as `context["firm_review_knowledge_context"]` — smoke-tested: key present at 1500 chars
+- [x] KB-03: Junior agent `build_system_prompt()` injects `firm_knowledge_context` but NOT `firm_review_knowledge_context` — code inspection
+- [x] KB-03: PM and Partner `build_system_prompt()` inject both `firm_knowledge_context` and `firm_review_knowledge_context` — code inspection
+- [x] KB-03: No `FirmKnowledgeEngine` import or call in `agents/junior_analyst/prompts.py`, `agents/project_manager/prompts.py`, or `agents/partner/prompts.py` — grep confirms
+- [x] KB-03: Combined `firm_knowledge_context` (Fetch 1 + Fetch 2) is ≤ 3000 chars; `firm_review_knowledge_context` is ≤ 1500 chars — smoke-tested: 3000 / 1500 exactly
+- [x] KB-04: `workflows/investigation_report.py` has no raw `open(` calls referencing `knowledge/` files — grep check
+- [x] KB-04: `workflows/frm_risk_register.py` same — grep check
+- [ ] KB-04 (regression): `python run.py` Option 6 (FRM, `RESEARCH_MODE=knowledge_only`) completes without crash and writes `final_report.en.md` — manual smoke check by AK before QA_APPROVED
+
+---
+
+### Sprint-UX-ERR-01 — Crash Reporter + Structured Error Logs [UNBLOCKED]
+
+**Status:** READY — no design decisions needed; extends existing FE-TRIAGE-04/05 error boundaries.
+**Context:** Unhandled exceptions show raw Python tracebacks in Streamlit browser. No structured output, nothing shareable. When something breaks, Maher needs a single file he can drag into a Claude conversation for diagnosis — not a raw traceback.
+**Security model:** crash report captures exception + sanitised session context only. No case content, no document text, no file paths from `cases/`. Session context is slug/type/status only.
+
+- [ ] ERR-00 Create `logs/crash_reports/` directory — add `logs/crash_reports/.gitkeep`; add `logs/crash_reports/*.json` to `.gitignore`.
+- [ ] ERR-01 Create `streamlit_app/shared/crash_reporter.py` — `write_crash_report(page_name: str, exception: Exception) -> str`. Captures and writes to `logs/crash_reports/crash_{YYYYMMDD_HHMMSS}.json`:
+  - `timestamp_utc`: ISO-8601
+  - `page`: basename of `page_name`
+  - `exception_type`: `type(exception).__name__`
+  - `exception_message`: `str(exception)`
+  - `traceback`: `traceback.format_exc()`
+  - `session_context`: read from `st.session_state` — extract only: `active_project` (slug string), `active_workflow_type`, current pipeline status from `cases/{slug}/state.json` if readable. If any key is missing or unreadable: `null`. Never read case content.
+  - `recent_activity`: last 10 lines of `logs/activity.jsonl` if file exists, else `[]`
+  - Returns the written file path as a string.
+- [ ] ERR-02 Update error boundary on all pages — in the `except` block of every `bootstrap(st, caller_file=__file__)` try/except (FE-TRIAGE-05 pattern): call `write_crash_report(__file__, e)` before `st.error()`. Replace raw `st.error(f"Page failed to load: {e}")` with:
+  - `st.error("Something went wrong loading this page.")` (no raw exception in primary message)
+  - `st.code(crash_path, language=None)` — shows the file path, easy to copy
+  - `st.caption("Share this file with Claude to diagnose the issue.")` 
+  - `st.expander("Show error details")` → `st.text(exception_type + ": " + exception_message)` — tech details available but not in Maher's face
+- [ ] ERR-03 Pipeline error boundary — in `streamlit_app/shared/pipeline.py`, wrap the pipeline run call in try/except. On exception: call `write_crash_report("pipeline:" + workflow_type, e)` and show the same styled error panel as ERR-02. Pipeline stage sets `inv_stage = "error"` as already done in BUG-042-07; crash report is in addition.
+
+#### AC — Sprint-UX-ERR-01
+
+- [ ] ERR-01: `write_crash_report()` produces valid JSON with all required keys: `timestamp_utc`, `page`, `exception_type`, `exception_message`, `traceback`, `session_context`, `recent_activity` — code inspection
+- [ ] ERR-01: `session_context` contains only `active_project`, `active_workflow_type`, `pipeline_status` — no case content, no `cases/` file paths — code inspection
+- [ ] ERR-01: if `logs/activity.jsonl` is absent, `recent_activity` is `[]` not an error — code inspection
+- [ ] ERR-01: file is written to `logs/crash_reports/` — file existence check after simulated exception
+- [ ] ERR-02: error boundary shows file path via `st.code()`, not a raw traceback — visual inspection
+- [ ] ERR-02: `st.expander("Show error details")` is present but collapsed by default — visual inspection
+- [ ] ERR-03: pipeline exception writes crash report and shows the styled error panel — code inspection of pipeline.py except block
+
+---
+
+### Sprint-UX-DS-01 — Design System Portability Shell [DEFERRED — white-label phase]
+
+**Status:** DEFERRED. GoodWork colors and design stay as-is for now. Reusable design_system/ directory is a white-label deliverable — build when white-label packaging begins (likely alongside Phase 7). No tasks written yet.
+
+---
+
+### Sprint-UX-WIRE-01 — Interaction Sophistication [UNBLOCKED — after ERR-01]
+
+**Status:** READY. AK decision 2026-04-23: sophistication problem is interaction wiring, not visual design. Colors/fonts stay GoodWork as-is. The root cause of "feels like it'll fall apart" is: (1) every button causes a full page rerun, (2) no inline feedback on saves, (3) forms dump all fields at once, (4) session state bleeds between pages, (5) stage transitions are abrupt jumps.
+**Streamlit patterns used:** `@st.fragment` (partial reruns), `st.toast()` (non-blocking feedback), `st.dialog()` (modal confirms), `st.popover()` (contextual metadata), `st.progress()` step indicators, session state namespacing.
+**No new libraries needed.** All patterns are native Streamlit ≥ 1.33.
+
+- [ ] WIRE-01 `@st.fragment` on all Workspace save actions — in `pages/16_Workspace.py`: wrap each save handler (Save Note, Add Key Fact, Add Red Flag, Add Subject/Target/Population, file upload confirm) in `@st.fragment`. Each fragment reruns only its own section on submit; the rest of the page does not reload. After save: call `st.toast("Saved ✓")` inside the fragment. Pattern for every fragment:
+  ```python
+  @st.fragment
+  def _save_note_fragment(case_id):
+      note = st.text_area("Session note", key="note_input")
+      if st.button("Save Note"):
+          ProjectManager.add_session_note(case_id, note)
+          st.toast("Note saved")
+          st.rerun(scope="fragment")
+  ```
+- [ ] WIRE-02 `@st.fragment` on AIC questions stage — in `streamlit_app/shared/aic.py`: wrap the Q&A loop in a fragment so only the chat area reruns per answer, not the whole workflow page. Each question appears as `st.chat_message("assistant")`, answer via `st.chat_input()`. Fragment reruns on each answer submission; parent page does not reload until all questions answered or skipped.
+- [ ] WIRE-03 Multi-step intake with step progress — in `streamlit_app/shared/intake_renderer.py` (or equivalent intake entry point): introduce `intake_step` counter in session state (namespaced: `f"{workflow_id}_intake_step"`). Render fields in logical groups: Step 1 = identification (client, type, jurisdiction), Step 2 = scope parameters (modules, depth, audience), Step 3 = remarks + confirmation. Show `st.progress(step / total_steps)` + `st.caption(f"Step {step} of {total_steps}")` above each group. "Next" button advances step without running the pipeline. "Back" button goes back. Final step has the "Confirm & Continue" button. Applies to Investigation, FRM, DD, Sanctions, TT intake pages — not to Mode B (Policy, Training, Proposal) which have simpler intakes.
+- [ ] WIRE-04 Session state namespacing audit — in all 10 workflow pages: prefix every `st.session_state` key with `f"{workflow_id}_"` (e.g. `inv_stage` → `f"{workflow_id}_stage"`). Use a helper `ws(key)` → `f"{workflow_id}_{key}"` defined once in `streamlit_app/shared/state_helpers.py`. Fixes state bleed when Maher navigates between workflow pages without completing them (R-NEW-11 root cause).
+- [ ] WIRE-05 `st.dialog()` for destructive confirms — replace any "Reset" / "Start over" / "Clear intake" actions that currently use `st.warning()` + second button with `@st.dialog`. Dialog shows: action description, consequence, Cancel + Confirm buttons. Apply to: intake reset on all workflow pages, engagement deletion if present.
+- [ ] WIRE-06 `st.popover()` for contextual metadata — on Case Tracker and Engagements page: replace static status text with a status chip that opens a `st.popover()` on click showing: current status, last state transition timestamp, last agent that ran, revision count. Read from `state.json`. No new data — just surfaces what's already stored.
+- [ ] WIRE-07 Stage transition feedback — on all workflow pages, when `stage` changes (intake → ai_questions → running → done): call `st.toast(f"{stage_label}...")` at the transition point so Maher gets an immediate signal the page is advancing, before the spinner appears. E.g. `st.toast("Starting pipeline — this takes 1–3 minutes")` when stage flips to `running`.
+
+#### AC — Sprint-UX-WIRE-01
+
+- [ ] WIRE-01: Clicking "Save Note" in Workspace does not reload the engagement header, sidebar, or context budget bar — visual inspection confirms only the note section updates
+- [ ] WIRE-01: `st.toast("Note saved")` appears and fades after save — visual inspection
+- [ ] WIRE-01: Same fragment pattern applied to Key Facts, Red Flags, and DD/Sanctions/TT population panels — code inspection of each handler
+- [ ] WIRE-02: Answering one AIC question does not reload the workflow page intake form — visual inspection
+- [ ] WIRE-02: Skip button inside the fragment still advances the parent page stage to `running` — code inspection of skip handler (uses `st.session_state` write + parent rerun)
+- [ ] WIRE-03: Investigation intake shows exactly 3 steps with `st.progress()` indicator — visual inspection
+- [ ] WIRE-03: "Back" button on Step 2 returns to Step 1 with previously entered values preserved in session state — visual inspection
+- [ ] WIRE-03: FRM, DD, Sanctions, TT intake pages also use step progression — code inspection confirms `intake_step` counter present in each
+- [ ] WIRE-04: `state_helpers.py` exists with `ws(workflow_id, key) -> str` helper — code inspection
+- [ ] WIRE-04: No bare `st.session_state["inv_stage"]` or similar un-namespaced workflow keys remain in any workflow page — grep confirms all workflow state keys use `ws()` helper
+- [ ] WIRE-05: Intake reset action on at least Investigation and FRM pages uses `@st.dialog` confirm — visual inspection
+- [ ] WIRE-06: Clicking status chip in Case Tracker opens popover with status, timestamp, last agent, revision count — visual inspection on a case with state.json present
+- [ ] WIRE-07: `st.toast()` fires when stage transitions intake → running on any workflow page — visual inspection
+- [ ] (regression) All 17 pages still render without crash; existing workflow end-to-end (FRM knowledge_only) completes — manual smoke check by AK before QA_APPROVED
 
 ---
 
@@ -819,6 +948,8 @@ SETUP-00 through SETUP-03 all completed and merged. See releases/completed-tasks
 **Note:** KL-00 and KL-01 DONE (merged Phase D). KL-02 is next.
 
 - [x] **[KL-02]** Engagement harvest pipeline — `tools/knowledge_harvester.py`: `harvest_case(case_id)` runs after OWNER_APPROVED. Extracts approved patterns to `cases/{id}/knowledge_export/approved_patterns.json`. Promotes to `firm_profile/knowledge/engagement/index.jsonl`. Never extracts client identifiers or raw evidence text. ← deps: KL-01 | AC: harvest_case() on approved case produces approved_patterns.json; file contains no client name, no case_id reference in content fields; audit event written.
+
+- [ ] **[KL-02b]** Expand harvest trigger to DELIVERABLE_WRITTEN (AK decision 2026-04-23) — currently `harvest_case()` only fires at `OWNER_APPROVED`. Update the post-hook in `core/hooks/post_hooks.py` (or wherever the OWNER_APPROVED trigger lives) to also call `KnowledgeHarvester.harvest_case(case_id)` when `new_status == CaseStatus.DELIVERABLE_WRITTEN`. Applies to both Streamlit pipeline and CLI pipeline paths. Guard: only harvest if `approved_patterns.json` does not already exist for this case_id (idempotent — do not harvest twice). ← deps: KL-02 | AC: (1) pipeline that ends at DELIVERABLE_WRITTEN (Mode B workflows: Policy/SOP, Proposal, Training) produces `approved_patterns.json` — verify by running a policy workflow and checking `cases/{id}/knowledge_export/`; (2) running the same case twice does not produce duplicate entries in `firm_profile/knowledge/engagement/index.jsonl` — idempotency check; (3) OWNER_APPROVED path still works unchanged — regression check on existing KL-02 AC.
 
 ---
 

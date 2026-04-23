@@ -63,11 +63,13 @@ class JuniorAnalyst:
         language_standard          = context.get("language_standard", "acfe")
         recommendation_instruction = context.get("recommendation_instruction")  # FR-06
         stakeholder_context        = context.get("stakeholder_context") or None  # FR-02
+        firm_knowledge_context     = context.get("firm_knowledge_context", "")   # KB-03
         system_prompt = prompts.build_system_prompt(
             self._workflow, intake_obj, doc_index, revision_feedback,
             firm_name=firm_name, language_standard=language_standard,
             recommendation_instruction=recommendation_instruction,
             stakeholder_context=stakeholder_context,
+            firm_knowledge_context=firm_knowledge_context,
         )
         task_message = prompts.build_task_message(intake_obj)
 

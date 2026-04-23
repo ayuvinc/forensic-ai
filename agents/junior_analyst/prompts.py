@@ -35,6 +35,7 @@ def build_system_prompt(
     language_standard: str = "acfe",
     recommendation_instruction: str | None = None,
     stakeholder_context: str | None = None,
+    firm_knowledge_context: str = "",
 ) -> str:
     """Build the Consultant system prompt for a given workflow and intake."""
     from agents.shared.language_standards import get_language_block
@@ -103,6 +104,10 @@ Your final response must be valid JSON matching this structure:
 
 Produce thorough, professional analysis. Use all available tools before drafting.
 """
+
+    # KB-03: firm-level knowledge context (pre-fetched by orchestrator)
+    if firm_knowledge_context:
+        base += f"\nFIRM KNOWLEDGE CONTEXT:\n{firm_knowledge_context}\n"
 
     if revision_feedback:
         base += f"\nREVISION INSTRUCTIONS FROM PROJECT MANAGER:\n{revision_feedback}\n"
