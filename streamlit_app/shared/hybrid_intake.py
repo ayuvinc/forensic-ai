@@ -391,6 +391,29 @@ INVESTIGATION_JURISDICTIONS = [
     "UAE", "Saudi Arabia", "India", "UK", "USA", "Other", "Multiple jurisdictions",
 ]
 
+COMPANY_SIZE_OPTIONS = ["Small (<50 staff)", "Medium (50–500 staff)", "Large (>500 staff)", "Listed / public"]
+
+INDUSTRY_OPTIONS = [
+    "Banking",
+    "Financial Services (non-bank)",
+    "Insurance",
+    "Real Estate",
+    "Construction",
+    "Retail & Trading",
+    "Manufacturing",
+    "Technology",
+    "Healthcare & Pharmaceuticals",
+    "Oil & Gas / Energy",
+    "Professional Services",
+    "Hospitality & Tourism",
+    "Logistics & Transportation",
+    "Telecommunications",
+    "Government / Public Sector",
+    "Education",
+    "Media & Entertainment",
+    "Other",
+]
+
 _INVESTIGATION_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
         id="jurisdiction",
@@ -473,29 +496,6 @@ FRM_MODULE_LABELS: list[tuple[int, str]] = [
 # Dependency map mirrors MODULE_DEPENDENCIES in frm_risk_register.py.
 # Pages use this to auto-add Module 2 when 3/4/7 are selected.
 FRM_MODULE_DEPENDENCIES: dict[int, list[int]] = {3: [2], 4: [2], 7: [2, 3]}
-
-COMPANY_SIZE_OPTIONS = ["Small (<50 staff)", "Medium (50–500 staff)", "Large (>500 staff)", "Listed / public"]
-
-INDUSTRY_OPTIONS = [
-    "Banking",
-    "Financial Services (non-bank)",
-    "Insurance",
-    "Real Estate",
-    "Construction",
-    "Retail & Trading",
-    "Manufacturing",
-    "Technology",
-    "Healthcare & Pharmaceuticals",
-    "Oil & Gas / Energy",
-    "Professional Services",
-    "Hospitality & Tourism",
-    "Logistics & Transportation",
-    "Telecommunications",
-    "Government / Public Sector",
-    "Education",
-    "Media & Entertainment",
-    "Other",
-]
 
 _FRM_FIELD_CONFIG: list[WorkflowFieldConfig] = [
     WorkflowFieldConfig(
