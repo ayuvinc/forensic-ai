@@ -1,49 +1,37 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
-architect
+architect (after DOCX-03 smoke pass)
 
 ## NEXT_TASK
-**Session 049: Fix 01_Scope.py rename + sprint selection (priority reorder needed)**
+**DOCX-03 smoke verify → Sprint-DOCX-01 merge → architect sprint planning**
 
-Session 048 completed:
-- Page load smoke test: 19/19 P0 PASS, QA_APPROVED, zero crashes
-- Sprint-UX-ERR-01 error boundaries confirmed working across all 17 pages
-- 3 new BA requirements captured from live smoke test:
-  - BA-REQ-FORMATTING-01: Word (.docx) output + format selector in every intake (prime requirement)
-  - BA-REQ-CLOSE-01: "Mark Complete / Close" button on all engagements, workflows, cases
-  - BA-REQ-SANCTIONS-EVIDENCE-01: Evidence capture per citation hit (copy, URL, timestamp, per-hit determination)
-- Results: releases/smoke-test-page-load-check-20260423.md
-- ba-logic.md updated with all 3 requirements
+Session 049 completed on branch `feature/sprint-docx-01-download-buttons`:
 
-**Outstanding items — architect must resolve at session open:**
+**Sprint-DOCX-01 (all code done, one AK step remaining):**
+- DOCX-01 through DOCX-02e: .docx + .md download buttons in st.columns(2) on all 8 output surfaces
+- DOCX-03: AK must run FRM knowledge_only end-to-end, confirm both buttons appear, .docx opens in Word → call PASS or FAIL
 
-1. **01_Scope.py prefix collision** — rename pages/01_Scope.py to pages/17_Scope.py (or confirm number). Quick fix, no logic changes. Must do before next sprint.
+**Ad-hoc fixes committed same branch:**
+- JuniorDraft.recommendations coercion (dict → str)
+- FRM schema_retry on HookVetoError (empty findings crash fixed)
+- Industry dropdown (18 options) across all 5 workflow configs
+- Project name field on all 8 workflow intakes → used as case folder name (replaces date-hex UUID)
+- logs/error_log.jsonl: structured error log for pattern analysis
 
-2. **Sprint priority reorder** — three new BA requirements change the queue. Architect must re-evaluate:
-   - BA-REQ-FORMATTING-01 (.docx output) affects ALL workflows — high user impact
-   - BA-REQ-CLOSE-01 (close button) affects Engagements + Case Tracker — medium impact
-   - BA-REQ-SANCTIONS-EVIDENCE-01 (evidence chain) — compliance-critical, aligns with R-NEW-13
-   - Original queue: Sprint-SMOKE-01 → Sprint-UX-WIRE-01 → Sprint-UX-STREAM-01
-   - New question: does .docx sprint move above SMOKE-01 given it was called a prime requirement?
-
-3. **P1 observations from smoke test** (full list in releases/smoke-test-page-load-check-20260423.md):
-   - Page 00 label "Setting" → "Setup"
-   - Page 02 label "Investigation Report" → "Investigation" (OBS-02 long deferred)
-   - Persona Review sidebar restructure (WORKFLOWS injected into main sidebar)
-   - Page dimming on state transitions → Sprint-UX-WIRE-01
-   - Sanctions disposition hits not shown inline before memo generation
-   - Workspace needs list-to-select UI
-   - Setup page slow to load
+**Pending design questions (architect must decide before next sprint):**
+1. CLI error runner sprint — build a headless pipeline runner that exercises each workflow, catches exceptions, appends to error_log.jsonl → gives us an error inventory without API cost
+2. Sprint priority reorder — BA-REQ-FORMATTING-01 (done), BA-REQ-CLOSE-01 (close button), BA-REQ-SANCTIONS-EVIDENCE-01 (evidence chain), Sprint-SMOKE-01, Sprint-UX-WIRE-01
+3. Error UX workarounds — defer until error_log.jsonl accumulates data from real runs
 
 ## COMMAND
 ```
-/session-open session_id=049
+AK: run FRM workflow in browser → confirm both download buttons → report PASS/FAIL
+Then: /architect to merge branch + plan next sprint
 ```
-Then: confirm 01_Scope.py rename + architect sprint priority decision
 
 ## COMPLETION STATUS
 
@@ -56,30 +44,23 @@ Sprint-IA-01/02/03/04:           100% ██████████ DONE
 Sprint-KB-01:                    100% ██████████ MERGED — smoke check deferred
 Sprint-QUAL-01:                  100% ██████████ DONE
 ARCH-SIM-01/02:                  100% ██████████ DONE
-Sprint-UX-ERR-01:                100% ██████████ DONE — confirmed by smoke test
-Page load smoke test:            100% ██████████ QA_APPROVED Session 048
-Sprint-SMOKE-01 (formal suite):  0% ░░░░░░░░░░ QUEUED
-Sprint-DOCX-01 (.docx output):   0% ░░░░░░░░░░ NEW — priority TBD
-Sprint-UX-WIRE-01:               0% ░░░░░░░░░░ QUEUED
-Sprint-UX-STREAM-01:             0% ░░░░░░░░░░ QUEUED
+Sprint-UX-ERR-01:                100% ██████████ DONE
+Sprint-DOCX-01:                  90% █████████░ CODE DONE — DOCX-03 smoke pending
+Sprint-SMOKE-01 (formal suite):  0%  ░░░░░░░░░░ QUEUED
+Sprint-UX-WIRE-01:               0%  ░░░░░░░░░░ QUEUED
+Sprint-UX-STREAM-01:             0%  ░░░░░░░░░░ QUEUED
+Sprint-CLI-ERR-01 (error runner):0%  ░░░░░░░░░░ NEW — design pending
 ```
 
-## CARRY_FORWARD_CONTEXT
-
-Session 048 P1 observations (full detail in smoke test report):
-- OBS-01: Page 00 label "Setting" not "Setup"
-- OBS-02: Page 02 label "Investigation Report" not "Investigation" (long deferred)
-- OBS-03: 01_Scope / 01_Engagements prefix collision — must rename
-- OBS-04: Persona Review sidebar restructure when page loads
-- OBS-05: Full page dims on state transitions — Sprint-UX-WIRE-01
-- OBS-06: Sanctions disposition hits not shown inline
-- OBS-07: No verifiable evidence per citation in Sanctions memo
-- OBS-08: No .docx output — BA-REQ-FORMATTING-01
-- OBS-09: No close/complete button — BA-REQ-CLOSE-01
-- OBS-10: Workspace needs list UI
-- OBS-11: Setup page slow to load
-
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Sprint-KB-01 smoke check: DEFERRED (no API credit); CLI only, RESEARCH_MODE=knowledge_only
 - R-NEW-13 OPEN: evidence-chain enforcement prompt-only — production cases blocked
-- BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files until resolved
+- BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files
+- BA-REQ-CLOSE-01: No Mark Complete/Close button yet
+- Sprint-KB-01 smoke check: DEFERRED (no API credit)
+- DOCX-03: .docx download unverified until AK runs a complete workflow
+
+## CARRY_FORWARD_CONTEXT
+- Project name = case folder (slugified). Engagement path: Engagements page sets it. Standalone path: each workflow asks for it.
+- Industry field is now a selectbox (18 options) on all workflows — no longer free text
+- FRM pipeline: schema_retry fires on empty findings; recommendations dict→str coercion added
+- Error log at logs/error_log.jsonl accumulates every crash with category — read this before designing error UX workarounds

@@ -5,7 +5,7 @@ Status:         OPEN
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T16:59:37Z — state transition by MCP server
+Last updated:   2026-04-23T18:06:28Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -206,6 +206,39 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 - [ ] STREAM-01 Update `streamlit_app/shared/pipeline.py:run_in_status()` — replace `st.spinner` with `st.status(expanded=True)`. Each `on_progress` call appends a `st.write()` line inside the status block with agent name + message. Status label updates to "complete" or "failed" on exit.
 - [ ] STREAM-02 Calibrate `total_steps` per workflow — investigation (6), FRM per-module (4 per module), others (3). Pass from each workflow page to `run_in_status(total_steps=N)`.
+
+---
+
+### Sprint-DOCX-01 — .docx Download Buttons [Session 049]
+
+**Status:** READY_FOR_REVIEW — all code complete. DOCX-03 (AK smoke verify) pending.
+**Branch:** feature/sprint-docx-01-download-buttons
+**Commits:** 0bc9f4d (DOCX buttons), 1b05849 (recommendations fix), 7b028f8 (project name + industry + error log)
+
+- [x] DOCX-01 `streamlit_app/shared/done_zone.py` — st.columns(2), docx left "Download Word document", md right "Download Markdown backup"
+- [x] DOCX-02 `pages/04_Policy_SOP.py` — same 2-column pattern
+- [x] DOCX-02b `pages/05_Training.py` — same 2-column pattern
+- [x] DOCX-02c `pages/07_Proposal.py` — same 2-column pattern
+- [x] DOCX-02d `pages/10_Sanctions.py` — same 2-column pattern
+- [x] DOCX-02e `pages/11_Transaction_Testing.py` — same 2-column pattern
+- [ ] DOCX-03 Smoke verify — AK runs FRM knowledge_only end-to-end; confirms both buttons appear, .docx opens in Word
+
+**Ad-hoc fixes this session (unplanned, committed same branch):**
+- [x] `schemas/artifacts.py` — JuniorDraft.recommendations: coerce dict → str before validation (model was returning structured dicts)
+- [x] `workflows/frm_risk_register.py` — HookVetoError from validate_schema now caught in module loop; retried once with schema_retry=True
+- [x] `streamlit_app/shared/hybrid_intake.py` — Industry / sector changed from free-text to selectbox (18 options) across all 5 workflow configs
+- [x] `tools/file_tools.py` — slugify_project_name() utility added
+- [x] `schemas/case.py` — project_name: Optional[str] field added to CaseIntake
+- [x] `streamlit_app/shared/intake.py` — generic_intake_form() now asks for Project name; uses slug as case_id
+- [x] All 7 HybridIntakeEngine pages — Project name * field added; slug used as case folder name
+- [x] `streamlit_app/shared/crash_reporter.py` — structured logs/error_log.jsonl append on every crash (category, class, page, workflow)
+
+#### AC — DOCX-03
+- [ ] At least one workflow (FRM knowledge_only preferred) run end-to-end; both download buttons visible in Done Zone
+- [ ] `.docx` file opens in Word or LibreOffice without corruption error
+- [ ] `.md` file downloads correctly with "Download Markdown backup" label
+- [ ] No page crash during or after workflow run on any of the 8 affected pages
+- [ ] Regression: pages that do NOT use done_zone.py (PPT Pack, Due Diligence standalone) unaffected
 
 ---
 
