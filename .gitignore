@@ -50,6 +50,8 @@ Thumbs.db
 logs/*.jsonl
 # Crash reports (runtime-generated, not committed; directory tracked via .gitkeep)
 logs/crash_reports/*.json
+# MCP server runtime logs (runtime-generated, not committed)
+logs/mcp/*.log
 
 # Session lock files (session-open/session-close fallback path)
 tasks/.session-transition-lock
