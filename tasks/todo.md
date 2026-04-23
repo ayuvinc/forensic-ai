@@ -353,6 +353,28 @@ Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitt
 
 ---
 
+### Sprint-UX-WAIT-01 — Pipeline Wait Screen Activity [QUEUED — no API needed]
+
+**Status:** QUEUED — pure UI, no API calls, can build while credits are low.
+**Observation Session 049:** Pipeline wait screen is blank text. User wants something to engage with during 2–4 minute runs.
+
+**Design:**
+- Add a rotating "forensic insight" panel inside the `st.status()` container
+- Draw from a static list of ~20 forensic / AML / fraud tips (hardcoded, no API)
+- Use `st.empty()` + a loop with `time.sleep(4)` in the status callback — or show one random tip on load (simpler, no threading complexity)
+- Simple option: on pipeline start, pick one random tip and display it as `st.info()` below the spinner. Tip rotates on page refresh / rerun but not within the same run.
+- Complex option (opt-in): background thread updates `st.empty()` every 4 seconds — requires Streamlit thread safety care
+
+**Architect decision before build:** simple (one tip on load) vs rotating (thread-based). Rotating is more engaging but has thread safety complexity in Streamlit.
+
+- [ ] WAIT-01 Add `FORENSIC_TIPS` list (20 entries) to `streamlit_app/shared/pipeline.py`
+- [ ] WAIT-02 Render one randomly selected tip inside `run_in_status()` via `st.info()` below the status container — updates on each rerun, stable within a run
+- [ ] WAIT-03 Smoke verify: FRM knowledge_only run — tip appears on pipeline start, does not cause errors
+
+**Security model:** static content only, no user input, no PII. No auth impact.
+
+---
+
 ### Sprint-SMOKE-01 — Multi-Level Smoke Test Suite [UNBLOCKED]
 
 **Status:** READY — spec designed Session 042.
