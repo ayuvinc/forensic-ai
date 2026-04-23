@@ -152,3 +152,103 @@
 2026-04-21T06:49:14Z [INFO] Processing request of type CallToolRequest
 2026-04-21T06:54:24Z [INFO] Processing request of type CallToolRequest
 2026-04-21T06:55:14Z [INFO] Processing request of type CallToolRequest
+2026-04-21T06:57:01Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:00:43Z [INFO] startup — PID=1571 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-21T08:00:43Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-21T08:00:43Z [INFO] Processing request of type ListToolsRequest
+2026-04-21T08:01:52Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:10:00Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:11:35Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:16:58Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:31:52Z [INFO] Processing request of type CallToolRequest
+2026-04-21T08:39:03Z [INFO] Processing request of type CallToolRequest
+2026-04-21T09:41:04Z [INFO] Processing request of type CallToolRequest
+2026-04-21T09:42:42Z [INFO] startup — PID=13537 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-21T09:42:42Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-21T09:42:42Z [INFO] Processing request of type ListToolsRequest
+2026-04-21T19:41:07Z [INFO] startup — PID=14190 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-21T19:41:07Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-21T19:41:07Z [INFO] Processing request of type ListToolsRequest
+2026-04-21T19:41:30Z [INFO] Processing request of type CallToolRequest
+2026-04-21T21:42:00Z [INFO] Processing request of type CallToolRequest
+2026-04-21T21:55:56Z [INFO] Processing request of type CallToolRequest
+2026-04-21T21:56:17Z [INFO] startup — PID=31292 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-21T21:56:17Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-21T21:56:17Z [INFO] Processing request of type ListToolsRequest
+2026-04-21T21:56:41Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:20:36Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:22:36Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:25:52Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:34:07Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:36:04Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:39:15Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:41:21Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:44:57Z [INFO] Processing request of type CallToolRequest
+2026-04-21T22:51:53Z [INFO] Processing request of type CallToolRequest
+2026-04-22T07:59:31Z [INFO] startup — PID=50256 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-22T07:59:31Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-22T07:59:31Z [INFO] Processing request of type ListToolsRequest
+2026-04-22T08:01:18Z [INFO] Processing request of type CallToolRequest
+2026-04-22T08:22:44Z [INFO] Processing request of type CallToolRequest
+2026-04-22T08:40:47Z [INFO] Processing request of type CallToolRequest
+2026-04-22T08:48:45Z [INFO] Processing request of type CallToolRequest
+2026-04-22T08:54:05Z [INFO] Processing request of type CallToolRequest
+2026-04-22T09:01:06Z [INFO] Processing request of type CallToolRequest
+2026-04-22T23:02:33Z [INFO] startup — PID=2989 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-22T23:02:33Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-22T23:02:33Z [INFO] Processing request of type ListToolsRequest
+2026-04-22T23:06:34Z [INFO] Processing request of type CallToolRequest
+2026-04-22T23:09:28Z [INFO] Processing request of type CallToolRequest
+2026-04-23T10:57:29Z [INFO] startup — PID=1407 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T10:57:29Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T10:57:29Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T10:58:06Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:04:29Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:13:29Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:18:25Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:19:53Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:31:37Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:35:34Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:41:38Z [INFO] Processing request of type CallToolRequest
+2026-04-23T11:44:52Z [INFO] Processing request of type CallToolRequest
+2026-04-23T12:55:38Z [INFO] startup — PID=1905 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T12:55:38Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T12:55:38Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T13:08:18Z [INFO] Processing request of type CallToolRequest
+2026-04-23T13:40:56Z [INFO] startup — PID=11107 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T13:40:56Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T13:40:56Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T13:44:01Z [INFO] Processing request of type CallToolRequest
+2026-04-23T15:42:03Z [INFO] startup — PID=3612 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T15:42:03Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T15:42:03Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T15:42:27Z [INFO] Processing request of type CallToolRequest
+2026-04-23T15:49:24Z [INFO] Processing request of type CallToolRequest
+2026-04-23T15:56:20Z [INFO] Processing request of type CallToolRequest
+2026-04-23T16:08:32Z [INFO] Processing request of type CallToolRequest
+2026-04-23T16:12:44Z [INFO] Processing request of type CallToolRequest
+2026-04-23T16:23:13Z [INFO] Processing request of type CallToolRequest
+2026-04-23T16:30:46Z [INFO] Processing request of type CallToolRequest
+2026-04-23T17:44:37Z [INFO] startup — PID=20405 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T17:44:37Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T17:44:37Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T17:45:02Z [INFO] Processing request of type CallToolRequest
+2026-04-23T17:56:47Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:09:19Z [INFO] startup — PID=28293 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T18:09:19Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T18:09:19Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T18:09:32Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:17:46Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:24:27Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:26:37Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:33:46Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:35:59Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:37:33Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:38:28Z [INFO] startup — PID=44969 PROJECT_ROOT=/Users/akaushal011/forensic-ai
+2026-04-23T18:38:28Z [INFO] MCP handshake starting — waiting for client initialize
+2026-04-23T18:38:28Z [INFO] Processing request of type ListToolsRequest
+2026-04-23T18:40:38Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:47:37Z [INFO] Processing request of type CallToolRequest
+2026-04-23T18:53:20Z [INFO] Processing request of type CallToolRequest
+2026-04-23T19:05:58Z [INFO] Processing request of type CallToolRequest
+2026-04-23T19:09:21Z [INFO] Processing request of type CallToolRequest

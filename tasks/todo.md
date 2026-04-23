@@ -5,7 +5,7 @@ Status:         CLOSED
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T13:10:32Z — state transition by MCP server
+Last updated:   2026-04-23T13:38:52Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -83,6 +83,10 @@ Sprint-IA-04 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 04
 
 Sprint-QUAL-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 045, merged main). Removed from PENDING.
 
+ARCH-SIM-01/02 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 046, merged main). Removed from PENDING.
+
+Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 046, merged main). Removed from PENDING.
+
 ---
 
 ### Sprint-KB-01 — Firm Knowledge Base Embedding [READY_FOR_REVIEW]
@@ -144,59 +148,6 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
-### ARCH-SIM-01/02 — Simulation Directory Housekeeping [ATTACH TO NEXT SPRINT]
-
-**Status:** READY — no design decisions needed. Attach as housekeeping tasks to Sprint-UX-ERR-01.
-**Context:** Architect evaluation (Session 045) confirmed simulation/ is stale (calibrated to pre-Sprint-10L; doesn't model schema_retry, findings_floor, HybridIntakeEngine, FirmKnowledgeEngine). Harness family archived; empirical tests rescued to tests/.
-
-- [ ] **[ARCH-SIM-01]** Fix empirical test imports and migrate to `tests/` — In `simulation/test_empirical_hooks.py`, `test_empirical_orchestrator.py`, `test_empirical_schemas.py`, `test_empirical_state_machine.py`: fix import paths so all 4 files are collected by `python3 -m pytest tests/ -q` without errors. Move files to `tests/`. Label with `# integration test — requires real codebase` comment at top. Verify: `python3 -m pytest tests/ -q` collects and runs all 4 + existing 131. ← no deps | P0 | Owner: junior-dev
-
-- [ ] **[ARCH-SIM-02]** Archive harness family — Create `archive/simulation/`. Move these 10 files from `simulation/` to `archive/simulation/`: `harness.py`, `harness_future.py`, `game_theory.py`, `conflict_detector.py`, `conflict_detector_future.py`, `run_all.py`, `run_empirical.py`, `run_future.py`, `input_fuzzer.py`, `empirical_fixtures.py`. Write `archive/simulation/README.md`: "Monte Carlo failure harness — calibrated to pre-Sprint-10L (Sprint-IA-01 era). Archived Session 045. See git log for methodology. Do not maintain." Delete `simulation/` directory from active tree (it will be empty after moves). Verify: no import in `tests/` or any active module references `simulation/`. ← ARCH-SIM-01 | P0 | Owner: junior-dev
-
-#### AC — ARCH-SIM-01/02
-- [ ] SIM-01: `python3 -m pytest tests/ -q` collects all 4 empirical test files with no import errors
-- [ ] SIM-01: Empirical tests either pass or fail with meaningful assertion errors (not ImportError/ModuleNotFoundError)
-- [ ] SIM-02: `archive/simulation/` exists with 10 harness files + README.md
-- [ ] SIM-02: `simulation/` directory no longer exists at repo root
-- [ ] SIM-02: `grep -r "from simulation" tests/ agents/ core/ workflows/` returns nothing
-- [ ] Regression: existing 131 tests still pass after moves
-
----
-
-### Sprint-UX-ERR-01 — Crash Reporter + Structured Error Logs [UNBLOCKED]
-
-**Status:** READY — no design decisions needed; extends existing FE-TRIAGE-04/05 error boundaries.
-**Context:** Unhandled exceptions show raw Python tracebacks in Streamlit browser. No structured output, nothing shareable. When something breaks, Maher needs a single file he can drag into a Claude conversation for diagnosis — not a raw traceback.
-**Security model:** crash report captures exception + sanitised session context only. No case content, no document text, no file paths from `cases/`. Session context is slug/type/status only.
-
-- [ ] ERR-00 Create `logs/crash_reports/` directory — add `logs/crash_reports/.gitkeep`; add `logs/crash_reports/*.json` to `.gitignore`.
-- [ ] ERR-01 Create `streamlit_app/shared/crash_reporter.py` — `write_crash_report(page_name: str, exception: Exception) -> str`. Captures and writes to `logs/crash_reports/crash_{YYYYMMDD_HHMMSS}.json`:
-  - `timestamp_utc`: ISO-8601
-  - `page`: basename of `page_name`
-  - `exception_type`: `type(exception).__name__`
-  - `exception_message`: `str(exception)`
-  - `traceback`: `traceback.format_exc()`
-  - `session_context`: read from `st.session_state` — extract only: `active_project` (slug string), `active_workflow_type`, current pipeline status from `cases/{slug}/state.json` if readable. If any key is missing or unreadable: `null`. Never read case content.
-  - `recent_activity`: last 10 lines of `logs/activity.jsonl` if file exists, else `[]`
-  - Returns the written file path as a string.
-- [ ] ERR-02 Update error boundary on all pages — in the `except` block of every `bootstrap(st, caller_file=__file__)` try/except (FE-TRIAGE-05 pattern): call `write_crash_report(__file__, e)` before `st.error()`. Replace raw `st.error(f"Page failed to load: {e}")` with:
-  - `st.error("Something went wrong loading this page.")` (no raw exception in primary message)
-  - `st.code(crash_path, language=None)` — shows the file path, easy to copy
-  - `st.caption("Share this file with Claude to diagnose the issue.")` 
-  - `st.expander("Show error details")` → `st.text(exception_type + ": " + exception_message)` — tech details available but not in Maher's face
-- [ ] ERR-03 Pipeline error boundary — in `streamlit_app/shared/pipeline.py`, wrap the pipeline run call in try/except. On exception: call `write_crash_report("pipeline:" + workflow_type, e)` and show the same styled error panel as ERR-02. Pipeline stage sets `inv_stage = "error"` as already done in BUG-042-07; crash report is in addition.
-
-#### AC — Sprint-UX-ERR-01
-
-- [ ] ERR-01: `write_crash_report()` produces valid JSON with all required keys: `timestamp_utc`, `page`, `exception_type`, `exception_message`, `traceback`, `session_context`, `recent_activity` — code inspection
-- [ ] ERR-01: `session_context` contains only `active_project`, `active_workflow_type`, `pipeline_status` — no case content, no `cases/` file paths — code inspection
-- [ ] ERR-01: if `logs/activity.jsonl` is absent, `recent_activity` is `[]` not an error — code inspection
-- [ ] ERR-01: file is written to `logs/crash_reports/` — file existence check after simulated exception
-- [ ] ERR-02: error boundary shows file path via `st.code()`, not a raw traceback — visual inspection
-- [ ] ERR-02: `st.expander("Show error details")` is present but collapsed by default — visual inspection
-- [ ] ERR-03: pipeline exception writes crash report and shows the styled error panel — code inspection of pipeline.py except block
-
----
 
 ### Sprint-UX-DS-01 — Design System Portability Shell [DEFERRED — white-label phase]
 

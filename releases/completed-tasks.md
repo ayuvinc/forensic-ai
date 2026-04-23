@@ -495,3 +495,32 @@ Root cause analysis: revision loop (PM requests revision 2×) was caused by Juni
 Design decisions: D1 — `prompts.py` remains a pure function; context reads in `agent.py` only (separation of concerns). D2 — schema_retry instruction prepends prompt (model sees constraint first). D3 — findings floor is mode-agnostic, applies in both knowledge_only and live.
 
 131 tests pass.
+
+---
+
+## ARCH-SIM-01/02 — Simulation Directory Housekeeping (2026-04-23)
+
+QA_APPROVED 2026-04-23 · Session 046 · Merged to main
+
+- [x] ARCH-SIM-01 — Rescue empirical tests: moved `test_empirical_hooks.py`, `test_empirical_orchestrator.py`, `test_empirical_schemas.py`, `test_empirical_state_machine.py` + `empirical_fixtures.py` (5 files) to `tests/`. Removed sys.path hacks; fixed `from simulation.empirical_fixtures import …` → `from tests.empirical_fixtures import …` throughout (including in-function imports in hooks test). `test_empirical_schemas.py` inlined `_SLUG_TRAVERSAL_FUZZ` list (was importing from `input_fuzzer.py`, now archived). All 4 files labelled `# integration test — requires real codebase, no mocks`.
+- [x] ARCH-SIM-02 — Archive harness: created `archive/simulation/` and `archive/simulation/reports/`. Moved 9 harness files (`harness.py`, `harness_future.py`, `game_theory.py`, `conflict_detector.py`, `conflict_detector_future.py`, `run_all.py`, `run_empirical.py`, `run_future.py`, `input_fuzzer.py`) and 7 report files. Wrote `archive/simulation/README.md` (one-line). Deleted `simulation/__init__.py`, `__pycache__/`, empty dirs; `simulation/` removed from repo root.
+
+Design decisions: D1 — `empirical_fixtures.py` classified as test fixture (provides `make_junior_handoff` quality variants) → `tests/`, not archive. D2 — `input_fuzzer.py` classified as harness artifact → archive; `slug_traversal` data inlined in schema test. D3 — harness archived not deleted; historical failure analysis preserved in git and archive for reference.
+
+131 tests pass.
+
+---
+
+## Sprint-UX-ERR-01 — Crash Reporter + Structured Error Logs (2026-04-23)
+
+QA_APPROVED 2026-04-23 · Session 046 · Merged to main
+
+- [x] ERR-00 — Created `logs/crash_reports/` with `.gitkeep`; added `logs/crash_reports/*.json` to `.gitignore`.
+- [x] ERR-01 — Created `streamlit_app/shared/crash_reporter.py`: `write_crash_report(page_name, exception) -> str`. Captures timestamp, page basename, exception type/message/traceback, sanitised session context (active_project slug, active_workflow_type, pipeline_status only — no case content), last 10 lines of activity.jsonl. Writes to `logs/crash_reports/crash_{YYYYMMDD_HHMMSS}.json`. Returns file path as string.
+- [x] ERR-02 — Updated bootstrap error boundary on all 17 workflow pages: replaced `st.error(f"Page failed to load: {e}")` with `write_crash_report()` + `st.error("Something went wrong loading this page.")` + `st.code(crash_path)` + `st.caption()` + collapsed `st.expander("Show error details")`.
+- [x] ERR-03 — Updated pipeline error boundary in `streamlit_app/shared/pipeline.py`: calls `write_crash_report("pipeline:" + label, e)` on exception; replaces bare `st.error(f"Pipeline error: {e}")` with the same styled panel (no raw exception in primary message; expander available).
+
+Security: crash report captures exception + sanitised session context only. `session_context` dict contains only `active_project` (slug string), `active_workflow_type`, and `pipeline_status` read from `state.json` — never from `cases/{id}/` content. `recent_activity` lines are parsed from `logs/activity.jsonl` (already sanitised at write time by ActivityLogger).
+
+131 tests pass.
+
