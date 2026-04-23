@@ -1,3 +1,4 @@
+# integration test — requires real codebase, no mocks
 """
 Empirical orchestrator tests — E3.
 Runs the real Orchestrator with controlled mock agent callables.
@@ -5,17 +6,13 @@ Validates revision loop enforcement, PM feedback threading, resume logic.
 """
 from __future__ import annotations
 
-import sys
 import json
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from unittest.mock import MagicMock
 
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
-
-from simulation.empirical_fixtures import (
+from tests.empirical_fixtures import (
     make_intake, make_junior_handoff, make_pm_handoff, make_partner_handoff
 )
 
@@ -40,14 +37,10 @@ def _run_orchestrator(
     tmp_cases: Path,
     case_id: str,
     workflow: str,
-    junior_responses: list[dict],   # sequence of handoffs Junior will return
-    pm_responses: list[dict],        # sequence of handoffs PM will return
-    partner_response: dict,          # single partner handoff
+    junior_responses: list[dict],
+    pm_responses: list[dict],
+    partner_response: dict,
 ) -> tuple[str | None, dict | None, Exception | None]:
-    """
-    Instantiates real Orchestrator with mock agent callables.
-    Returns (terminal_state, state_dict, exception_raised).
-    """
     try:
         import config
         import tools.file_tools as ft
@@ -84,7 +77,6 @@ def _run_orchestrator(
 
         result = orch.run(make_intake(workflow=workflow, case_id=case_id))
 
-        # Read final state.json
         state_file = tmp_cases / case_id / "state.json"
         state = json.loads(state_file.read_text()) if state_file.exists() else {}
 
@@ -129,7 +121,10 @@ def run_e3_basic_pipeline() -> OrchestratorTestResult:
 
         jr = info.get("junior_calls", 0)
         pm = info.get("pm_calls", 0)
-        passed = (jr == 1 and pm == 1 and status in ("owner_ready", "OWNER_READY", "partner_review_complete", "PARTNER_REVIEW_COMPLETE"))
+        passed = (jr == 1 and pm == 1 and status in (
+            "owner_ready", "OWNER_READY",
+            "partner_review_complete", "PARTNER_REVIEW_COMPLETE",
+        ))
 
         return OrchestratorTestResult(
             "E3.1", "Basic pipeline — no revisions",
@@ -151,19 +146,16 @@ def run_e3_pm_revision_feedback() -> OrchestratorTestResult:
 
         feedback_text = "Please add more regulatory citations."
 
-        # PM: first call → revision requested; second call → accept
         pm_responses = [
             make_pm_handoff(revision_requested=True, feedback=feedback_text, case_id=case_id),
             make_pm_handoff(revision_requested=False, case_id=case_id),
         ]
 
-        # Junior: two good responses
         junior_responses = [
             make_junior_handoff("good", revision_round=0, case_id=case_id),
             make_junior_handoff("good", revision_round=1, case_id=case_id),
         ]
 
-        # Capture Junior's context on second call
         received_feedback = [None]
         try:
             import config
@@ -202,7 +194,6 @@ def run_e3_pm_revision_feedback() -> OrchestratorTestResult:
             )
             passed = call_num[0] == 2 and pm_call[0] == 2
 
-            # SIM-02 finding: does PM feedback reach Junior on revision?
             if not feedback_received:
                 detail += " — SIM-02 CONFIRMED: PM feedback NOT in Junior context on revision"
                 sim_ref = "SIM-02"
@@ -233,7 +224,6 @@ def run_e3_revision_limit_exhaustion() -> OrchestratorTestResult:
         case_id = "TEST-E33"
         (tmp_path / case_id).mkdir()
 
-        # PM always requests revision → should hit MAX_REVISION_ROUNDS
         always_revise_pm = make_pm_handoff(revision_requested=True, case_id=case_id)
         always_pass_junior = make_junior_handoff("good", case_id=case_id)
 
@@ -260,9 +250,8 @@ def run_e3_revision_limit_exhaustion() -> OrchestratorTestResult:
                 partner_fn=lambda *a, **kw: make_partner_handoff(case_id=case_id),
             )
 
-            result = orch.run(make_intake(workflow="investigation_report", case_id=case_id))
+            orch.run(make_intake(workflow="investigation_report", case_id=case_id))
 
-            # If we get here without exception, limit was NOT enforced
             detail = (
                 f"NO EXCEPTION RAISED — junior_calls={call_counts['junior']}, "
                 f"pm_calls={call_counts['pm']} — MAX_REVISION_ROUNDS not enforced"
@@ -279,8 +268,6 @@ def run_e3_revision_limit_exhaustion() -> OrchestratorTestResult:
                 f"Raised {error_type} after junior_calls={call_counts['junior']}, "
                 f"pm_calls={call_counts['pm']} — {str(e)[:80]}"
             )
-            # MAX_REVISION_ROUNDS["junior"]=3, ["pm"]=2
-            # Expect either RevisionLimitError or PipelineError
             expected_types = {"RevisionLimitError", "PipelineError"}
             passed = error_type in expected_types
 
@@ -328,7 +315,6 @@ def run_e3_partner_revision_terminal() -> OrchestratorTestResult:
             )
             orch.run(make_intake(workflow="investigation_report", case_id=case_id))
 
-            # No exception = Partner revision NOT terminal — bad
             detail = (
                 f"NO EXCEPTION RAISED, partner called {retry_attempts[0]} times — "
                 "SIM-04 pattern: Partner rejection not triggering PipelineError"
@@ -347,10 +333,8 @@ def run_e3_partner_revision_terminal() -> OrchestratorTestResult:
             )
             if retried:
                 detail += " — UNEXPECTED: Partner was retried (should be terminal)"
-                sim_finding = "SIM-04 PARTIALLY CONFIRMED"
             else:
                 detail += " — SIM-04 CONFIRMED: Partner rejection is terminal (1 call, then error)"
-                sim_finding = "SIM-04 CONFIRMED"
 
             return OrchestratorTestResult(
                 "E3.4", "Partner revision is terminal",
@@ -391,12 +375,6 @@ def run_e3_resume_from_checkpoint() -> OrchestratorTestResult:
                 call_log.append("partner")
                 return make_partner_handoff(revision_requested=False, case_id=case_id)
 
-            # Run 1: complete Junior, then simulate interruption by writing JUNIOR_DRAFT_COMPLETE to state
-            orch1 = Orchestrator(
-                case_id=case_id, workflow="investigation_report",
-                junior_fn=junior_fn, pm_fn=pm_fn, partner_fn=partner_fn,
-            )
-            # Directly write a JUNIOR_DRAFT_COMPLETE state to simulate checkpoint
             from tools.file_tools import write_state
             from schemas.case import CaseState
             _cs = CaseState(
@@ -407,16 +385,13 @@ def run_e3_resume_from_checkpoint() -> OrchestratorTestResult:
             )
             write_state(case_id, _cs.model_dump(mode="json"))
 
-            # Also write a stub junior artifact so PM can load it
             junior_artifact_path = tmp_path / case_id / "junior_output.v1.json"
             junior_artifact_path.write_text(json.dumps(
                 {"output": make_junior_handoff("good", case_id=case_id)["output"]}
             ))
 
-            # Reset call_log
             call_log.clear()
 
-            # Run 2: new Orchestrator instance — should resume from JUNIOR_DRAFT_COMPLETE
             orch2 = Orchestrator(
                 case_id=case_id, workflow="investigation_report",
                 junior_fn=junior_fn, pm_fn=pm_fn, partner_fn=partner_fn,

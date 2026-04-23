@@ -1,19 +1,16 @@
+# integration test — requires real codebase, no mocks
 """
 Empirical hook tests — E1 (pre-hooks) and E2 (post-hooks).
 Runs real hook code against controlled inputs. No mock of the hooks themselves.
 """
 from __future__ import annotations
 
-import sys
 import tempfile
 import json
 from pathlib import Path
 from dataclasses import dataclass
 
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
-
-from simulation.empirical_fixtures import make_intake, make_evidence_payload
+from tests.empirical_fixtures import make_intake, make_evidence_payload
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +75,6 @@ def run_e1_pii_tests() -> list[HookTestResult]:
                 sim_ref = None
             else:
                 outcome = "PASSED"
-                # Determine if this is a PII value that SHOULD have been stripped
                 pii_labels = {"passport_number", "bank_account", "ssn", "credit_card",
                                "iban_uae", "null_bytes"}
                 if label in pii_labels:
@@ -179,7 +175,6 @@ def run_e1_prehook_chain_tests() -> list[HookTestResult]:
     for label, payload in variants:
         try:
             result = engine.run_pre(dict(payload), {"case_id": payload.get("case_id", "")})
-            # Check for mutations
             original_desc = payload.get("description", "")
             result_desc = result.get("description", original_desc)
             lang_normalised = result.get("language") != payload.get("language")
@@ -220,7 +215,7 @@ def run_e2_validate_schema_tests() -> list[HookTestResult]:
         from hooks.post_hooks import validate_schema
         from core.hook_engine import HookVetoError
         from schemas.artifacts import JuniorDraft
-        from simulation.empirical_fixtures import make_junior_handoff
+        from tests.empirical_fixtures import make_junior_handoff
     except ImportError as e:
         return [HookTestResult("E2.1-import", "validate_schema", "import",
                                "IMPORT_ERROR", str(e), "SIM-03")]
@@ -297,29 +292,23 @@ def run_e2_evidence_chain_tests() -> list[HookTestResult]:
             outcome, detail, "SIM-01",
         )
 
-    # Case 1: valid — all evidence IDs exist and are permissible
     p1 = make_evidence_payload(valid_evidence=True)
     results.append(_run("valid_evidence", p1, "investigation_report", "partner", expect_blocked=False))
 
-    # Case 2: evidence ID not in evidence_items
     p2 = make_evidence_payload(valid_evidence=True)
     p2["output"]["finding_chains"][0]["supporting_evidence"] = ["E-NONEXISTENT-999"]
     results.append(_run("bad_evidence_id", p2, "investigation_report", "partner", expect_blocked=True))
 
-    # Case 3: non-permissible evidence referenced
     p3 = make_evidence_payload(non_permissible=True)
     results.append(_run("non_permissible_evidence", p3, "investigation_report", "partner", expect_blocked=True))
 
-    # Case 4: empty supporting_evidence []
     p4 = make_evidence_payload(valid_evidence=True)
     p4["output"]["finding_chains"][0]["supporting_evidence"] = []
     results.append(_run("empty_supporting_evidence", p4, "investigation_report", "partner"))
 
-    # Case 5: workflow not in evidence_chain list (policy_sop)
     p5 = make_evidence_payload(valid_evidence=False)
     results.append(_run("non_evidence_workflow", p5, "policy_sop", "partner", expect_blocked=False))
 
-    # Case 6: agent is "pm" (hook should skip — only fires for partner)
     p6 = make_evidence_payload(non_permissible=True)
     results.append(_run("pm_agent_skips", p6, "investigation_report", "pm", expect_blocked=False))
 
@@ -335,7 +324,7 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
     try:
         from hooks.post_hooks import persist_artifact, extract_citations
         from core.hook_engine import HookVetoError
-        from simulation.empirical_fixtures import make_junior_handoff
+        from tests.empirical_fixtures import make_junior_handoff
     except ImportError as e:
         return [HookTestResult("E2.3-import", "hook_ordering", "import",
                                "IMPORT_ERROR", str(e), "SIM-16")]
@@ -345,7 +334,6 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
         case_dir = tmp_path / "cases" / "TEST-001"
         case_dir.mkdir(parents=True)
 
-        # Monkey-patch CASES_DIR temporarily
         import config
         import tools.file_tools as ft
         orig_cases = config.CASES_DIR
@@ -358,7 +346,6 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
             ctx = {"case_id": "TEST-001", "agent": "junior",
                    "artifact_type": "output", "workflow": "investigation_report"}
 
-            # Step 1: persist_artifact
             artifact_written = False
             try:
                 persist_artifact(payload, dict(ctx))
@@ -374,17 +361,15 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
                 artifact_detail, "SIM-16",
             ))
 
-            # Step 2: extract_citations with malformed source_url (empty string)
             payload_bad_citations = dict(payload)
             payload_bad_citations["output"] = dict(payload["output"])
             payload_bad_citations["output"]["citations"] = [
                 {"source_name": "Test", "source_type": "authoritative",
                  "retrieved_at": "2026-04-21", "excerpt": "test",
-                 "confidence": "high", "source_url": ""}  # empty URL — the gap
+                 "confidence": "high", "source_url": ""}
             ]
 
             citations_index = tmp_path / "cases" / "TEST-001" / "citations_index.json"
-            citations_before = citations_index.exists()
 
             try:
                 extract_citations(payload_bad_citations, dict(ctx))
@@ -394,7 +379,7 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
                     detail = f"citations_index written with {len(idx_content)} entries"
                 else:
                     detail = "citations_index NOT written — citations silently lost (SIM-16 CONFIRMED)"
-                outcome = "PASSED"  # Hook didn't raise — confirms silent failure
+                outcome = "PASSED"
             except Exception as e:
                 detail = f"extract_citations raised: {e}"
                 outcome = "EXCEPTION"
@@ -404,7 +389,6 @@ def run_e2_hook_ordering_test() -> list[HookTestResult]:
                 outcome, detail, "SIM-16",
             ))
 
-            # Step 3: Confirm artifact exists but citations may be lost
             artifact_after = list(case_dir.glob("*.json"))
             if artifact_written and not citations_index.exists():
                 gap_confirmed = "SIM-16 CONFIRMED: artifact written, citations_index absent"

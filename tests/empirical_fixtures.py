@@ -5,11 +5,6 @@ Provides controlled AgentHandoff builders and test CaseIntake factories.
 from __future__ import annotations
 
 import uuid
-import sys
-from pathlib import Path
-
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
 
 
 # ---------------------------------------------------------------------------

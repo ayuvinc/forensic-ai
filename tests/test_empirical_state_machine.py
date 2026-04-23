@@ -1,15 +1,11 @@
+# integration test — requires real codebase, no mocks
 """
 Empirical state machine tests — E4.
 Runs real transition() and is_terminal() against all edge cases.
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
-
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
 
 
 @dataclass
@@ -55,16 +51,12 @@ def run_all_state_machine_tests() -> list[SMTestResult]:
 
     # E4.2 — Invalid transitions raise InvalidTransitionError
     invalid_cases = [
-        # Skip-level forward
         (CaseStatus.INTAKE_CREATED, CaseStatus.PARTNER_REVIEW_COMPLETE),
         (CaseStatus.JUNIOR_DRAFT_COMPLETE, CaseStatus.OWNER_APPROVED),
-        # Backward
         (CaseStatus.PM_REVIEW_COMPLETE, CaseStatus.INTAKE_CREATED),
         (CaseStatus.PARTNER_REVIEW_COMPLETE, CaseStatus.JUNIOR_DRAFT_COMPLETE),
-        # Self-loop
         (CaseStatus.INTAKE_CREATED, CaseStatus.INTAKE_CREATED),
         (CaseStatus.OWNER_APPROVED, CaseStatus.OWNER_APPROVED),
-        # Terminal → anything
         (CaseStatus.OWNER_APPROVED, CaseStatus.INTAKE_CREATED),
     ]
 

@@ -1,17 +1,21 @@
+# integration test — requires real codebase, no mocks
 """
 Empirical schema adversarial tests — E5.
 Instantiates real Pydantic schemas with adversarial inputs and records outcomes.
 """
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
-from pathlib import Path
 
-_ROOT = Path(__file__).parent.parent
-sys.path.insert(0, str(_ROOT))
-
-from simulation.input_fuzzer import FUZZ_CLASSES
+# Traversal inputs for E5.4 — inlined from simulation/input_fuzzer.py (archived)
+_SLUG_TRAVERSAL_FUZZ = [
+    "../../../etc",
+    "con", "nul", "prn", "aux",       # Windows reserved names
+    ".", "..", " ", "",
+    "a" * 256,                         # overlong
+    "valid/../escape",
+    "\x00null",
+]
 
 
 @dataclass
@@ -90,7 +94,7 @@ def run_all_schema_tests() -> list[SchemaTestResult]:
         try:
             ei = EvidenceItem(
                 evidence_id="E-001", case_id="TEST-001",
-                source_doc_id="DOC-001", source_excerpt="",  # empty
+                source_doc_id="DOC-001", source_excerpt="",
                 evidence_type="documentary", description="test",
                 permissibility="permissible", provenance="test", usability="usable",
             )
@@ -120,10 +124,9 @@ def run_all_schema_tests() -> list[SchemaTestResult]:
         safely_rejected = []
         exceptions_on = []
 
-        for val in FUZZ_CLASSES["slug_traversal"]:
+        for val in _SLUG_TRAVERSAL_FUZZ:
             try:
                 slug = derive_slug(str(val))
-                # Check result is safe
                 if ".." in slug or "/" in slug or "\\" in slug or "\x00" in slug:
                     unsafe_produced.append(f"{repr(val)} → {repr(slug)}")
                 else:
@@ -163,7 +166,7 @@ def run_all_schema_tests() -> list[SchemaTestResult]:
             jd = JuniorDraft(
                 case_id="TEST-001", version=1,
                 summary="Test",
-                findings=[],   # empty — valid?
+                findings=[],
                 methodology="test", regulatory_implications="none",
                 recommendations=[], open_questions=[], citations=[],
                 revision_round=0,
