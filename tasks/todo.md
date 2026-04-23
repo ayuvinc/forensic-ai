@@ -302,6 +302,40 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### Sprint-DRAFT-01 — Interim Draft Access [QUEUED]
+
+**Status:** QUEUED — architect design needed.
+**Context:** The artifact versioning system already writes Junior draft (v1), PM-reviewed draft (v2), and Partner-signed output to `cases/{project}/` on every pipeline run. These files exist on disk but are invisible in the UI. Two layers of value: (1) access to partial results if pipeline crashes; (2) live module-by-module output during long FRM runs.
+**Highest value:** FRM multi-module — up to 20 min total runtime, each module's output should appear as it completes rather than one final dump.
+
+**Layer 1 — Artifact access in Case Tracker (quick win, no pipeline change):**
+
+- [ ] DRAFT-01 `pages/12_Case_Tracker.py` — in the case detail expander, scan `cases/{project}/` for all `*.v1.json`, `*.v2.json` artifacts and list them as downloadable files with human-readable labels (e.g. "Junior draft — Module 2 FRM", "PM-reviewed draft — Investigation"). Existing `build_case_index()` already knows the folder; just add artifact scan.
+- [ ] DRAFT-02 Add "Partial results available" badge on Case Tracker rows where pipeline status = `pipeline_error` but at least one vN artifact exists — Maher can recover partial output without re-running.
+
+**Layer 2 — Live module output during FRM run (stream to UI as each module completes):**
+
+- [ ] DRAFT-03 `workflows/frm_risk_register.py` — after each module's partner sign-off, write a `module_{N}_interim.json` to the case folder containing that module's risk items and summary. This is a lightweight append alongside existing artifact writes.
+- [ ] DRAFT-04 `pages/06_FRM.py` running stage — use `@st.fragment` or `st.rerun()` to render completed modules as they arrive. Each completed module shows a collapsed `st.expander` with its risk count and top findings. Pipeline continues in the same status block.
+- [ ] DRAFT-05 Smoke verify: run FRM 2-module knowledge_only, confirm Module 1 results appear before Module 2 completes.
+
+**Dependencies:** DRAFT-03/04 depend on Sprint-UX-WIRE-01 (@st.fragment patterns). DRAFT-01/02 are independent.
+
+---
+
+### Sprint-FOLDER-01 — Pre-create Case Folder on Run Click [QUEUED — small fix]
+
+**Status:** QUEUED — small, implement after Sprint-DOCX-01 merge.
+**Context:** Case folder is created when the first artifact is persisted (Junior draft). For a 3-module FRM run this means the folder doesn't exist until 2-4 min into the run. User expectation: folder visible in Finder immediately on clicking Run.
+**Fix:** In each workflow page, call `case_dir(case_id).mkdir(parents=True, exist_ok=True)` and write a minimal `state.json` ({case_id, workflow, status: "running", started_at}) immediately before `run_in_status(...)` is called.
+
+- [ ] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
+- [ ] FOLDER-02 `pages/06_FRM.py` — same
+- [ ] FOLDER-03 `pages/09_Due_Diligence.py` — same
+- [ ] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
+
+---
+
 ### Sprint-SMOKE-01 — Multi-Level Smoke Test Suite [UNBLOCKED]
 
 **Status:** READY — spec designed Session 042.
