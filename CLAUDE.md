@@ -6,8 +6,8 @@ Tier: Standard
 - Session status: CLOSED
 - Active task: none
 - Active persona: none
-- Last updated: 2026-04-22 06:30:00 UTC — Session 039 closed by session-close
-- Session summary: Session 039 — Sprint-IA-02 complete and merged. HybridIntakeEngine built (streamlit_app/shared/hybrid_intake.py): structured fields + Remarks-triggered Haiku conversation + confirmation step machine. Investigation workflow wired (02_Investigation.py). Multi-workstream engagements: initial_workstreams in ProjectState + multiselect in 01_Engagements.py + declared-but-unrun sections with Run Now buttons in 16_Workspace.py. AUP investigation type (BA-IA-05): numbered procedures intake, Partner no-conclusions hard rules (AICPA/IAASB). Custom/Other type (BA-IA-06): description prefix + structure notice. hld.md + scope-brief.md updated. 131 tests pass. Next: Session 040 — Sprint-IA-03 (wire HybridIntakeEngine to FRM, DD, Sanctions, TT, Policy/SOP, Training).
+- Last updated: 2026-04-23 06:15:00 UTC — Session 041 closed by architect
+- Session summary: Session 041 — Sprint-IA-03 complete and merged. HybridIntakeEngine wired to all 7 workflow pages: FRM (8-module radio fields, dependency enforcement), DD (post-engine subject_count/relationship, report_format logic), Sanctions (knowledge_only gate preserved, subject_name inside engine), TT (doc upload outside engine, label→key maps), Policy/SOP (11-subtype combined selectbox, doc_type inferred), Training (duration selectbox, Yes/No→bool). BA-IA-09 written for Sprint-IA-04 (Policy/SOP co-build). Smoke spec at tasks/smoke-tests/sprint-ia-03.md. 131 tests pass. hld.md + GoodWork_AI_Framework_Brief.md + scope-brief.md updated. Next: Sprint-IA-04 (Policy/SOP guided co-build) — needs dedicated architect session.
 
 ## Use Case Note
 

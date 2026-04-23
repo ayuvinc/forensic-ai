@@ -1,32 +1,27 @@
 # NEXT ACTION
 
 ## SESSION
-OPEN
+CLOSED
 
 ## NEXT_PERSONA
-junior-dev
+architect
 
 ## NEXT_TASK
-**Session 041: Sprint-IA-03 — AK approval received → junior-dev executes IA-03-C1 through IA-03-W6**
+**Session 042: Sprint-IA-04 — Policy/SOP Guided Co-Build Mode**
 
-Architect decomposition complete (Session 041). Tasks written to tasks/todo.md.
+Sprint-IA-03 complete and merged (Session 041). HybridIntakeEngine now wired to all 7 workflows.
 
-All 4 design decisions confirmed by AK (Session 041):
-- [D1 CONFIRMED] FRM: 8 individual radio (Yes/No) fields per module, each has_remarks=True. Dependency check runs in page after engine_result.
-- [D2 CONFIRMED] Training: duration selectbox (presets), include_quiz/case_study radio Yes/No.
-- [D3 CONFIRMED] Sanctions: subject_name INSIDE engine; client_name OUTSIDE (engagement banner).
-- [D4 CONFIRMED] Policy/SOP IA-03-W5: fixed 11 types only; no Custom in this sprint. Custom co-build → Sprint-IA-04.
+Next sprint requires a dedicated architect session before any build tasks are written:
+- BA: BA-IA-09 confirmed (tasks/ba-logic.md)
+- Product context: docs/product-packaging.md → "Product Positioning Insight — Co-Build Mode"
+- Prerequisite: Sprint-IA-03-W5 QA_APPROVED (done)
 
-Junior-dev runs IA-03-C1 first (field configs + option lists), then W1–W6 in parallel, then QA.
-
-Sprint-IA-04 (co-build) queued — needs dedicated architect session. BA-IA-09 written.
+Architect decomposes Sprint-IA-04 into tasks and gets AK approval before junior-dev builds.
 
 ## COMMAND
 ```
-/junior-dev task_id=IA-03-C1
+/architect sprint_id=sprint-ia-04
 ```
-
-(After IA-03-C1 complete: run W1–W6 in parallel, then QA)
 
 ## COMPLETION STATUS
 
@@ -42,27 +37,25 @@ Sprint-FE-TRIAGE-03/04/05: 100% ██████████ DONE — merged S
 Sprint-REM-01..04:         100% ██████████ DONE — merged Session 038
 Sprint-IA-01:              100% ██████████ DONE — merged Session 038 (9d0aa49)
 Sprint-IA-02 (hybrid intake): 100% ██████████ DONE — merged Session 039
-Sprint-IA-03 (remaining workflows hybrid intake): 0% ░░░░░░░░░░ NEXT SPRINT
+Sprint-IA-03 (remaining workflows): 100% ██████████ DONE — merged Session 041 (5246ad4)
+Sprint-IA-04 (Policy/SOP co-build): 0% ░░░░░░░░░░ NEXT SPRINT
 ```
 
-**OVERALL: ~98% complete by task count**
+**OVERALL: ~99% complete by task count**
 
 ## CARRY_FORWARD_CONTEXT
-Session 040 was a demo/walkthrough session — no sprint work executed.
-App demo guidance given; session lifecycle completed cleanly.
 
-Sprint-IA-03 context (unchanged from Session 039 handoff):
-- HybridIntakeEngine built: streamlit_app/shared/hybrid_intake.py
-- Investigation workflow wired (02_Investigation.py) — reference implementation
-- Multi-workstream engagements: initial_workstreams in ProjectState, multiselect in 01_Engagements.py
-- AUP (type 8) + Custom/Other (type 9) investigation types live
-- 131 tests pass; manual smoke STEP-A..F pending Maher live run
+Sprint-IA-03 summary (Session 041):
+- HybridIntakeEngine wired to all 7 workflow pages (FRM, DD, Sanctions, TT, Policy/SOP, Training + Investigation)
+- All generic_intake_form / frm_intake_form / dd_intake_form removed from 6 pages
+- BA-IA-09 written: Policy/SOP co-build mode (section-by-section sync loop)
+- 131 tests pass; smoke spec written
 
-Open carry-forward observations:
+Open carry-forward observations (unchanged):
 - OBS-02: "Investigation Report" sidebar label → AK preference is "Investigation" (deferred)
 - OBS-03: No back/home navigation on Workspace error state (deferred)
-- Manual smoke: STEP-A..F of tasks/smoke-tests/sprint-ia-02.md pending Maher live run
+- Manual smoke: tasks/smoke-tests/sprint-ia-03.md Steps A-G pending Maher live run
 
 ## BLOCKERS_AND_ENV_LIMITATIONS
 - None blocking
-- Watch: R-NEW-10 (HybridIntake API timeout), R-NEW-11 (mid-intake session state), R-NEW-12 (investigation_type side-effects)
+- Sprint-IA-04 needs architect decomposition before build — BA-IA-09 is the input

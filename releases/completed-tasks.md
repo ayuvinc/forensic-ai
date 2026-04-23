@@ -440,3 +440,21 @@ ARCH-DOC-IA-01: `docs/lld/product-ia-design.md` navigation table + app.py code b
 AUTOMATED: 7/7 AC blocks PASS. 131 tests PASS. 1 QA defect fixed in-session (dead `generic_intake_form` import removed).
 MANUAL: STEP-A..F pending Maher live run (`tasks/smoke-tests/sprint-ia-02.md`).
 QA_APPROVED automated (qa-run-039-sprint-ia-02-20260422). Merged to main (Session 039).
+
+---
+
+## Sprint-IA-03 — Wire HybridIntakeEngine to Remaining Workflow Pages (2026-04-23)
+
+QA_APPROVED 2026-04-23 · Session 041 · Merged: 5246ad4 → main
+
+- [x] IA-03-C1 — Added 6 _FIELD_CONFIGs to hybrid_intake.py (FRM, DD, Sanctions, TT, Policy/SOP, Training)
+- [x] IA-03-W1 — HybridIntakeEngine wired to 06_FRM.py; 8-module radio fields; dependency enforcement
+- [x] IA-03-W2 — HybridIntakeEngine wired to 09_Due_Diligence.py; post-engine fields; report_format logic preserved
+- [x] IA-03-W3 — HybridIntakeEngine wired to 10_Sanctions.py; knowledge_only gate preserved; subject_name inside engine
+- [x] IA-03-W4 — HybridIntakeEngine wired to 11_Transaction_Testing.py; doc upload outside engine; label→key maps
+- [x] IA-03-W5 — HybridIntakeEngine wired to 04_Policy_SOP.py; 11-subtype selectbox; doc_type inferred
+- [x] IA-03-W6 — HybridIntakeEngine wired to 05_Training.py; duration selectbox; Yes/No→bool
+- [x] IA-03-QA — Smoke spec written (tasks/smoke-tests/sprint-ia-03.md); 131 tests pass; manual Steps A-G pending Maher
+
+Design decisions confirmed: D1 (FRM 8 individual radios), D2 (Training duration selectbox + radio), D3 (Sanctions subject_name inside engine), D4 (Policy/SOP 11-subtype combined selectbox, no Custom in this sprint).
+BA-IA-09 written for Sprint-IA-04 (Policy/SOP co-build mode — queued).
