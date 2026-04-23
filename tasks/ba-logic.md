@@ -1276,3 +1276,23 @@ STEP 2b — Custom scoping conversation
 - Scope: `agents/junior_analyst/agent.py` (read from context) + `agents/junior_analyst/prompts.py` (accept params, prepend instruction).
 
 ---
+
+## Session 046 BA — Sprint-UX-ERR-01: Crash Reporter (2026-04-23)
+
+### BA-ERR-01 — Structured Crash Reports
+- Status: CONFIRMED — 2026-04-23
+- Scope: When a Streamlit page crashes (bootstrap failure) or the pipeline raises an unhandled exception, the system must write a structured JSON crash report file and display a diagnostic-friendly error panel.
+
+**User outcome:** Maher sees a clean error panel (not a raw Python traceback) with the path to a crash report file. He can drag that file into a Claude conversation to diagnose the issue without needing developer access to logs.
+
+**Business rules:**
+- Every page crash writes a structured crash report to `logs/crash_reports/crash_{YYYYMMDD_HHMMSS}.json` before displaying any error UI.
+- Crash report contains: `timestamp_utc`, `page`, `exception_type`, `exception_message`, `traceback`, `session_context` (active_project slug, workflow_type, pipeline_status only — no case content), `recent_activity` (last 10 lines of activity.jsonl if present, else []).
+- Crash report MUST NOT contain: case document content, file paths under `cases/`, PII from case files.
+- Error panel shows: clean message ("Something went wrong loading this page."), crash report file path via `st.code()`, caption ("Share this file with Claude to diagnose the issue."), collapsed expander with exception type + message for technical users.
+- Raw Python tracebacks must not appear in the primary error display — only inside the collapsed expander.
+- Pipeline crashes (PipelineError) are also covered — `pipeline.py` wraps the pipeline run in try/except and writes crash report + shows styled panel.
+- `logs/crash_reports/` is gitignored; `logs/crash_reports/.gitkeep` preserves the directory.
+- Sprint assignment: Sprint-UX-ERR-01.
+
+---

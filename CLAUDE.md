@@ -9,6 +9,10 @@ Tier: Standard
 - Last updated: 2026-04-23 06:15:00 UTC — Session 041 closed by architect
 - Session summary: Session 041 — Sprint-IA-03 complete and merged. HybridIntakeEngine wired to all 7 workflow pages: FRM (8-module radio fields, dependency enforcement), DD (post-engine subject_count/relationship, report_format logic), Sanctions (knowledge_only gate preserved, subject_name inside engine), TT (doc upload outside engine, label→key maps), Policy/SOP (11-subtype combined selectbox, doc_type inferred), Training (duration selectbox, Yes/No→bool). BA-IA-09 written for Sprint-IA-04 (Policy/SOP co-build). Smoke spec at tasks/smoke-tests/sprint-ia-03.md. 131 tests pass. hld.md + GoodWork_AI_Framework_Brief.md + scope-brief.md updated. Next: Sprint-IA-04 (Policy/SOP guided co-build) — needs dedicated architect session.
 
+## Pending Codex Review
+
+Claude must review `tasks/codex-review-handoff-20260423.md` before selecting or executing the next sprint. Propose actions for Aditya's approval first. Delete `tasks/codex-review-handoff-20260423.md` only after Aditya approves the actions and they are completed or intentionally deferred.
+
 ## Use Case Note
 
 This note was added by Codex. The repo has a credible use case as an internal forensic-consulting copilot for structured casework, not as a general-purpose chat product. The strongest fit is the combination of guided intake, local case artifacts, audit trail, bounded document handling, and multi-stage review for higher-risk deliverables. The main product risk is boundary clarity: the repo currently mixes full-pipeline reviewed workflows with assisted single-pass generators. That split is acceptable only if the UI and docs make the difference explicit so users do not confuse assisted output with partner-reviewed output. Aditya wants to address this problem explicitly in the product framing and workflow design. For this product, provenance, state consistency, and evidence-chain enforcement matter more than feature count.
