@@ -353,6 +353,85 @@ Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitt
 
 ---
 
+### Sprint-INDEX-01 — Pipeline State Index [QUEUED — foundation for checkpoint + resume]
+
+**Status:** QUEUED — no UI, no pipeline redesign. Additive only.
+**Design confirmed Session 050.**
+
+**What it is:** A `pipeline_index.json` written to each case folder alongside existing artifacts. The `persist_artifact` hook updates it after every successful agent write. The pipeline reads it at startup and skips stages already marked complete. Solves resume-on-failure and is the foundation for Sprint-CHECKPOINT-01 (human review panel) and Sprint-SESSION-ENTRY-01 (session log).
+
+**Schema:**
+```json
+{
+  "case_id": "...",
+  "workflow": "frm_risk_register",
+  "scope": ["module_2", "module_4"],
+  "stages": {
+    "module_2_draft":    { "status": "complete",  "artifact": "junior_output.v2.json", "completed_at": "..." },
+    "module_2_review":   { "status": "complete",  "artifact": "pm_review.v2.json" },
+    "module_2_signoff":  { "status": "rejected",  "artifact": "partner_approval.v1.json" },
+    "module_4_draft":    { "status": "failed",    "artifact": null, "error": "empty_findings_after_retry" },
+    "executive_summary": { "status": "pending" },
+    "final_report":      { "status": "pending" }
+  },
+  "milestone_artifacts": [],
+  "human_corrections":   {},
+  "last_updated": "..."
+}
+```
+
+**Milestone artifact:** When all selected module drafts reach `status: complete`, the index fires a cheap (Haiku) summarization call and writes `milestone_summary_v1.json` — a "6 risks identified across 2 modules, 3 high, 4 medium. Regulatory mapping pending." document. Not a final report. An intermediate deliverable Maher can act on.
+
+**Tasks:**
+- [ ] INDEX-01 `tools/pipeline_index.py` — `PipelineIndex` class: `load(case_id)`, `update_stage(stage, status, artifact)`, `fire_milestone(case_id, summary)`. Atomic write (`.tmp` swap). Schema validated with Pydantic.
+- [ ] INDEX-02 `core/hooks.py` — `persist_artifact` hook calls `PipelineIndex.update_stage()` after every successful artifact write.
+- [ ] INDEX-03 `workflows/frm_risk_register.py` — on pipeline start, load index; skip stages already `status: complete`; write milestone when all module drafts done.
+- [ ] INDEX-04 `workflows/investigation.py` — same pattern.
+- [ ] INDEX-05 Smoke verify: run FRM knowledge_only, kill mid-run, restart — confirm resumes from last complete stage, does not re-run completed modules.
+
+**Security model:** index is case-local, no PII beyond what's already in artifacts, append-only writes, atomic swap prevents corruption.
+**Dependencies:** None. Can build immediately after Sprint-DOCX-01 merges.
+
+---
+
+### Sprint-CHECKPOINT-01 — Human Review Panel + Interim Downloads [QUEUED — after Sprint-INDEX-01]
+
+**Status:** QUEUED — depends on Sprint-INDEX-01 (needs pipeline_index milestone events).
+**Design confirmed Session 050.**
+
+**What it is:** At each pipeline milestone, the UI surfaces the interim artifact inline for Maher to review and correct before the pipeline continues. This is the human checkpoint layer — the step that makes outputs professionally defensible.
+
+**Two modes:**
+1. **Inline review panel** — editable `st.text_area` pre-populated with milestone artifact content. `st.columns(2)` download buttons (Word + Markdown) alongside. "Accept as-is" or "Save corrections and continue."
+2. **Offline download** — .docx and .md available at every milestone, not just final output.
+
+**Corrections flow:** Human edits stored in `pipeline_index.human_corrections[stage]`. Next stage context includes: "Consultant reviewed this draft and applied the following corrections: [...]". Injected via existing context dict mechanism — no pipeline architecture change.
+
+**Tasks:**
+- [ ] CHKPT-01 `streamlit_app/shared/pipeline.py` — add `milestone_review()` function: reads pipeline_index milestone, renders inline review panel, blocks on user confirmation, writes corrections to index.
+- [ ] CHKPT-02 `pages/06_FRM.py` — insert `milestone_review()` call between module identification stage and risk assessment stage.
+- [ ] CHKPT-03 `pages/02_Investigation.py` — same, at evidence inventory → finding synthesis boundary.
+- [ ] CHKPT-04 Interim download buttons — `st.columns(2)` docx + md at every milestone panel (not just Done Zone).
+- [ ] CHKPT-05 Smoke verify: FRM knowledge_only, confirm milestone panel appears, corrections round-trip into next stage context, download buttons work.
+
+**Security model:** human_corrections stored locally in pipeline_index, no external transmission, corrections are plain text (no code execution), no XSS surface (Streamlit handles escaping).
+**Dependencies:** Sprint-INDEX-01 complete.
+
+---
+
+### Sprint-SESSION-ENTRY-01 — Session Log with Engagement / Workflow Entry [QUEUED — after Sprint-INDEX-01, needs wireframe]
+
+**Status:** QUEUED — navigation model change. Needs designer wireframe (NAV-00 pattern) before code.
+**Design confirmed Session 050.**
+
+**What it is:** When Maher opens any workflow page, he first sees active in-progress cases for that workflow (reading from pipeline_index files across all case folders). He can resume an existing case or start a new one. Session log replaces the current blank intake-first experience.
+
+**Paired with:** pipeline_index.json (Sprint-INDEX-01) provides the state. Case Tracker (page 12) becomes the full session log view.
+
+**Pre-build gate:** NAV-00 wireframe required. Do not build without it.
+
+---
+
 ### Sprint-UX-WAIT-01 — Pipeline Wait Screen Activity [QUEUED — no API needed]
 
 **Status:** QUEUED — pure UI, no API calls, can build while credits are low.
