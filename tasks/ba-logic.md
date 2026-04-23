@@ -8,6 +8,15 @@ _Populated via /ba discovery session — 2026-04-04_
 
 ## Business Logic Decisions
 
+[2026-04-23] BA-REQ-FORMATTING-01: All workflow outputs must generate a Word (.docx) file as the primary deliverable. A "Preferred output format" selector (Word / Markdown / both) must be present in every intake form. Word formatting quality is a prime requirement across all workflows: Sanctions memo, Investigation report, FRM risk register, DD report, Policy/SOP, Training material, Proposal, TT report. python-docx is already in requirements.txt — the gap is the intake selector and consistent formatting quality across all workflows.
+Rationale: Client deliverables must be professionally formatted. Maher works in Word. Raw markdown is not a client-facing format.
+
+[2026-04-23] BA-REQ-CLOSE-01: All engagements, workflows, and cases must have a user-facing "Mark Complete" / "Close" button that Maher presses to explicitly move an item to a terminal state. The state machine has terminal states (OWNER_APPROVED, etc.) but no UI trigger to set them from any page.
+Rationale: Without a close action, Maher cannot signal that a case is done. The Case Tracker cannot distinguish active from completed engagements. Audit trail cannot record a closure event.
+
+[2026-04-23] BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions screening reports must capture and attach verifiable evidence for each citation hit — not just describe it. Required per hit: (1) copy or screenshot of the actual source record, (2) URL and timestamp of when the source was accessed, (3) reviewer's per-hit determination (confirmed match / false positive / inconclusive). In knowledge_only mode, citations are model-generated and must be clearly labelled as "model-generated baseline — not verified against live lists." Live-mode hits must capture actual API response artifacts.
+Rationale: This is a compliance product. Evidence chain is non-negotiable. A memo that describes hits without attaching source evidence cannot be placed on a compliance file.
+
 [2026-04-04] Decision: Tool is a writing and organization aid, not an investigator.
 Rationale: Maher provides facts, evidence, and analytical conclusions. The tool structures, drafts, and standardizes — it does not reach conclusions independently. Any output that presents a "finding" is structured from Maher's input, not generated as independent analysis.
 
