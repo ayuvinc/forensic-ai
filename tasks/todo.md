@@ -336,6 +336,23 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [QUEUED — small]
+
+**Status:** QUEUED — small fix, no design needed.
+**Observation Session 049:** Progress bar hits 100% (turns red) while pipeline is still running. Root cause: `total_steps` is calibrated for a clean single-pass run. Schema retry, PM revision requests, and multi-module FRM each add extra `on_progress` events that overflow the bar. Streamlit clamps at 100% and the bar turns red — misleading, implies failure.
+
+**Fix options (architect picks one at session open):**
+
+Option A — Indeterminate bar: replace `st.progress()` with Streamlit's native `st.status()` spinner for the outer pipeline container. No step counting needed. Already used inside `run_in_status()` — just remove the manual `st.progress` overlay.
+
+Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitted events and cap the display at 95% until the pipeline actually completes, then snap to 100%.
+
+- [ ] PROG-01 `streamlit_app/shared/pipeline.py` — implement chosen fix (A or B). Progress bar must never show red/full while pipeline is still running. On completion: show 100% briefly then replace with `st.success()`.
+- [ ] PROG-02 FRM-specific: calibrate or remove step counting for multi-module runs — each module's schema_retry and PM revision round adds 2–4 extra events; fixed `total_steps` cannot predict this.
+- [ ] PROG-03 Smoke verify: run FRM 2-module knowledge_only; confirm bar never turns red mid-run; confirm completion state is clear.
+
+---
+
 ### Sprint-SMOKE-01 — Multi-Level Smoke Test Suite [UNBLOCKED]
 
 **Status:** READY — spec designed Session 042.
