@@ -32,6 +32,23 @@ class JuniorDraft(BaseModel):
     citations: list[Citation]
     revision_round: int = 0
 
+    @model_validator(mode="before")
+    @classmethod
+    def coerce_recommendations_to_strings(cls, values: dict) -> dict:
+        # Model sometimes returns recommendations as dicts {title, description, ...}.
+        # Coerce to strings so downstream f"- {rec}" formatting works correctly.
+        recs = values.get("recommendations", [])
+        coerced = []
+        for r in recs:
+            if isinstance(r, dict):
+                title = r.get("title", "")
+                body = r.get("description", r.get("body", r.get("content", "")))
+                coerced.append(f"{title}: {body}".strip(": ") if body else title)
+            else:
+                coerced.append(str(r))
+        values["recommendations"] = coerced
+        return values
+
 
 class ReviewFinding(BaseModel):
     section: str
