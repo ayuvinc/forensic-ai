@@ -141,3 +141,4 @@
 | 2026-04-23T06:00:00Z | qa-run | COMPLETE | qa-run-041-IA-03-C1-20260423T060000Z | IA-03-C1 QA_APPROVED — all 4 ACs pass: imports clean, field_types valid, BA-IA-07 has_remarks correct, 131 tests pass |
 | 2026-04-23T06:01:37Z | junior-dev | COMPLETE | junior-dev-041-sprint-ia-03-w3w4w5w6-20260423 | IA-03-W3/W4/W5/W6 implemented — HybridIntakeEngine wired to Sanctions, Transaction Testing, Policy/SOP, Training pages; 131 tests pass; all W tasks READY_FOR_REVIEW |
 | 2026-04-23T06:05:34Z | qa-run | QA_APPROVED | qa-run-041-sprint-ia-03-20260423T0610Z | Sprint-IA-03 QA PASS — all 7 tasks (C1+W1-W6+QA) approved; 131 tests pass; smoke spec written; 0 AC failures; manual Steps A-G pending Maher live run |
+| 2026-04-23T06:11:38Z | architect | COMPLETE | architect-041-sprint-ia-03-close-20260423T0615Z | Sprint-IA-03 merged to main, tasks archived, docs updated (hld/Brief/scope-brief), session CLOSED — next: Sprint-IA-04 architect session |
