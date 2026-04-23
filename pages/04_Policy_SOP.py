@@ -1,13 +1,35 @@
 """Policy / SOP Generator — Streamlit page.
 
 UX-003 shell: Zone A (intake + doc type) → Zone B (pipeline) → Zone C (output + download).
+Fixed types only (11 subtypes); co-build mode deferred to Sprint-IA-04 (BA-IA-09).
 """
 
 import streamlit as st
+from datetime import datetime, timezone
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import generic_intake_form
+from streamlit_app.shared.intake import render_engagement_banner, get_project_language_standard
+from streamlit_app.shared.hybrid_intake import (
+    HybridIntakeEngine,
+    _POLICY_SOP_FIELD_CONFIG,
+    POLICY_SUBTYPE_LABELS,
+)
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir, get_final_report_path
+
+# Label → pipeline key maps
+_POLICY_SUBTYPE_KEYS = {
+    "AML / CFT Policy":                    "aml_cft_policy",
+    "Fraud Prevention Policy":             "fraud_prevention_policy",
+    "Whistleblower Policy":                "whistleblower_policy",
+    "Procurement Policy":                  "procurement_policy",
+    "Conflict of Interest Policy":         "conflict_of_interest_policy",
+    "Data Privacy Policy":                 "data_privacy_policy",
+    "Transaction Monitoring SOP":          "transaction_monitoring_sop",
+    "KYC / Due Diligence SOP":             "kyc_due_diligence_sop",
+    "Fraud Investigation SOP":             "fraud_investigation_sop",
+    "Sanctions Screening SOP":             "sanctions_screening_sop",
+    "Suspicious Activity Reporting SOP":   "suspicious_activity_reporting_sop",
+}
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -18,22 +40,7 @@ except Exception as _bootstrap_err:
 st.title("Policy / SOP Generator")
 st.caption("Draft AML/CFT policies, fraud prevention policies, SOPs with regulatory citations")
 
-POLICY_TYPES = {
-    "aml_cft_policy": "AML / CFT Policy",
-    "fraud_prevention_policy": "Fraud Prevention Policy",
-    "whistleblower_policy": "Whistleblower Policy",
-    "procurement_policy": "Procurement Policy",
-    "conflict_of_interest_policy": "Conflict of Interest Policy",
-    "data_privacy_policy": "Data Privacy Policy",
-}
-
-SOP_TYPES = {
-    "transaction_monitoring_sop": "Transaction Monitoring SOP",
-    "kyc_due_diligence_sop": "KYC / Due Diligence SOP",
-    "fraud_investigation_sop": "Fraud Investigation SOP",
-    "sanctions_screening_sop": "Sanctions Screening SOP",
-    "suspicious_activity_reporting_sop": "Suspicious Activity Reporting SOP",
-}
+_ps_engine = HybridIntakeEngine(st, _POLICY_SOP_FIELD_CONFIG, "policy_sop")
 
 if "ps_stage" not in st.session_state:
     st.session_state.ps_stage = "intake"
@@ -42,41 +49,55 @@ if st.session_state.ps_stage != "intake":
     if st.sidebar.button("Start New Case"):
         for k in ["ps_stage", "ps_intake", "ps_params", "ps_result"]:
             st.session_state.pop(k, None)
+        _ps_engine.reset()
         st.rerun()
 
-# ── STAGE: intake ─────────────────────────────────────────────────────────────
+# ── STAGE: intake (BA-IA-07: HybridIntakeEngine) ─────────────────────────────
 if st.session_state.ps_stage == "intake":
-    intake = generic_intake_form(st, "policy_sop", "Policy / SOP — Intake")
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    client_name = project_meta.get("client_name", "") if project_meta else ""
+    if not client_name:
+        client_name = st.text_input("Client name *", key="ps_client_name_manual")
 
-    if intake is not None:
-        doc_type = st.selectbox("Document type", ["policy", "sop"], format_func=str.title)
+    st.divider()
+    engine_result = _ps_engine.run()
 
-        if doc_type == "policy":
-            subtypes = POLICY_TYPES
-        else:
-            subtypes = SOP_TYPES
+    if engine_result is not None and client_name.strip():
+        import uuid as _uuid
+        from schemas.case import CaseIntake
 
-        doc_subtype = st.selectbox(
-            "Document subtype",
-            options=list(subtypes.keys()),
-            format_func=lambda k: subtypes[k],
+        values = engine_result["values"]
+        case_id = engagement_id if engagement_id else (
+            f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
         )
 
-        gap_analysis = st.selectbox(
-            "Mode",
-            ["new", "gap"],
-            format_func=lambda v: "New document" if v == "new" else "Gap analysis of existing",
-        )
+        doc_subtype_label = values.get("doc_subtype", "AML / CFT Policy")
+        doc_type = "policy" if doc_subtype_label in POLICY_SUBTYPE_LABELS else "sop"
+        doc_subtype = _POLICY_SUBTYPE_KEYS.get(doc_subtype_label, "aml_cft_policy")
 
-        if st.button("Generate Document", type="primary"):
-            st.session_state.ps_intake = intake
-            st.session_state.ps_params = {
-                "doc_type": doc_type,
-                "doc_subtype": doc_subtype,
-                "gap_analysis": gap_analysis,
-            }
-            st.session_state.ps_stage = "ai_questions"
-            st.rerun()
+        gap_analysis_label = values.get("gap_analysis", "New document")
+        gap_analysis = "new" if gap_analysis_label == "New document" else "gap"
+
+        intake = CaseIntake(
+            case_id=case_id,
+            client_name=client_name.strip(),
+            industry=values.get("industry", "").strip(),
+            primary_jurisdiction=values.get("jurisdiction", "UAE"),
+            description=values.get("description", "").strip(),
+            workflow="policy_sop",
+            language=get_project_language_standard(st),
+            created_at=datetime.now(timezone.utc),
+            engagement_id=engagement_id or None,
+        )
+        st.session_state.ps_intake = intake
+        st.session_state.ps_params = {
+            "doc_type":    doc_type,
+            "doc_subtype": doc_subtype,
+            "gap_analysis": gap_analysis,
+        }
+        st.session_state.ps_stage = "ai_questions"
+        st.rerun()
 
 # ── STAGE: ai_questions ───────────────────────────────────────────────────────
 elif st.session_state.ps_stage == "ai_questions":

@@ -137,7 +137,7 @@ AC:
 
 ---
 
-#### IA-03-W1 — Wire HybridIntakeEngine to 06_FRM.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W1 — Wire HybridIntakeEngine to 06_FRM.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/06_FRM.py`
 
@@ -167,7 +167,7 @@ AC:
 
 ---
 
-#### IA-03-W2 — Wire HybridIntakeEngine to 09_Due_Diligence.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W2 — Wire HybridIntakeEngine to 09_Due_Diligence.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/09_Due_Diligence.py`
 
@@ -196,7 +196,7 @@ AC:
 
 ---
 
-#### IA-03-W3 — Wire HybridIntakeEngine to 10_Sanctions.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W3 — Wire HybridIntakeEngine to 10_Sanctions.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/10_Sanctions.py`
 
@@ -226,7 +226,7 @@ AC:
 
 ---
 
-#### IA-03-W4 — Wire HybridIntakeEngine to 11_Transaction_Testing.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W4 — Wire HybridIntakeEngine to 11_Transaction_Testing.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/11_Transaction_Testing.py`
 
@@ -257,7 +257,7 @@ AC:
 
 ---
 
-#### IA-03-W5 — Wire HybridIntakeEngine to 04_Policy_SOP.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W5 — Wire HybridIntakeEngine to 04_Policy_SOP.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/04_Policy_SOP.py`
 
@@ -289,7 +289,7 @@ AC:
 
 ---
 
-#### IA-03-W6 — Wire HybridIntakeEngine to 05_Training.py [P1, depends: IA-03-C1, PENDING]
+#### IA-03-W6 — Wire HybridIntakeEngine to 05_Training.py [P1, depends: IA-03-C1, READY_FOR_REVIEW]
 
 File: `pages/05_Training.py`
 
@@ -321,7 +321,7 @@ AC:
 
 ---
 
-#### IA-03-QA — Smoke test and regression gate [P1, depends: all W-tasks, PENDING]
+#### IA-03-QA — Smoke test and regression gate [P1, depends: all W-tasks, READY_FOR_REVIEW]
 
 Pre-conditions: all 6 W-tasks completed, engine.reset() wired on all pages.
 

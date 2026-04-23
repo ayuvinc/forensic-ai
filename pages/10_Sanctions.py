@@ -2,15 +2,31 @@
 
 UX-003 shell + Sanctions-specific override:
 - knowledge_only mode: st.error warning + acknowledgement checkbox required BEFORE intake form.
-- Run button disabled until checkbox ticked (if knowledge_only).
+- Intake rendered only after acknowledgement (if knowledge_only).
 """
 
 import streamlit as st
 import config
+from datetime import datetime, timezone
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import generic_intake_form
+from streamlit_app.shared.intake import render_engagement_banner, get_project_language_standard
+from streamlit_app.shared.hybrid_intake import HybridIntakeEngine, _SANCTIONS_FIELD_CONFIG
 from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 from tools.file_tools import case_dir, get_final_report_path
+
+# Label → pipeline key maps
+_SAN_PURPOSE_KEYS = {
+    "Onboarding":      "onboarding",
+    "Transaction":     "transaction",
+    "Periodic Review": "periodic_review",
+    "Acquisition":     "acquisition",
+    "Regulatory":      "regulatory",
+    "Other":           "other",
+}
+_SAN_OUTPUT_KEYS = {
+    "Full Report":    "full_report",
+    "Clearance Memo": "clearance_memo",
+}
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -39,6 +55,8 @@ if knowledge_only:
         value=st.session_state.get("sanctions_acknowledged", False),
     )
 
+_san_engine = HybridIntakeEngine(st, _SANCTIONS_FIELD_CONFIG, "sanctions_screening")
+
 if "san_stage" not in st.session_state:
     st.session_state.san_stage = "intake"
 
@@ -46,62 +64,66 @@ if st.session_state.san_stage != "intake":
     if st.sidebar.button("Start New Case"):
         for k in ["san_stage", "san_intake", "san_params", "san_result", "sanctions_acknowledged"]:
             st.session_state.pop(k, None)
-        # Clear dispositions keyed by case_id
         for key in list(st.session_state.keys()):
             if key.startswith("san_dispositions_"):
                 st.session_state.pop(key, None)
+        _san_engine.reset()
         st.rerun()
 
-# ── STAGE: intake ─────────────────────────────────────────────────────────────
+# ── STAGE: intake (BA-IA-07: HybridIntakeEngine) ─────────────────────────────
 if st.session_state.san_stage == "intake":
-    intake = generic_intake_form(st, "sanctions_screening", "Sanctions Screening — Intake")
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    client_name = project_meta.get("client_name", "") if project_meta else ""
+    if not client_name:
+        client_name = st.text_input("Client name *", key="san_client_name_manual")
 
-    if intake is not None:
-        subject_name = st.text_input(
-            "Name of individual or entity to screen",
-            placeholder="Full legal name",
-        )
-        subject_type = st.selectbox("Subject type", ["individual", "entity"], format_func=str.title)
-        nationalities_raw = st.text_input(
-            "Nationality / jurisdiction of incorporation (comma-separated)",
-            value=intake.primary_jurisdiction,
-        )
-        aliases_raw = st.text_input("Known aliases or alternate name spellings (comma-separated, optional)")
-        dob_or_reg = st.text_input("Date of birth or company reg number (optional — improves match accuracy)")
-        purpose = st.selectbox(
-            "Purpose of screening",
-            ["onboarding", "transaction", "periodic_review", "acquisition", "regulatory", "other"],
-            format_func=lambda v: v.replace("_", " ").title(),
-        )
-        output_format = st.selectbox(
-            "Output format",
-            ["full_report", "clearance_memo"],
-            format_func=lambda v: "Full Report" if v == "full_report" else "Clearance Memo",
-        )
+    if knowledge_only and not acknowledged:
+        st.info("Acknowledge the warning above to proceed.")
+    else:
+        st.divider()
+        engine_result = _san_engine.run()
 
-        # Run button is disabled until knowledge_only is acknowledged
-        run_disabled = knowledge_only and not acknowledged
-        if st.button("Run Sanctions Screen", type="primary", disabled=run_disabled):
-            if not subject_name.strip():
-                st.error("Required: Subject name")
-            else:
-                nationalities = [n.strip() for n in nationalities_raw.split(",") if n.strip()]
-                aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()] if aliases_raw else []
-                st.session_state.san_intake = intake
-                st.session_state.san_params = {
-                    "subject_name": subject_name.strip(),
-                    "subject_type": subject_type,
-                    "nationalities": nationalities,
-                    "aliases": aliases,
-                    "dob_or_reg": dob_or_reg.strip(),
-                    "selected_lists": "all",
-                    "screen_associates": False,
-                    "purpose": purpose,
-                    "output_format": output_format,
-                    "specific_concerns": "",
-                }
-                st.session_state.san_stage = "ai_questions"
-                st.rerun()
+        if engine_result is not None and client_name.strip():
+            import uuid as _uuid
+            from schemas.case import CaseIntake
+
+            values = engine_result["values"]
+            case_id = engagement_id if engagement_id else (
+                f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
+            )
+
+            nationalities_raw = values.get("nationalities", "")
+            nationalities = [n.strip() for n in nationalities_raw.split(",") if n.strip()] if nationalities_raw else []
+            aliases_raw = values.get("aliases", "")
+            aliases = [a.strip() for a in aliases_raw.split(",") if a.strip()] if aliases_raw else []
+
+            intake = CaseIntake(
+                case_id=case_id,
+                client_name=client_name.strip(),
+                industry="",
+                primary_jurisdiction=values.get("jurisdiction", "UAE"),
+                description=f"Sanctions screening: {values.get('subject_name', '').strip()}. {values.get('description', '').strip()}".strip(),
+                workflow="sanctions_screening",
+                language=get_project_language_standard(st),
+                created_at=datetime.now(timezone.utc),
+                engagement_id=engagement_id or None,
+            )
+            st.session_state.san_intake = intake
+            st.session_state.san_params = {
+                "subject_name":      values.get("subject_name", "").strip(),
+                "subject_type":      values.get("subject_type", "Individual").lower(),
+                "nationalities":     nationalities,
+                "aliases":           aliases,
+                "dob_or_reg":        values.get("dob_or_reg", "").strip(),
+                "selected_lists":    "all",
+                "screen_associates": False,
+                "purpose":           _SAN_PURPOSE_KEYS.get(values.get("purpose", "Onboarding"), "onboarding"),
+                "output_format":     _SAN_OUTPUT_KEYS.get(values.get("output_format", "Full Report"), "full_report"),
+                "specific_concerns": values.get("description", "").strip(),
+            }
+            st.session_state.san_stage = "ai_questions"
+            st.rerun()
 
 # ── STAGE: ai_questions ───────────────────────────────────────────────────────
 elif st.session_state.san_stage == "ai_questions":
@@ -175,7 +197,6 @@ elif st.session_state.san_stage == "per_hit_review":
     if _disp_key not in st.session_state:
         st.session_state[_disp_key] = {}
 
-    # One expander per screened entity (subject_name from params)
     subject_name = params.get("subject_name", "Unknown Subject")
     with st.expander(f"Screened Entity: {subject_name}", expanded=True):
         default_idx = _disposition_options.index(_default_disposition) if _default_disposition in _disposition_options else 2
@@ -193,10 +214,8 @@ elif st.session_state.san_stage == "per_hit_review":
         st.session_state[_disp_key][subject_name] = {"disposition": disposition, "notes": notes}
 
     if st.button("Confirm all dispositions", type="primary", key=f"san_confirm_disp_{intake.case_id}"):
-        # Persist dispositions to D_Working_Papers/
         import os as _os
         from tools.file_tools import case_dir as _case_dir
-        from datetime import datetime, timezone
         _wp = _case_dir(intake.case_id) / "D_Working_Papers"
         _wp.mkdir(parents=True, exist_ok=True)
         _disp_path = _wp / "sanctions_dispositions.json"

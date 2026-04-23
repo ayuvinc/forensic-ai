@@ -30,7 +30,7 @@ Features that must ship for the product to have value for Maher:
 - [x] Workpaper generator — interim workpaper generation during active engagement
 - [x] Evidence chat — conversational document review and evidence extraction
 - [ ] Expert Witness Report — full pipeline workflow; model routing exists, page and knowledge file pending
-- [x] Hybrid intake — structured dropdowns + remarks-triggered conversation; Investigation wired Sprint-IA-02; remaining workflows (FRM, DD, Sanctions, TT, Policy, Training) deferred to Sprint-IA-03
+- [x] Hybrid intake — structured dropdowns + remarks-triggered conversation; all 7 workflows wired (Sprint-IA-02: Investigation; Sprint-IA-03: FRM, DD, Sanctions, TT, Policy/SOP, Training)
 - [x] Product IA redesign — two-arc navigation (Sprint-IA-01), project/engagement model enforced in UI
 - [ ] Historical knowledge library — firm_profile/historical_registers/ and historical_reports/; sanitised ingestion
 

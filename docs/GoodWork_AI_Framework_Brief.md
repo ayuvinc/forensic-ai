@@ -206,7 +206,7 @@ Stored in `firm_profile/` locally. Loaded automatically into every proposal, rep
 | Firm profile setup wizard | Complete |
 | Streamlit browser UI (18 pages) | Complete — 5-section st.navigation() sidebar |
 | Product IA redesign (two-arc model, st.navigation()) | Complete — Sprint-IA-01 merged 2026-04-21 |
-| Hybrid intake (structured dropdowns + remarks conversation) | Designed — Sprint-IA-02 |
+| Hybrid intake (structured dropdowns + remarks conversation) | Complete — Sprint-IA-02 (Investigation), Sprint-IA-03 (FRM, DD, Sanctions, TT, Policy/SOP, Training) |
 | Expert Witness workflow | Planned |
 | FRM guided exercise redesign | Planned |
 | White-label packaging | Planned — Phase 7 |

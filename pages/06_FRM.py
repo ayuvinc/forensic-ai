@@ -19,7 +19,12 @@ from pathlib import Path
 import streamlit as st
 import config
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import frm_intake_form
+from streamlit_app.shared.intake import render_engagement_banner, get_project_language_standard
+from streamlit_app.shared.hybrid_intake import (
+    HybridIntakeEngine,
+    _FRM_FIELD_CONFIG,
+    FRM_MODULE_DEPENDENCIES,
+)
 from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 
 
@@ -99,21 +104,72 @@ st.caption("Fraud Risk Management — multi-module assessment pipeline")
 if "frm_stage" not in st.session_state:
     st.session_state.frm_stage = "intake"
 
+# Engine instantiated once per page load; namespaced to "frm" in session_state
+_frm_engine = HybridIntakeEngine(st, _FRM_FIELD_CONFIG, "frm")
+
 # Reset button — available on all stages except intake
 if st.session_state.frm_stage != "intake":
     if st.sidebar.button("Start new FRM case"):
         for key in ["frm_stage", "frm_intake", "frm_modules", "frm_result", "frm_reviewed", "frm_dm", "frm_reg_results"]:
             st.session_state.pop(key, None)
+        _frm_engine.reset()
         st.rerun()
 
-# ── STAGE: intake ─────────────────────────────────────────────────────────────
+# ── STAGE: intake (BA-IA-07: HybridIntakeEngine) ─────────────────────────────
 if st.session_state.frm_stage == "intake":
-    result = frm_intake_form(st)
-    if result is not None:
-        intake, selected_modules = result
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    client_name = project_meta.get("client_name", "") if project_meta else ""
+    if not client_name:
+        client_name = st.text_input("Client name *", key="frm_client_name_manual")
+
+    st.divider()
+
+    engine_result = _frm_engine.run()
+
+    if engine_result is not None and client_name.strip():
+        import uuid as _uuid
+        from datetime import datetime, timezone
+        from schemas.case import CaseIntake
+
+        values = engine_result["values"]
+
+        # Build selected_modules list from 8 individual Yes/No radio fields (D1)
+        selected_modules = [n for n in range(1, 9) if values.get(f"module_{n}") == "Yes"]
+        if not selected_modules:
+            st.error("Select at least one module.")
+            st.stop()
+
+        # Module dependency enforcement: auto-add required modules (mirrors frm_intake_form logic)
+        selected_set = set(selected_modules)
+        missing_deps: set[int] = set()
+        for mod, deps in FRM_MODULE_DEPENDENCIES.items():
+            if mod in selected_set:
+                for dep in deps:
+                    if dep not in selected_set:
+                        missing_deps.add(dep)
+        if missing_deps:
+            auto_added = sorted(missing_deps)
+            selected_modules = sorted(selected_set | missing_deps)
+            st.warning(f"Module(s) {auto_added} added automatically — required by the selected modules.")
+
+        case_id = engagement_id if engagement_id else (
+            f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
+        )
+        intake = CaseIntake(
+            case_id=case_id,
+            client_name=client_name.strip(),
+            industry=values.get("industry", "").strip(),
+            primary_jurisdiction=values.get("jurisdiction", "UAE"),
+            description=values.get("description", "").strip(),
+            company_size=values.get("company_size"),
+            workflow="frm_risk_register",
+            language=get_project_language_standard(st),
+            created_at=datetime.now(timezone.utc),
+            engagement_id=engagement_id or None,
+        )
         st.session_state.frm_intake = intake
         st.session_state.frm_modules = selected_modules
-        # Transition to confirm (document upload) stage — not directly to running (UX-006)
         st.session_state.frm_stage = "confirm"
         st.rerun()
 
