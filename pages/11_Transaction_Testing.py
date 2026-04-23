@@ -9,15 +9,50 @@ from pathlib import Path
 
 import streamlit as st
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import generic_intake_form
+from streamlit_app.shared.intake import render_engagement_banner, get_project_language_standard
+from streamlit_app.shared.hybrid_intake import HybridIntakeEngine, _TT_FIELD_CONFIG
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir, get_final_report_path
+
+# Label → pipeline key maps
+_TT_CONTEXT_KEYS = {
+    "Fraud Discovery (does fraud exist?)":            "fraud_discovery",
+    "Fraud Quantification (measure the loss)":        "fraud_quantification",
+    "Audit / Controls Compliance":                    "audit_compliance",
+    "Due Diligence (pre-acquisition financial integrity)": "due_diligence",
+    "Regulatory (regulator-mandated testing)":        "regulatory",
+}
+_TT_TYPOLOGY_KEYS = {
+    "Not applicable":          None,
+    "Procurement Fraud":       "procurement_fraud",
+    "Payroll Fraud":           "payroll_fraud",
+    "Expense Fraud":           "expense_fraud",
+    "Cash Fraud":              "cash_fraud",
+    "Financial Statement Fraud": "financial_stmt_fraud",
+    "AML / Suspicious Transactions": "aml",
+}
+_TT_EVIDENCE_KEYS = {
+    "Internal Review":       "internal_review",
+    "Regulatory Submission": "regulatory_submission",
+    "Court Ready":           "court_ready",
+    "Board Pack":            "board_pack",
+}
+
+# Kept for running-stage display
+ENGAGEMENT_CONTEXTS = {
+    "fraud_discovery":     "Fraud Discovery (does fraud exist?)",
+    "fraud_quantification": "Fraud Quantification (measure the loss)",
+    "audit_compliance":    "Audit / Controls Compliance",
+    "due_diligence":       "Due Diligence (pre-acquisition financial integrity)",
+    "regulatory":          "Regulatory (regulator-mandated testing)",
+}
 
 
 def _infer_doc_type(filename: str) -> str:
     """Map file extension to DocumentManager doc_type string (RG-3)."""
     ext = Path(filename).suffix.lower()
     return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
+
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -28,29 +63,7 @@ except Exception as _bootstrap_err:
 st.title("Transaction Testing")
 st.caption("Fraud quantification, procurement fraud testing, AML transaction analysis, and audit compliance")
 
-ENGAGEMENT_CONTEXTS = {
-    "fraud_discovery": "Fraud Discovery (does fraud exist?)",
-    "fraud_quantification": "Fraud Quantification (measure the loss)",
-    "audit_compliance": "Audit / Controls Compliance",
-    "due_diligence": "Due Diligence (pre-acquisition financial integrity)",
-    "regulatory": "Regulatory (regulator-mandated testing)",
-}
-
-FRAUD_TYPOLOGIES = {
-    "procurement_fraud": "Procurement Fraud",
-    "payroll_fraud": "Payroll Fraud",
-    "expense_fraud": "Expense Fraud",
-    "cash_fraud": "Cash Fraud",
-    "financial_stmt_fraud": "Financial Statement Fraud",
-    "aml": "AML / Suspicious Transactions",
-}
-
-EVIDENCE_STANDARDS = {
-    "internal_review": "Internal Review",
-    "regulatory_submission": "Regulatory Submission",
-    "court_ready": "Court Ready",
-    "board_pack": "Board Pack",
-}
+_tt_engine = HybridIntakeEngine(st, _TT_FIELD_CONFIG, "transaction_testing")
 
 if "tt_stage" not in st.session_state:
     st.session_state.tt_stage = "intake"
@@ -59,43 +72,27 @@ if st.session_state.tt_stage != "intake":
     if st.sidebar.button("Start New Case"):
         for k in ["tt_stage", "tt_intake", "tt_params", "tt_result", "tt_reg_results"]:
             st.session_state.pop(k, None)
+        _tt_engine.reset()
         st.rerun()
 
-# ── STAGE: intake ─────────────────────────────────────────────────────────────
+# ── STAGE: intake (BA-IA-07: HybridIntakeEngine) ─────────────────────────────
 if st.session_state.tt_stage == "intake":
-    intake = generic_intake_form(st, "transaction_testing", "Transaction Testing — Intake")
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    client_name = project_meta.get("client_name", "") if project_meta else ""
+    if not client_name:
+        client_name = st.text_input("Client name *", key="tt_client_name_manual")
 
-    if intake is not None:
-        engagement_context = st.selectbox(
-            "Engagement context",
-            options=list(ENGAGEMENT_CONTEXTS.keys()),
-            format_func=lambda k: ENGAGEMENT_CONTEXTS[k],
-        )
+    st.divider()
+    engine_result = _tt_engine.run()
 
-        fraud_typology = None
-        if engagement_context in ("fraud_discovery", "fraud_quantification"):
-            fraud_typology = st.selectbox(
-                "Fraud typology",
-                options=list(FRAUD_TYPOLOGIES.keys()),
-                format_func=lambda k: FRAUD_TYPOLOGIES[k],
-            )
+    if engine_result is not None and client_name.strip():
+        import uuid as _uuid
+        from schemas.case import CaseIntake
 
-        date_range = st.text_input(
-            "Transaction date range",
-            placeholder="e.g. Jan 2023 – Dec 2024",
-        )
-        data_inventory = st.text_input(
-            "Data available / expected",
-            placeholder="e.g. GL export Jan-Dec 2024, AP ledger",
-            value="TBD",
-        )
-        evidence_standard = st.selectbox(
-            "Evidence standard",
-            options=list(EVIDENCE_STANDARDS.keys()),
-            format_func=lambda k: EVIDENCE_STANDARDS[k],
-        )
+        values = engine_result["values"]
 
-        # ── Document upload — Zone A (UX-006, below intake, above Run) ──────────
+        # ── Document upload — Zone A (outside engine; file uploader not supported in engine) ──
         uploaded_files = st.file_uploader(
             "Upload case documents (optional)",
             accept_multiple_files=True,
@@ -107,53 +104,75 @@ if st.session_state.tt_stage == "intake":
             st.warning("Maximum 10 documents per case.")
 
         if st.button("Run Transaction Testing", type="primary"):
-            if not date_range.strip():
-                st.error("Required: Transaction date range")
-            else:
-                # RT-1: registration on Run click
-                from tools.document_manager import DocumentManager
-                from schemas.documents import DocumentProvenance
+            from tools.document_manager import DocumentManager
+            from schemas.documents import DocumentProvenance
 
-                reg_results = []
-                if uploaded_files:
-                    cdir = case_dir(intake.case_id)  # RT-2
-                    dm = DocumentManager(intake.case_id)  # RG-1
-                    for f in uploaded_files:
-                        try:
-                            file_bytes = bytes(f.getbuffer())  # FW-1
-                            dest = cdir / f.name               # FW-2
-                            dest.write_bytes(file_bytes)
-                            provenance = DocumentProvenance(
-                                collection_method="uploaded_by_consultant",
-                                collected_at=datetime.now(timezone.utc),
-                                collector_role="consultant",
-                                scope_authorized_by=f"case_{intake.case_id}",
-                                source_hash=hashlib.sha256(file_bytes).hexdigest(),
-                            )
-                            dm.register_document(  # RG-2
-                                str(dest),
-                                folder="uploaded",
-                                doc_type=_infer_doc_type(f.name),  # RG-3
-                                provenance=provenance,
-                            )
-                            size_mb = round(f.size / (1024 * 1024), 1)
-                            reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
-                        except Exception as e:  # RG-4: per-file isolation
-                            reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
-                    # WI-4: dm NOT passed to workflow — registration only
+            case_id = engagement_id if engagement_id else (
+                f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
+            )
 
-                st.session_state.tt_reg_results = reg_results
-                st.session_state.tt_intake = intake
-                st.session_state.tt_params = {
-                    "engagement_context": engagement_context,
-                    "fraud_typology": fraud_typology,
-                    "date_range": date_range.strip(),
-                    "data_inventory": data_inventory.strip(),
-                    "evidence_standard": evidence_standard,
-                    "sampling": "full_population",
-                }
-                st.session_state.tt_stage = "ai_questions"
-                st.rerun()
+            # RT-1: registration on Run click
+            reg_results = []
+            if uploaded_files:
+                cdir = case_dir(case_id)  # RT-2
+                dm = DocumentManager(case_id)  # RG-1
+                for f in uploaded_files:
+                    try:
+                        file_bytes = bytes(f.getbuffer())  # FW-1
+                        dest = cdir / f.name               # FW-2
+                        dest.write_bytes(file_bytes)
+                        provenance = DocumentProvenance(
+                            collection_method="uploaded_by_consultant",
+                            collected_at=datetime.now(timezone.utc),
+                            collector_role="consultant",
+                            scope_authorized_by=f"case_{case_id}",
+                            source_hash=hashlib.sha256(file_bytes).hexdigest(),
+                        )
+                        dm.register_document(  # RG-2
+                            str(dest),
+                            folder="uploaded",
+                            doc_type=_infer_doc_type(f.name),  # RG-3
+                            provenance=provenance,
+                        )
+                        size_mb = round(f.size / (1024 * 1024), 1)
+                        reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
+                    except Exception as e:  # RG-4: per-file isolation
+                        reg_results.append({"name": f.name, "size_mb": 0, "ok": False, "error": str(e)})
+                # WI-4: dm NOT passed to workflow — registration only
+
+            intake = CaseIntake(
+                case_id=case_id,
+                client_name=client_name.strip(),
+                industry=values.get("industry", "").strip() if "industry" in values else "",
+                primary_jurisdiction=values.get("jurisdiction", "UAE"),
+                description=values.get("description", "").strip(),
+                workflow="transaction_testing",
+                language=get_project_language_standard(st),
+                created_at=datetime.now(timezone.utc),
+                engagement_id=engagement_id or None,
+            )
+            st.session_state.tt_reg_results = reg_results
+            st.session_state.tt_intake = intake
+            st.session_state.tt_params = {
+                "engagement_context": _TT_CONTEXT_KEYS.get(
+                    values.get("engagement_context", "Fraud Discovery (does fraud exist?)"),
+                    "fraud_discovery",
+                ),
+                "fraud_typology": _TT_TYPOLOGY_KEYS.get(
+                    values.get("fraud_typology", "Not applicable"),
+                    None,
+                ),
+                "transaction_types": values.get("transaction_types", "").strip(),
+                "date_range":        values.get("date_range", "").strip(),
+                "data_inventory":    values.get("data_inventory", "TBD").strip() or "TBD",
+                "evidence_standard": _TT_EVIDENCE_KEYS.get(
+                    values.get("evidence_standard", "Internal Review"),
+                    "internal_review",
+                ),
+                "sampling":          "full_population",
+            }
+            st.session_state.tt_stage = "ai_questions"
+            st.rerun()
 
 # ── STAGE: ai_questions ───────────────────────────────────────────────────────
 elif st.session_state.tt_stage == "ai_questions":
@@ -170,7 +189,11 @@ elif st.session_state.tt_stage == "running":
     params = st.session_state.tt_params
 
     with st.expander("Intake Summary", expanded=False):
-        st.write(f"**Client:** {intake.client_name} | **Context:** {ENGAGEMENT_CONTEXTS.get(params['engagement_context'], params['engagement_context'])} | **Date range:** {params['date_range']}")
+        st.write(
+            f"**Client:** {intake.client_name} | "
+            f"**Context:** {ENGAGEMENT_CONTEXTS.get(params['engagement_context'], params['engagement_context'])} | "
+            f"**Date range:** {params['date_range']}"
+        )
 
     # ── Document registration results (FS-1) ───────────────────────────────────
     for r in st.session_state.get("tt_reg_results", []):

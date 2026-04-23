@@ -203,3 +203,23 @@ GoodWork Forensic AI is designed as a portable, private forensic workbench. The 
 The workflow engine, agent pipeline, hooks, schemas, and research tools are **model-agnostic**. They do not change between shipping models. What changes is the layer around them: who can access the system, how data is stored, and how it is delivered.
 
 This means any investment in the pipeline — new service lines, better prompts, improved research tools — applies to every shipping model without rework. The commercial value of the pipeline compounds across all models.
+
+---
+
+## Product Positioning Insight — Co-Build Mode (2026-04-23)
+
+**Decision confirmed by AK, Session 041.**
+
+Policy/SOP workflows must not be positioned as "AI generates, you review." The correct positioning is **collaborative drafting partner**: model and Maher build the document section by section, synchronously. Maher approves, edits, or regenerates each section before the next one drafts.
+
+This applies to all Policy/SOP types — fixed (6 policies, 5 SOPs) and custom. Custom type adds a scoping conversation before the structure proposal step.
+
+**Why this matters for product positioning:**
+- "Document generator" is a commodity feature. Any LLM can produce a draft AML policy.
+- "Co-build" is a workflow tool. It integrates Maher's institutional knowledge into the output at each section, produces documents that reflect his firm's voice and client context, and creates a traceable chain of consultant decisions.
+- The deliverable is not "AI output reviewed by a human." It is "Maher's document, structured and drafted with AI assistance." That distinction matters for professional credibility and client trust.
+- Co-build mode also applies naturally to Custom Policy/SOP where no template exists and scope must be defined conversationally before any drafting begins.
+
+**Implication for white-label (Model 2):** Co-build is a strong differentiator for solo forensic practitioners who currently produce policy documents manually. It compresses hours of drafting into a guided session while keeping the practitioner's judgment at every section.
+
+**Sprint assignment:** Sprint-IA-03-W5 wires intake for fixed types. Sprint-IA-04 builds co-build mode for all types + custom.

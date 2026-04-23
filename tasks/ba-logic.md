@@ -1173,3 +1173,67 @@ Each workflow's intake schema must separate structured fields (typed enums/lists
 **Impact on CLAUDE.md:** Updated this session.
 
 ---
+
+### BA-IA-09 — Policy/SOP Guided Co-Build Mode
+- Status: CONFIRMED — AK Session 041
+
+**AK decision:** Policy and SOP workflows must use a guided co-build model — not single-pass draft. Model and Maher build the document section by section, synchronously. Maher approves, edits, or regenerates each section before the next one drafts. This applies to ALL types: all 6 fixed policy types, all 5 fixed SOP types, and Custom.
+
+**Co-build flow (all types):**
+```
+STEP 1 — Intake (HybridIntakeEngine, Sprint-IA-03-W5)
+  Structured fields: doc type, jurisdiction, industry, description, gap_analysis
+  Remarks on jurisdiction → conversation if non-empty
+
+STEP 2 — AIC questions (existing render_intake_questions — unchanged)
+
+STEP 3 — Structure proposal
+  Model proposes section headings based on doc type + jurisdiction + description
+  Maher: approve / reorder / add section / remove section
+  Output: locked section list
+
+STEP 4 — Per-section sync loop
+  For each section in order:
+    Model drafts the section (Haiku for body, Sonnet for review pass)
+    Maher: Approve → advance | Edit inline → save and advance | Regenerate with instructions → re-draft
+  No section N+1 drafts until section N is approved
+
+STEP 5 — Final assembly
+  All approved sections assembled into full document
+  Standard done zone: DOCX + MD download
+```
+
+**Custom type — additional intake step (before STEP 3):**
+```
+STEP 2b — Custom scoping conversation
+  Model asks 4–5 structured questions to define scope:
+    1. What is the full name of this document?
+    2. Who does it apply to (entity types, roles, geographies)?
+    3. What regulations, standards, or frameworks should it reference?
+    4. Does an existing version exist? (if yes → gap analysis mode)
+    5. What is the primary risk or gap this document addresses?
+  Answers recorded to D_Working_Papers/custom_doc_scoping.json
+  These answers are injected into the structure proposal prompt (STEP 3)
+```
+
+**Business rules:**
+- A section cannot be skipped — Maher must explicitly approve or regenerate before advancing. There is no "skip" button.
+- If Maher edits a section inline, the edited text is the approved version — no re-draft unless Maher triggers it.
+- Gap analysis mode: model reads any uploaded existing document, identifies gaps against the selected standard, and drafts only the gap sections. Existing sections shown as read-only in the review loop.
+- Section count is not fixed — it is determined by the structure proposal and confirmed by Maher. Typical range: 6–14 sections.
+- Model uses jurisdiction + regulatory framework from intake to cite applicable regulations inline. Standard: authoritative citations preferred; disclaimer appended if none found (per BA-IA-08).
+- All section approvals recorded in audit_log.jsonl: event type "section_approved", section title, action (approved/edited/regenerated), timestamp.
+
+**What this replaces:**
+- Current single-pass `run_policy_sop_workflow` pipeline → replaced by multi-step co-build orchestrator
+- The single "Run" button → replaced by structure proposal confirmation + per-section controls
+
+**What this does NOT change:**
+- HybridIntakeEngine intake wiring (Sprint-IA-03-W5) — co-build starts after intake completes
+- AIC questions stage — unchanged
+- Done zone (DOCX + MD download) — unchanged
+- Audit trail — co-build adds events; existing hooks unchanged
+
+**Sprint assignment:** Sprint-IA-04 — to be designed in a dedicated architect session before build starts.
+
+---

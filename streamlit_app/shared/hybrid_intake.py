@@ -453,3 +453,545 @@ _INVESTIGATION_FIELD_CONFIG: list[WorkflowFieldConfig] = [
         help_text="Narrative fields are always free text — no Remarks trigger per BA-IA-07.",
     ),
 ]
+
+
+# ── FRM field config (BA-IA-07, D1: 8 individual module radios) ───────────────
+
+# Module labels mirror FRM_MODULES in workflows/frm_risk_register.py — kept in
+# sync manually; not imported to avoid a circular dependency at module load time.
+FRM_MODULE_LABELS: list[tuple[int, str]] = [
+    (1, "Entity & Ownership Risk"),
+    (2, "Financial Crime / AML Risk"),
+    (3, "Procurement & Vendor Risk"),
+    (4, "HR & Payroll Risk"),
+    (5, "Revenue & Receivables Risk"),
+    (6, "Fixed Assets & Capex Risk"),
+    (7, "Management Override & Governance Risk"),
+    (8, "Regulatory & Compliance Risk"),
+]
+
+# Dependency map mirrors MODULE_DEPENDENCIES in frm_risk_register.py.
+# Pages use this to auto-add Module 2 when 3/4/7 are selected.
+FRM_MODULE_DEPENDENCIES: dict[int, list[int]] = {3: [2], 4: [2], 7: [2, 3]}
+
+COMPANY_SIZE_OPTIONS = ["Small (<50 staff)", "Medium (50–500 staff)", "Large (>500 staff)", "Listed / public"]
+
+_FRM_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Primary jurisdiction",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE HQ but operations across GCC",
+    ),
+    WorkflowFieldConfig(
+        id="industry",
+        label="Industry / sector",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Financial services, Real estate, Construction",
+    ),
+    WorkflowFieldConfig(
+        id="company_size",
+        label="Company size",
+        field_type="selectbox",
+        options=COMPANY_SIZE_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    # 8 individual module radios — one per FRM module (D1, confirmed AK Session 041).
+    # Each has a Remarks cell so Maher can note partial-scope or subsidiary limitations.
+    WorkflowFieldConfig(
+        id="module_1",
+        label="Module 1: Entity & Ownership Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Ownership structure is complex — multiple holding layers",
+    ),
+    WorkflowFieldConfig(
+        id="module_2",
+        label="Module 2: Financial Crime / AML Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. High-risk customer base — enhanced AML scope required",
+    ),
+    WorkflowFieldConfig(
+        id="module_3",
+        label="Module 3: Procurement & Vendor Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Module 3 but only for one subsidiary — parent entity excluded",
+    ),
+    WorkflowFieldConfig(
+        id="module_4",
+        label="Module 4: HR & Payroll Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Payroll fraud focus only — benefits excluded",
+    ),
+    WorkflowFieldConfig(
+        id="module_5",
+        label="Module 5: Revenue & Receivables Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Revenue recognition focus — collections out of scope",
+    ),
+    WorkflowFieldConfig(
+        id="module_6",
+        label="Module 6: Fixed Assets & Capex Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Construction capex only — IT assets excluded",
+    ),
+    WorkflowFieldConfig(
+        id="module_7",
+        label="Module 7: Management Override & Governance Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Board-level governance only — operational management excluded",
+    ),
+    WorkflowFieldConfig(
+        id="module_8",
+        label="Module 8: Regulatory & Compliance Risk",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. CBUAE AML regulations only — DFSA not in scope",
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Engagement context / scope notes",
+        field_type="textarea",
+        required=False,
+        has_remarks=False,
+        help_text="Background on the client, known risks, or specific focus areas for this FRM.",
+    ),
+]
+
+
+# ── Due Diligence field config (BA-IA-07) ─────────────────────────────────────
+
+DD_DEPTH_OPTIONS = ["Standard Phase 1", "Enhanced Phase 2"]
+
+_DD_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Primary jurisdiction",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE + offshore holding structure in BVI",
+    ),
+    WorkflowFieldConfig(
+        id="dd_depth",
+        label="DD depth",
+        field_type="selectbox",
+        options=DD_DEPTH_OPTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Enhanced but time-constrained to 5 days — no court records",
+    ),
+    WorkflowFieldConfig(
+        id="subject_type",
+        label="Subject type",
+        field_type="selectbox",
+        options=["Individual", "Entity"],
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="subject_jurisdictions",
+        label="Subject's operating jurisdictions",
+        field_type="multiselect",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=False,
+        has_remarks=True,
+        remarks_placeholder="e.g. Registered UAE but operations across 4 countries including Iraq",
+    ),
+    WorkflowFieldConfig(
+        id="industry",
+        label="Subject's industry / sector",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Financial services, Real estate, Construction",
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Purpose of DD / engagement context",
+        field_type="textarea",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Pre-acquisition due diligence on target entity for ABC Group.",
+    ),
+]
+
+
+# ── Sanctions Screening field config (BA-IA-07) ───────────────────────────────
+
+SANCTIONS_PURPOSE_OPTIONS = [
+    "Onboarding",
+    "Transaction",
+    "Periodic Review",
+    "Acquisition",
+    "Regulatory",
+    "Other",
+]
+
+SANCTIONS_OUTPUT_OPTIONS = ["Full Report", "Clearance Memo"]
+
+_SANCTIONS_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    # subject_name is the entity being screened — not the engaging client (D3)
+    WorkflowFieldConfig(
+        id="subject_name",
+        label="Name of individual or entity to screen",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="Full legal name",
+    ),
+    WorkflowFieldConfig(
+        id="subject_type",
+        label="Subject type",
+        field_type="selectbox",
+        options=["Individual", "Entity"],
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Nationality / jurisdiction of incorporation",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE national but also holds UK passport — screen both",
+    ),
+    WorkflowFieldConfig(
+        id="nationalities",
+        label="Additional nationalities or jurisdictions (comma-separated)",
+        field_type="text",
+        required=False,
+        has_remarks=False,
+        help_text="Leave blank if covered by jurisdiction above",
+    ),
+    WorkflowFieldConfig(
+        id="aliases",
+        label="Known aliases or alternate name spellings (comma-separated)",
+        field_type="text",
+        required=False,
+        has_remarks=False,
+        help_text="Optional — improves match accuracy",
+    ),
+    WorkflowFieldConfig(
+        id="dob_or_reg",
+        label="Date of birth or company registration number",
+        field_type="text",
+        required=False,
+        has_remarks=False,
+        help_text="Optional — reduces false positives",
+    ),
+    WorkflowFieldConfig(
+        id="purpose",
+        label="Purpose of screening",
+        field_type="selectbox",
+        options=SANCTIONS_PURPOSE_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="output_format",
+        label="Output format",
+        field_type="selectbox",
+        options=SANCTIONS_OUTPUT_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Additional context (optional)",
+        field_type="textarea",
+        required=False,
+        has_remarks=False,
+        help_text="e.g. Screening in context of acquisition — subject is target company CFO.",
+    ),
+]
+
+
+# ── Transaction Testing field config (BA-IA-07) ───────────────────────────────
+
+TT_ENGAGEMENT_CONTEXT_OPTIONS = [
+    "Fraud Discovery (does fraud exist?)",
+    "Fraud Quantification (measure the loss)",
+    "Audit / Controls Compliance",
+    "Due Diligence (pre-acquisition financial integrity)",
+    "Regulatory (regulator-mandated testing)",
+]
+
+TT_FRAUD_TYPOLOGY_OPTIONS = [
+    "Procurement Fraud",
+    "Payroll Fraud",
+    "Expense Fraud",
+    "Cash Fraud",
+    "Financial Statement Fraud",
+    "AML / Suspicious Transactions",
+]
+
+TT_EVIDENCE_STANDARD_OPTIONS = [
+    "Internal Review",
+    "Regulatory Submission",
+    "Court Ready",
+    "Board Pack",
+]
+
+_TT_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Primary jurisdiction",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE transactions but counterparties in multiple jurisdictions",
+    ),
+    WorkflowFieldConfig(
+        id="engagement_context",
+        label="Engagement context",
+        field_type="selectbox",
+        options=TT_ENGAGEMENT_CONTEXT_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="fraud_typology",
+        label="Fraud typology (if applicable)",
+        field_type="selectbox",
+        options=["Not applicable"] + TT_FRAUD_TYPOLOGY_OPTIONS,
+        required=False,
+        has_remarks=False,
+        help_text="Select only for Fraud Discovery or Fraud Quantification contexts",
+    ),
+    WorkflowFieldConfig(
+        id="transaction_types",
+        label="Transaction types in scope",
+        field_type="text",
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. Vendor payments but specifically construction subcontractors only",
+        help_text="e.g. Vendor payments, payroll runs, expense claims",
+    ),
+    WorkflowFieldConfig(
+        id="date_range",
+        label="Transaction date range",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Jan 2023 – Dec 2024",
+    ),
+    WorkflowFieldConfig(
+        id="data_inventory",
+        label="Data available / expected",
+        field_type="text",
+        required=False,
+        has_remarks=False,
+        help_text="e.g. GL export Jan–Dec 2024, AP ledger",
+    ),
+    WorkflowFieldConfig(
+        id="evidence_standard",
+        label="Evidence standard",
+        field_type="selectbox",
+        options=TT_EVIDENCE_STANDARD_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Engagement context / scope notes",
+        field_type="textarea",
+        required=True,
+        has_remarks=False,
+        help_text="Background on the client, the allegation, and the testing objective.",
+    ),
+]
+
+
+# ── Policy / SOP field config (BA-IA-07, D4: fixed types only; Sprint-IA-04 adds co-build) ──
+
+# All 11 subtypes in one selectbox — policies first, then SOPs (D4, confirmed AK Session 041).
+# The page infers doc_type ("policy" or "sop") from whichever subtype is selected.
+POLICY_SUBTYPE_LABELS: list[str] = [
+    "AML / CFT Policy",
+    "Fraud Prevention Policy",
+    "Whistleblower Policy",
+    "Procurement Policy",
+    "Conflict of Interest Policy",
+    "Data Privacy Policy",
+]
+
+SOP_SUBTYPE_LABELS: list[str] = [
+    "Transaction Monitoring SOP",
+    "KYC / Due Diligence SOP",
+    "Fraud Investigation SOP",
+    "Sanctions Screening SOP",
+    "Suspicious Activity Reporting SOP",
+]
+
+POLICY_ALL_SUBTYPES: list[str] = POLICY_SUBTYPE_LABELS + SOP_SUBTYPE_LABELS
+
+_POLICY_SOP_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Primary jurisdiction",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE + ADGM entity — both CBUAE and DFSA standards apply",
+    ),
+    WorkflowFieldConfig(
+        id="doc_subtype",
+        label="Document type",
+        field_type="selectbox",
+        options=POLICY_ALL_SUBTYPES,
+        required=True,
+        has_remarks=False,
+        help_text="Policies and SOPs listed — select the closest match",
+    ),
+    WorkflowFieldConfig(
+        id="gap_analysis",
+        label="Mode",
+        field_type="radio",
+        options=["New document", "Gap analysis of existing"],
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="industry",
+        label="Industry / sector",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Financial services, Real estate, Construction",
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Context / specific requirements",
+        field_type="textarea",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Client is a new VASP — needs AML policy compliant with CBUAE virtual asset guidance.",
+    ),
+]
+
+
+# ── Training Material field config (BA-IA-07, D2: duration selectbox, quiz/case_study radio) ─
+
+TRAINING_TOPIC_OPTIONS = [
+    "AML Awareness",
+    "Fraud Awareness",
+    "Bribery & Corruption Awareness",
+    "Data Privacy",
+    "Whistleblowing Procedures",
+    "KYC Procedures",
+]
+
+TRAINING_AUDIENCE_OPTIONS = [
+    "All Staff",
+    "Finance Team",
+    "Senior Management",
+    "Board / Directors",
+    "Compliance Team",
+    "Front Line Staff",
+]
+
+# Duration as selectbox (engine doesn't support number_input — D2, confirmed AK Session 041).
+TRAINING_DURATION_OPTIONS = ["30 min", "60 min", "90 min", "120 min", "180 min", "Custom"]
+
+_TRAINING_FIELD_CONFIG: list[WorkflowFieldConfig] = [
+    WorkflowFieldConfig(
+        id="jurisdiction",
+        label="Primary jurisdiction",
+        field_type="selectbox",
+        options=INVESTIGATION_JURISDICTIONS,
+        required=True,
+        has_remarks=True,
+        remarks_placeholder="e.g. UAE staff but India operations also covered — include both frameworks",
+    ),
+    WorkflowFieldConfig(
+        id="topic",
+        label="Training topic",
+        field_type="selectbox",
+        options=TRAINING_TOPIC_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="target_audience",
+        label="Target audience",
+        field_type="selectbox",
+        options=TRAINING_AUDIENCE_OPTIONS,
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="duration",
+        label="Duration",
+        field_type="selectbox",
+        options=TRAINING_DURATION_OPTIONS,
+        required=True,
+        has_remarks=False,
+        help_text="Select 'Custom' and describe in the context field below",
+    ),
+    # Checkboxes replaced by radio Yes/No — engine doesn't support checkbox (D2).
+    WorkflowFieldConfig(
+        id="include_quiz",
+        label="Include knowledge check quiz",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="include_case_study",
+        label="Include case study",
+        field_type="radio",
+        options=["Yes", "No"],
+        required=True,
+        has_remarks=False,
+    ),
+    WorkflowFieldConfig(
+        id="industry",
+        label="Industry / sector",
+        field_type="text",
+        required=True,
+        has_remarks=False,
+        help_text="e.g. Financial services, Real estate, Construction",
+    ),
+    WorkflowFieldConfig(
+        id="description",
+        label="Context / specific requirements",
+        field_type="textarea",
+        required=False,
+        has_remarks=False,
+        help_text="e.g. Following a regulatory finding — staff must complete within 30 days.",
+    ),
+]

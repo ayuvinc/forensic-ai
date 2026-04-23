@@ -1,28 +1,32 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
-architect
+junior-dev
 
 ## NEXT_TASK
-**Session 041: Sprint-IA-03 — Wire HybridIntakeEngine to remaining workflow pages**
+**Session 041: Sprint-IA-03 — AK approval received → junior-dev executes IA-03-C1 through IA-03-W6**
 
-AK approval required before build starts. Architect to decompose tasks, then junior-dev executes.
+Architect decomposition complete (Session 041). Tasks written to tasks/todo.md.
 
-Sprint-IA-03 scope (confirmed in next-action.md carry-forward, Session 039):
-- Wire HybridIntakeEngine to: 06_FRM.py, 09_Due_Diligence.py, 10_Sanctions.py,
-  11_Transaction_Testing.py, 04_Policy_SOP.py, 05_Training.py
-- Each workflow needs its own _FIELD_CONFIG (WorkflowFieldConfig list)
-- Engine infrastructure already built (streamlit_app/shared/hybrid_intake.py)
-- This is wiring-only — mechanical, low risk
-- No new BA decisions required: BA-IA-07 covers all workflows
+All 4 design decisions confirmed by AK (Session 041):
+- [D1 CONFIRMED] FRM: 8 individual radio (Yes/No) fields per module, each has_remarks=True. Dependency check runs in page after engine_result.
+- [D2 CONFIRMED] Training: duration selectbox (presets), include_quiz/case_study radio Yes/No.
+- [D3 CONFIRMED] Sanctions: subject_name INSIDE engine; client_name OUTSIDE (engagement banner).
+- [D4 CONFIRMED] Policy/SOP IA-03-W5: fixed 11 types only; no Custom in this sprint. Custom co-build → Sprint-IA-04.
+
+Junior-dev runs IA-03-C1 first (field configs + option lists), then W1–W6 in parallel, then QA.
+
+Sprint-IA-04 (co-build) queued — needs dedicated architect session. BA-IA-09 written.
 
 ## COMMAND
 ```
-/architect sprint_id=sprint-ia-03
+/junior-dev task_id=IA-03-C1
 ```
+
+(After IA-03-C1 complete: run W1–W6 in parallel, then QA)
 
 ## COMPLETION STATUS
 

@@ -30,7 +30,7 @@ The consultant (Maher) organises all work into **Projects**. Each Project maps t
 | `streamlit_app/shared/session.py` | Bootstrap: readiness check, session state init, setup redirect | streamlit_app/shared/readiness.py |
 | `streamlit_app/shared/pipeline.py` | Streamlit-side pipeline runner; connects pages to orchestrator | core/orchestrator.py |
 | `streamlit_app/shared/intake.py` | Guided intake conversation panel (Streamlit) | schemas/ |
-| `streamlit_app/shared/hybrid_intake.py` | HybridIntakeEngine: structured fields + Remarks-triggered Claude Haiku conversation (BA-IA-07); WorkflowFieldConfig, RemarksResult; investigation wired in Sprint-IA-02; remaining workflows in Sprint-IA-03 | streamlit_app/shared/intake.py, anthropic SDK |
+| `streamlit_app/shared/hybrid_intake.py` | HybridIntakeEngine: structured fields + Remarks-triggered Claude Haiku conversation (BA-IA-07); WorkflowFieldConfig, RemarksResult; all 7 workflows wired — Investigation (Sprint-IA-02), FRM/DD/Sanctions/TT/Policy-SOP/Training (Sprint-IA-03) | streamlit_app/shared/intake.py, anthropic SDK |
 | `streamlit_app/shared/aic.py` | AI-assisted intake completion | core/orchestrator.py |
 | `streamlit_app/shared/done_zone.py` | Deliverable display and download panel | tools/file_tools.py |
 | `streamlit_app/shared/evidence_chat_panel.py` | Conversational evidence review panel | workflows/evidence_chat.py |

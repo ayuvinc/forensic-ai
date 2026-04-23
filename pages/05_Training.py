@@ -4,10 +4,34 @@ UX-003 shell: Zone A (intake + topic/audience) → Zone B (pipeline) → Zone C 
 """
 
 import streamlit as st
+from datetime import datetime, timezone
 from streamlit_app.shared.session import bootstrap
-from streamlit_app.shared.intake import generic_intake_form
+from streamlit_app.shared.intake import render_engagement_banner, get_project_language_standard
+from streamlit_app.shared.hybrid_intake import HybridIntakeEngine, _TRAINING_FIELD_CONFIG
 from streamlit_app.shared.pipeline import run_in_status
 from tools.file_tools import case_dir, get_final_report_path
+
+# Label → pipeline key maps
+_TR_TOPIC_KEYS = {
+    "AML Awareness":                "aml_awareness",
+    "Fraud Awareness":              "fraud_awareness",
+    "Bribery & Corruption Awareness": "bribery_corruption_awareness",
+    "Data Privacy":                 "data_privacy",
+    "Whistleblowing Procedures":    "whistleblowing_procedures",
+    "KYC Procedures":               "kyc_procedures",
+}
+_TR_AUDIENCE_KEYS = {
+    "All Staff":         "all_staff",
+    "Finance Team":      "finance_team",
+    "Senior Management": "senior_management",
+    "Board / Directors": "board_directors",
+    "Compliance Team":   "compliance_team",
+    "Front Line Staff":  "front_line_staff",
+}
+
+# Kept for running-stage display
+TRAINING_TOPICS = {v: k_label for k_label, v in _TR_TOPIC_KEYS.items()}
+TARGET_AUDIENCES = {v: k_label for k_label, v in _TR_AUDIENCE_KEYS.items()}
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -18,23 +42,7 @@ except Exception as _bootstrap_err:
 st.title("Training Material")
 st.caption("Generate role-specific AML, fraud awareness, and compliance training modules")
 
-TRAINING_TOPICS = {
-    "aml_awareness": "AML Awareness",
-    "fraud_awareness": "Fraud Awareness",
-    "bribery_corruption_awareness": "Bribery & Corruption Awareness",
-    "data_privacy": "Data Privacy",
-    "whistleblowing_procedures": "Whistleblowing Procedures",
-    "kyc_procedures": "KYC Procedures",
-}
-
-TARGET_AUDIENCES = {
-    "all_staff": "All Staff",
-    "finance_team": "Finance Team",
-    "senior_management": "Senior Management",
-    "board_directors": "Board / Directors",
-    "compliance_team": "Compliance Team",
-    "front_line_staff": "Front Line Staff",
-}
+_tr_engine = HybridIntakeEngine(st, _TRAINING_FIELD_CONFIG, "training_material")
 
 if "tr_stage" not in st.session_state:
     st.session_state.tr_stage = "intake"
@@ -43,38 +51,60 @@ if st.session_state.tr_stage != "intake":
     if st.sidebar.button("Start New Case"):
         for k in ["tr_stage", "tr_intake", "tr_params", "tr_result"]:
             st.session_state.pop(k, None)
+        _tr_engine.reset()
         st.rerun()
 
-# ── STAGE: intake ─────────────────────────────────────────────────────────────
+# ── STAGE: intake (BA-IA-07: HybridIntakeEngine) ─────────────────────────────
 if st.session_state.tr_stage == "intake":
-    intake = generic_intake_form(st, "training_material", "Training Material — Intake")
+    project_meta = render_engagement_banner(st)
+    engagement_id = st.session_state.get("active_project", "")
+    client_name = project_meta.get("client_name", "") if project_meta else ""
+    if not client_name:
+        client_name = st.text_input("Client name *", key="tr_client_name_manual")
 
-    if intake is not None:
-        topic = st.selectbox(
-            "Training topic",
-            options=list(TRAINING_TOPICS.keys()),
-            format_func=lambda k: TRAINING_TOPICS[k],
-        )
-        target_audience = st.selectbox(
-            "Target audience",
-            options=list(TARGET_AUDIENCES.keys()),
-            format_func=lambda k: TARGET_AUDIENCES[k],
-        )
-        duration = st.number_input("Duration (minutes)", min_value=15, max_value=480, value=60, step=15)
-        include_quiz = st.checkbox("Include knowledge check quiz", value=True)
-        include_case_study = st.checkbox("Include case study", value=True)
+    st.divider()
+    engine_result = _tr_engine.run()
 
-        if st.button("Generate Training Material", type="primary"):
-            st.session_state.tr_intake = intake
-            st.session_state.tr_params = {
-                "topic": topic,
-                "target_audience": target_audience,
-                "duration": duration,
-                "include_quiz": include_quiz,
-                "include_case_study": include_case_study,
-            }
-            st.session_state.tr_stage = "ai_questions"
-            st.rerun()
+    if engine_result is not None and client_name.strip():
+        import uuid as _uuid
+        from schemas.case import CaseIntake
+
+        values = engine_result["values"]
+        case_id = engagement_id if engagement_id else (
+            f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
+        )
+
+        # Duration: "60 min" → 60; "Custom" → 60 default
+        duration_str = values.get("duration", "60 min")
+        if duration_str == "Custom":
+            duration = 60
+        else:
+            try:
+                duration = int(duration_str.replace(" min", ""))
+            except ValueError:
+                duration = 60
+
+        intake = CaseIntake(
+            case_id=case_id,
+            client_name=client_name.strip(),
+            industry=values.get("industry", "").strip(),
+            primary_jurisdiction=values.get("jurisdiction", "UAE"),
+            description=values.get("description", "").strip(),
+            workflow="training_material",
+            language=get_project_language_standard(st),
+            created_at=datetime.now(timezone.utc),
+            engagement_id=engagement_id or None,
+        )
+        st.session_state.tr_intake = intake
+        st.session_state.tr_params = {
+            "topic":              _TR_TOPIC_KEYS.get(values.get("topic", "AML Awareness"), "aml_awareness"),
+            "target_audience":    _TR_AUDIENCE_KEYS.get(values.get("target_audience", "All Staff"), "all_staff"),
+            "duration":           duration,
+            "include_quiz":       values.get("include_quiz", "Yes") == "Yes",
+            "include_case_study": values.get("include_case_study", "Yes") == "Yes",
+        }
+        st.session_state.tr_stage = "ai_questions"
+        st.rerun()
 
 # ── STAGE: ai_questions ───────────────────────────────────────────────────────
 elif st.session_state.tr_stage == "ai_questions":
@@ -91,7 +121,11 @@ elif st.session_state.tr_stage == "running":
     params = st.session_state.tr_params
 
     with st.expander("Intake Summary", expanded=False):
-        st.write(f"**Client:** {intake.client_name} | **Topic:** {TRAINING_TOPICS.get(params['topic'], params['topic'])} | **Audience:** {TARGET_AUDIENCES.get(params['target_audience'], params['target_audience'])}")
+        st.write(
+            f"**Client:** {intake.client_name} | "
+            f"**Topic:** {TRAINING_TOPICS.get(params['topic'], params['topic'])} | "
+            f"**Audience:** {TARGET_AUDIENCES.get(params['target_audience'], params['target_audience'])}"
+        )
 
     from workflows.training_material import run_training_material_workflow
 
