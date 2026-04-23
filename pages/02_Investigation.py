@@ -21,9 +21,27 @@ from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 
 
 def _infer_doc_type(filename: str) -> str:
-    """Map file extension to DocumentManager doc_type string (RG-3)."""
-    ext = Path(filename).suffix.lower()
-    return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
+    """Map filename to a valid DocumentEntry doc_type literal (RG-3)."""
+    name = Path(filename).stem.lower()
+    ext  = Path(filename).suffix.lower().lstrip(".")
+    if ext in ("xlsx", "xls", "csv"):
+        return "excel_data"
+    if ext in ("msg", "eml"):
+        return "email"
+    keywords = {
+        "financial_records":    ("bank", "statement", "transaction", "ledger", "account", "balance"),
+        "interview_transcript": ("transcript", "interview", "witness"),
+        "engagement_letter":    ("engagement", "retainer", "mandate"),
+        "correspondence":       ("letter", "board", "memo", "notice", "annexure", "annex"),
+        "corporate_filing":     ("incorporation", "registry", "filing", "moa", "aoa", "certificate"),
+        "policy_sop":           ("policy", "procedure", "sop", "guideline"),
+        "previous_report":      ("report", "audit", "finding"),
+        "email":                ("email",),
+    }
+    for doc_type, kws in keywords.items():
+        if any(kw in name for kw in kws):
+            return doc_type
+    return "other"
 
 try:
     session = bootstrap(st, caller_file=__file__)
@@ -200,7 +218,8 @@ if st.session_state.inv_stage == "intake":
                             source_hash=hashlib.sha256(file_bytes).hexdigest(),
                         )
                         dm.register_document(str(dest), folder="uploaded",
-                                             doc_type=_infer_doc_type(f.name))  # RG-2/3
+                                             doc_type=_infer_doc_type(f.name),
+                                             provenance=provenance)  # RG-2/3
                         size_mb = round(f.size / (1024 * 1024), 1)
                         reg_results.append({"name": f.name, "size_mb": size_mb, "ok": True})
                     except Exception as e:  # RG-4
@@ -224,7 +243,15 @@ if st.session_state.inv_stage == "intake":
 elif st.session_state.inv_stage == "ai_questions":
     intake = st.session_state.inv_intake
     from streamlit_app.shared.aic import render_intake_questions
-    intake_summary = f"Client: {intake.client_name}. {intake.description}"
+    intake_summary = (
+        f"Workflow: Investigation Report\n"
+        f"Investigation type: {st.session_state.get('inv_investigation_type', 'Not specified')}\n"
+        f"Audience: {st.session_state.get('inv_audience', 'Not specified')}\n"
+        f"Client: {intake.client_name}\n"
+        f"Industry: {intake.industry}\n"
+        f"Primary jurisdiction: {intake.primary_jurisdiction}\n"
+        f"Description: {intake.description}"
+    )
     if render_intake_questions(st, intake.case_id, intake_summary):
         st.session_state.inv_stage = "running"
         st.rerun()
@@ -261,10 +288,17 @@ elif st.session_state.inv_stage == "running":
         st.session_state.inv_stage = "done"
         st.rerun()
     except Exception as e:
-        st.error(f"Pipeline failed: {e}")
-        if st.button("Start Over"):
-            st.session_state.inv_stage = "intake"
-            st.rerun()
+        st.session_state.inv_stage = "error"
+        st.session_state.inv_error = str(e)
+        st.rerun()
+
+elif st.session_state.inv_stage == "error":
+    st.error(f"Pipeline failed: {st.session_state.get('inv_error', 'Unknown error')}")
+    if st.button("Start Over"):
+        for k in ["inv_stage", "inv_intake", "inv_params", "inv_result", "inv_dm",
+                  "inv_reg_results", "inv_error"]:
+            st.session_state.pop(k, None)
+        st.rerun()
 
 # ── STAGE: done ───────────────────────────────────────────────────────────────
 elif st.session_state.inv_stage == "done":

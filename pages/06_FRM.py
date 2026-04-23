@@ -29,9 +29,27 @@ from streamlit_app.shared.pipeline import run_in_status, PipelineEvent
 
 
 def _infer_doc_type(filename: str) -> str:
-    """Map file extension to DocumentManager doc_type string (RG-3)."""
-    ext = Path(filename).suffix.lower()
-    return {"pdf": "pdf", "docx": "word", "txt": "text", "xlsx": "excel"}.get(ext.lstrip("."), "text")
+    """Map filename to a valid DocumentEntry doc_type literal (RG-3)."""
+    name = Path(filename).stem.lower()
+    ext  = Path(filename).suffix.lower().lstrip(".")
+    if ext in ("xlsx", "xls", "csv"):
+        return "excel_data"
+    if ext in ("msg", "eml"):
+        return "email"
+    keywords = {
+        "financial_records":    ("bank", "statement", "transaction", "ledger", "account", "balance"),
+        "interview_transcript": ("transcript", "interview", "witness"),
+        "engagement_letter":    ("engagement", "retainer", "mandate"),
+        "correspondence":       ("letter", "board", "memo", "notice", "annexure", "annex"),
+        "corporate_filing":     ("incorporation", "registry", "filing", "moa", "aoa", "certificate"),
+        "policy_sop":           ("policy", "procedure", "sop", "guideline"),
+        "previous_report":      ("report", "audit", "finding"),
+        "email":                ("email",),
+    }
+    for doc_type, kws in keywords.items():
+        if any(kw in name for kw in kws):
+            return doc_type
+    return "other"
 
 
 def _render_ai_review_badges(st, case_id: str, risk_items) -> None:

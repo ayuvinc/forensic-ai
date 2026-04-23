@@ -30,27 +30,58 @@ from tools.file_tools import case_dir
 
 # ── AIC-01 ─────────────────────────────────────────────────────────────────────
 
-_AIC01_SYSTEM = """You are an expert forensic consulting assistant helping to complete an intake form.
+_AIC01_SYSTEM = """You are an expert forensic consulting assistant helping to complete a case intake form.
 
-The consultant has just submitted a case intake. Your job is to identify the 3 most important
-follow-up questions that would meaningfully improve the quality of the final deliverable.
+The consultant has just submitted a case intake. Identify up to 3 follow-up questions that would
+fill specific factual gaps and prevent the pipeline from producing generic output.
 
-Focus on gaps that would cause the pipeline to produce generic output:
-- Missing scope constraints (date ranges, entity list, transaction types)
-- Unclear engagement objectives
-- Ambiguous client context (sector, jurisdiction, regulatory exposure)
-- Missing red flags or known issues the consultant may not have mentioned
+RULES — strictly enforced:
+1. Every question must ask for a SPECIFIC FACT: a name, date range, regulation citation, amount,
+   entity, document type, or yes/no with explanation. Never ask "what is most important" or
+   "what aspect" — these are unanswerable and useless.
+2. Name the specific element you are asking about. Bad: "Could you clarify the regulatory context?"
+   Good: "You mentioned RBI — which specific regulation is alleged to have been violated
+   (e.g. KYC/AML under PMLA, FEMA reporting, priority sector lending norms)?"
+3. Only ask about genuine gaps in the intake. If the intake already answers something, do not ask it.
+4. For investigation reports: prioritise allegation specifics, key entities/persons implicated,
+   transaction period, and availability of key documents (bank statements, contracts, emails).
+5. If fewer than 3 meaningful gaps exist, return fewer questions. Never invent gaps.
 
 Output as JSON:
 {
   "questions": [
     {"id": "q1", "question": "...", "why_important": "..."},
-    {"id": "q2", "question": "...", "why_important": "..."},
-    {"id": "q3", "question": "...", "why_important": "..."}
+    {"id": "q2", "question": "...", "why_important": "..."}
   ]
 }
 
 Output ONLY valid JSON — no preamble, no explanation."""
+
+
+def build_intake_summary(intake, workflow_type: str = "", extra: dict | None = None) -> str:
+    """Build a rich intake summary string for AIC-01 from a CaseIntake object or dict."""
+    if hasattr(intake, "model_dump"):
+        d = intake.model_dump()
+    elif isinstance(intake, dict):
+        d = intake
+    else:
+        return str(intake)
+    lines = []
+    if workflow_type:
+        lines.append(f"Workflow: {workflow_type}")
+    if extra:
+        for k, v in extra.items():
+            if v:
+                lines.append(f"{k}: {v}")
+    lines += [
+        f"Client: {d.get('client_name', '')}",
+        f"Industry: {d.get('industry', '')}",
+        f"Primary jurisdiction: {d.get('primary_jurisdiction', '')}",
+        f"Description: {d.get('description', '')}",
+    ]
+    if d.get("operating_jurisdictions"):
+        lines.append(f"Operating jurisdictions: {', '.join(d['operating_jurisdictions'])}")
+    return "\n".join(l for l in lines if l.split(": ", 1)[-1].strip())
 
 
 def render_intake_questions(

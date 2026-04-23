@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         CLOSED
+Status:         OPEN
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T06:11:18Z — state transition by MCP server
+Last updated:   2026-04-23T07:37:22Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -78,6 +78,67 @@ Sprint-IA-02 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 03
 ---
 
 Sprint-IA-03 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Session 041, merged main). Removed from PENDING.
+
+---
+
+### Sprint-KB-01 — Firm Knowledge Base Embedding [UNBLOCKED — do after pip install]
+
+**Status:** READY — sentence-transformers + chromadb installed (Session 042).
+**Context:** 14 knowledge/ markdown files (~10k+ lines) currently loaded as raw full text into every agent system prompt. No retrieval — agents get everything whether relevant or not. FirmKnowledgeEngine indexes all knowledge/ files once into a firm-level persistent ChromaDB at `firm_profile/knowledge/.chromadb`. Agents then retrieve only relevant sections per query.
+**Separate from per-case EmbeddingEngine** (Sprint-EMB) which handles uploaded case documents.
+
+- [ ] KB-01 Create `tools/firm_knowledge_engine.py` — `FirmKnowledgeEngine` class. `__init__`: loads from `firm_profile/knowledge/.chromadb` (PersistentClient). `index_all()`: walks `knowledge/` recursively, chunks each .md file (chunk size 500 chars, 50 overlap), embeds with sentence-transformers, upserts to ChromaDB with metadata `{workflow_type, filename, chunk_idx}`. `search(query, workflow_type=None, top_k=5)`: retrieves relevant chunks, optionally filtered by workflow_type. `needs_reindex()`: returns True if any .md file mtime > last index timestamp. Auto-fallback: if unavailable, `search()` returns `""`.
+- [ ] KB-02 Wire into app.py bootstrap — call `FirmKnowledgeEngine().index_all()` on startup if `needs_reindex()`. Show `st.toast("Knowledge base indexed.")` on completion. Non-blocking — run in background thread.
+- [ ] KB-03 Wire into agent system prompts — in `agents/junior_analyst/prompts.py` and `agents/partner/prompts.py`: replace full knowledge file injection with `FirmKnowledgeEngine().search(workflow_relevant_query, workflow_type=workflow)`. Cap at 3000 chars.
+- [ ] KB-04 CLI path — in `workflows/investigation_report.py` and `frm_risk_register.py`: same search() call replaces raw `open(knowledge_file).read()` patterns.
+
+---
+
+### Sprint-QUAL-01 — Pipeline Quality: PM Mode-Awareness + Junior Floor [UNBLOCKED]
+
+**Status:** READY — root causes confirmed in Session 042 smoke test.
+**Context:** PM requests revision 2× even in knowledge_only mode (expects citations that don't exist). Junior returns empty findings in knowledge_only mode. `schema_retry` flag added to context but Junior prompt ignores it.
+
+- [ ] QUAL-01 PM prompt mode-aware — in `agents/project_manager/prompts.py`: inject `RESEARCH_MODE` into system prompt. In `knowledge_only` mode: "Accept findings that rely on framework knowledge — do NOT request revision solely due to missing external citations. Citations are unavailable in this mode."
+- [ ] QUAL-02 Junior findings floor — in `agents/junior_analyst/prompts.py`: add to all workflow system prompts: "You MUST return at least 3 findings. If no client documents are available, derive findings from your domain knowledge and framework baseline for this industry and jurisdiction. An empty findings list is never acceptable."
+- [ ] QUAL-03 schema_retry wiring — in `agents/junior_analyst/prompts.py`: read `context.get("schema_retry")` and `context.get("schema_error")`. If set, prepend to system prompt: "SCHEMA RETRY — your previous response failed validation: {schema_error}. Fix this specific issue in your response."
+
+---
+
+### Sprint-UX-STREAM-01 — Pipeline Streaming Progress [UNBLOCKED]
+
+**Status:** READY.
+**Context:** Pipeline takes 1–3 min with no visible progress. `on_progress` callbacks fire but Streamlit shows only a spinner. Replace with `st.status()` live step labels so Maher sees "Junior drafting... → PM reviewing... → Partner signing off..." as it runs.
+
+- [ ] STREAM-01 Update `streamlit_app/shared/pipeline.py:run_in_status()` — replace `st.spinner` with `st.status(expanded=True)`. Each `on_progress` call appends a `st.write()` line inside the status block with agent name + message. Status label updates to "complete" or "failed" on exit.
+- [ ] STREAM-02 Calibrate `total_steps` per workflow — investigation (6), FRM per-module (4 per module), others (3). Pass from each workflow page to `run_in_status(total_steps=N)`.
+
+---
+
+### Sprint-SMOKE-01 — Multi-Level Smoke Test Suite [UNBLOCKED]
+
+**Status:** READY — spec designed Session 042.
+**Context:** No formal smoke test suite exists. FE-TRIAGE-01 (manual triage pass) has been pending. This sprint builds the structured suite.
+
+- [ ] SMOKE-BOOT-01 App cold start — `streamlit run app.py`, all pages load, no traceback, sidebar 5 sections
+- [ ] SMOKE-BOOT-02 Firm profile present — Settings loads without setup redirect
+- [ ] SMOKE-BOOT-03 Page walk 00→16 — every page renders, no P0 crash
+- [ ] SMOKE-WF-01 Investigation (standalone) — intake fields, type selectbox, output to F_Final
+- [ ] SMOKE-WF-02 FRM (standalone) — 8-module radio, dependency enforcement, xlsx download
+- [ ] SMOKE-WF-03 DD (standalone) — subject_count, relationship routing
+- [ ] SMOKE-WF-04 Sanctions (standalone) — knowledge_only gate, per_hit_review, disposition
+- [ ] SMOKE-WF-05 TT (standalone) — doc upload, label→key maps
+- [ ] SMOKE-WF-06 Policy/SOP (standalone) — 11-subtype selectbox, output written
+- [ ] SMOKE-WF-07 Training (standalone) — duration selectbox, bool conversion
+- [ ] SMOKE-WF-08 Proposal (standalone) — Scope → Proposal, deck output
+- [ ] SMOKE-ENG-01 Engagement → Investigation — A-F folders, engagement_id in state.json, Workspace shows section
+- [ ] SMOKE-ENG-02 Engagement → FRM — is_af_project() = True
+- [ ] SMOKE-ENG-03 Context pre-fill — "Continuing engagement" banner, client_name locked
+- [ ] SMOKE-MWF-01 Investigation + FRM — both case_ids in ProjectState.cases, no state contamination
+- [ ] SMOKE-MWF-02 DD + Sanctions — independent state.json per workflow
+- [ ] SMOKE-EDGE-01 Navigate away mid-intake — state reset cleanly on return
+- [ ] SMOKE-EDGE-02 Zero-info path — baseline draft produced, no crash
+- [ ] SMOKE-EDGE-03 Legacy UUID case in Tracker — renders, no A-F features shown
 
 ---
 

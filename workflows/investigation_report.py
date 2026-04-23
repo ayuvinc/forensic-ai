@@ -113,25 +113,6 @@ def run_investigation_workflow(
     pm      = ProjectManager(registry, hook_engine, document_manager, "investigation_report")
     partner = Partner(registry, hook_engine, document_manager, "investigation_report")
 
-    def junior_fn(intake_d, ctx):
-        return junior(intake_d, ctx)
-
-    def pm_fn(j_output, ctx):
-        return pm(j_output, ctx)
-
-    def partner_fn(pm_output, ctx):
-        ctx["evidence_items"] = evidence_items
-        return partner(pm_output, ctx)
-
-    orch = Orchestrator(
-        case_id=intake.case_id,
-        workflow="investigation_report",
-        junior_fn=junior_fn,
-        pm_fn=pm_fn,
-        partner_fn=partner_fn,
-        on_status_change=lambda s: on_progress(f"Status: {s.value}"),
-    )
-
     context = {
         "case_id": intake.case_id,
         "workflow": "investigation_report",
@@ -144,6 +125,24 @@ def run_investigation_workflow(
         "language_standard": headless_params.get("language_standard", "acfe") if headless_params else "acfe",
         "ai_review_enabled": headless_params.get("ai_review_enabled", True) if headless_params else True,
     }
+
+    def junior_fn(intake_d, ctx):
+        return junior(intake_d, {**context, **ctx})
+
+    def pm_fn(j_output, ctx):
+        return pm(j_output, {**context, **ctx})
+
+    def partner_fn(pm_output, ctx):
+        return partner(pm_output, {**context, **ctx, "evidence_items": evidence_items})
+
+    orch = Orchestrator(
+        case_id=intake.case_id,
+        workflow="investigation_report",
+        junior_fn=junior_fn,
+        pm_fn=pm_fn,
+        partner_fn=partner_fn,
+        on_status_change=lambda s: on_progress(f"Status: {s.value}"),
+    )
 
     on_progress("Starting investigation report pipeline...")
     partner_output = orch.run(enriched_intake.model_dump())

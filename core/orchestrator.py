@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from typing import Callable
 
 from config import MAX_REVISION_ROUNDS
+from core.hook_engine import HookVetoError
 from core.state_machine import (
     CaseStatus,
     InvalidTransitionError,
@@ -99,9 +100,9 @@ class Orchestrator:
             CaseStatus.JUNIOR_DRAFT_COMPLETE,
             CaseStatus.PM_REVISION_REQUESTED,
         ):
-            pm_output = self._run_pm(junior_output, context)
+            pm_output = self._run_pm(junior_output, context, intake)
         elif status == CaseStatus.PARTNER_REVISION_REQ:
-            pm_output = self._run_pm(junior_output, context)
+            pm_output = self._run_pm(junior_output, context, intake)
         elif status == CaseStatus.PM_REVIEW_COMPLETE:
             pm_output = self._load_last_output("pm_review")
         else:
@@ -122,17 +123,23 @@ class Orchestrator:
 
     def _run_junior(self, intake: dict, context: dict) -> dict:
         max_rounds = MAX_REVISION_ROUNDS["junior"]
+        run_context = dict(context)
         while self._revision_counts["junior"] < max_rounds:
             try:
-                output = self.junior_fn(intake, {**context, "agent": "junior"})
+                output = self.junior_fn(intake, {**run_context, "agent": "junior"})
                 self._set_status(CaseStatus.JUNIOR_DRAFT_COMPLETE)
                 return output
+            except HookVetoError as e:
+                # Schema validation failure — retry with explicit instruction rather than crashing
+                self._revision_counts["junior"] += 1
+                run_context = {**run_context, "schema_retry": True, "schema_error": str(e)}
+                continue
             except Exception as e:
                 self._set_status(CaseStatus.PIPELINE_ERROR)
                 raise PipelineError(f"Junior agent failed: {e}") from e
         raise RevisionLimitError(f"Junior exceeded max revision rounds ({max_rounds})")
 
-    def _run_pm(self, junior_output: dict, context: dict) -> dict:
+    def _run_pm(self, junior_output: dict, context: dict, intake: dict) -> dict:
         max_rounds = MAX_REVISION_ROUNDS["pm"]
         while self._revision_counts["pm"] < max_rounds:
             output = self.pm_fn(junior_output, {**context, "agent": "pm"})
@@ -142,9 +149,9 @@ class Orchestrator:
                 self._revision_counts["pm"] += 1
                 self._revision_counts["junior"] += 1
                 self._set_status(CaseStatus.PM_REVISION_REQUESTED)
-                # re-run junior with PM feedback
+                # re-run junior with PM feedback — pass original intake, not previous output
                 revised = self.junior_fn(
-                    junior_output,
+                    intake,
                     {**context,
                      "agent": "junior",
                      "revision_round": self._revision_counts["junior"],
@@ -157,7 +164,11 @@ class Orchestrator:
             self._set_status(CaseStatus.PM_REVIEW_COMPLETE)
             return output
 
-        raise RevisionLimitError(f"PM exceeded max revision rounds ({max_rounds})")
+        # Revision limit hit — promote best available junior draft to Partner rather than crashing.
+        # Partner will add disclaimers per CLAUDE.md: "Partner never blocks delivery."
+        self._set_status(CaseStatus.PM_REVIEW_COMPLETE)
+        return {**junior_output, "revision_limit_reached": True,
+                "pm_note": f"PM revision limit ({max_rounds}) reached — Partner to assess and disclaim."}
 
     def _run_partner(self, pm_output: dict, context: dict) -> dict:
         output = self.partner_fn(pm_output, {**context, "agent": "partner"})

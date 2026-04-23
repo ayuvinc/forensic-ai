@@ -319,17 +319,21 @@ if mode == "Input Session":
 
     # Session notes
     st.markdown("**Session Notes**")
+    _note_key = f"session_note_{slug}"
+    _reset_key = f"_reset_note_{slug}"
+    if st.session_state.pop(_reset_key, False):
+        st.session_state.pop(_note_key, None)
     note_text = st.text_area(
         "Note",
         placeholder="Observations from this session...",
         height=100,
-        key=f"session_note_{slug}",
+        key=_note_key,
     )
     if st.button("Save Note", key=f"save_note_{slug}"):
         if note_text.strip():
             pm.add_session_note(slug, note_text.strip())
             st.success("Note saved.")
-            st.session_state[f"session_note_{slug}"] = ""
+            st.session_state[_reset_key] = True
             st.rerun()
         else:
             st.warning("Note is empty.")
