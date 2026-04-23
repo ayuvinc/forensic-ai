@@ -48,6 +48,8 @@ Thumbs.db
 
 # Activity log events (runtime-generated, not committed; .gitkeep tracked)
 logs/*.jsonl
+# Crash reports (runtime-generated, not committed; directory tracked via .gitkeep)
+logs/crash_reports/*.json
 
 # Session lock files (session-open/session-close fallback path)
 tasks/.session-transition-lock

@@ -12,7 +12,13 @@ from tools.file_tools import case_dir, get_final_report_path
 try:
     session = bootstrap(st, caller_file=__file__)
 except Exception as _bootstrap_err:
-    st.error(f"Page failed to load: {_bootstrap_err}")
+    from streamlit_app.shared.crash_reporter import write_crash_report
+    _crash_path = write_crash_report(__file__, _bootstrap_err)
+    st.error("Something went wrong loading this page.")
+    st.code(_crash_path, language=None)
+    st.caption("Share this file with Claude to diagnose the issue.")
+    with st.expander("Show error details"):
+        st.text(type(_bootstrap_err).__name__ + ": " + str(_bootstrap_err))
     st.stop()
 
 st.info(

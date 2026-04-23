@@ -168,7 +168,13 @@ def run_in_status(
                 pass
         except Exception as e:
             status.update(label=f"{label} — failed", state="error")
-            st.error(f"Pipeline error: {e}")
+            from streamlit_app.shared.crash_reporter import write_crash_report
+            _crash_path = write_crash_report("pipeline:" + label, e)
+            st.error("Something went wrong during the pipeline run.")
+            st.code(_crash_path, language=None)
+            st.caption("Share this file with Claude to diagnose the issue.")
+            with st.expander("Show error details"):
+                st.text(type(e).__name__ + ": " + str(e))
             # ACT-02: log pipeline error
             try:
                 from tools.activity_logger import logger as _act_logger
