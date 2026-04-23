@@ -13,7 +13,7 @@ Session 045 — Sprint-QUAL-01 complete, merged, archived.
 
 Three queued sprints, all UNBLOCKED, in recommended priority order:
 
-1. **Sprint-UX-ERR-01** (crash reporter) — structured crash reports instead of raw tracebacks; 3 tasks (ERR-00/01/02/03); low risk, high usability. ~1 session.
+1. **ARCH-SIM-01/02 + Sprint-UX-ERR-01** (recommended bundle) — 2 housekeeping tasks (fix empirical tests → tests/, archive harness family) + crash reporter. All low-risk. ~1 session.
 2. **Sprint-SMOKE-01** (multi-level smoke suite) — formal smoke test matrix; foundational before heavy UX work. ~1 session.
 3. **Sprint-UX-WIRE-01** (interaction sophistication) — @st.fragment, st.toast, multi-step intake, session state namespacing. Larger scope (~7 tasks).
 

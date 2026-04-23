@@ -144,6 +144,25 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### ARCH-SIM-01/02 — Simulation Directory Housekeeping [ATTACH TO NEXT SPRINT]
+
+**Status:** READY — no design decisions needed. Attach as housekeeping tasks to Sprint-UX-ERR-01.
+**Context:** Architect evaluation (Session 045) confirmed simulation/ is stale (calibrated to pre-Sprint-10L; doesn't model schema_retry, findings_floor, HybridIntakeEngine, FirmKnowledgeEngine). Harness family archived; empirical tests rescued to tests/.
+
+- [ ] **[ARCH-SIM-01]** Fix empirical test imports and migrate to `tests/` — In `simulation/test_empirical_hooks.py`, `test_empirical_orchestrator.py`, `test_empirical_schemas.py`, `test_empirical_state_machine.py`: fix import paths so all 4 files are collected by `python3 -m pytest tests/ -q` without errors. Move files to `tests/`. Label with `# integration test — requires real codebase` comment at top. Verify: `python3 -m pytest tests/ -q` collects and runs all 4 + existing 131. ← no deps | P0 | Owner: junior-dev
+
+- [ ] **[ARCH-SIM-02]** Archive harness family — Create `archive/simulation/`. Move these 10 files from `simulation/` to `archive/simulation/`: `harness.py`, `harness_future.py`, `game_theory.py`, `conflict_detector.py`, `conflict_detector_future.py`, `run_all.py`, `run_empirical.py`, `run_future.py`, `input_fuzzer.py`, `empirical_fixtures.py`. Write `archive/simulation/README.md`: "Monte Carlo failure harness — calibrated to pre-Sprint-10L (Sprint-IA-01 era). Archived Session 045. See git log for methodology. Do not maintain." Delete `simulation/` directory from active tree (it will be empty after moves). Verify: no import in `tests/` or any active module references `simulation/`. ← ARCH-SIM-01 | P0 | Owner: junior-dev
+
+#### AC — ARCH-SIM-01/02
+- [ ] SIM-01: `python3 -m pytest tests/ -q` collects all 4 empirical test files with no import errors
+- [ ] SIM-01: Empirical tests either pass or fail with meaningful assertion errors (not ImportError/ModuleNotFoundError)
+- [ ] SIM-02: `archive/simulation/` exists with 10 harness files + README.md
+- [ ] SIM-02: `simulation/` directory no longer exists at repo root
+- [ ] SIM-02: `grep -r "from simulation" tests/ agents/ core/ workflows/` returns nothing
+- [ ] Regression: existing 131 tests still pass after moves
+
+---
+
 ### Sprint-UX-ERR-01 — Crash Reporter + Structured Error Logs [UNBLOCKED]
 
 **Status:** READY — no design decisions needed; extends existing FE-TRIAGE-04/05 error boundaries.
