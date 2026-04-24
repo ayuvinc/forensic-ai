@@ -100,18 +100,52 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 
 ### Sprint-PARTNER-FIX-01 — Fix Partner Prompt to Never Block [TIER 1 — build first]
 
-**Status:** QUEUED — 2 tasks. BA-IA-08 (confirmed Session 022) and CLAUDE.md both specify Partner never blocks. Current Partner prompts reject drafts and set `revision_requested=True`, causing pipelines to exit with no final report.
+**Status:** READY_FOR_REVIEW — PFIX-01/02/03 complete. 139 tests pass. Branch: feature/sprint-partner-fix-01
 
-**Root cause:** Partner prompts across all workflows contain blocking language ("reject if X") that overrides the CLAUDE.md constraint.
+**Root cause (confirmed Session 051):**
+- `agents/partner/prompts.py` — APPROVAL RULES contain "If rejecting: set approved=false" and "If revision is needed, set revision_requested=true". Live mode section explicitly calls missing citations "grounds for rejection".
+- `agents/partner/agent.py` `_enforce_evidence_chains()` — directly overrides `approved=False` and `revision_requested=True` when evidence chains fail. This is the hard block path.
+- Orchestrator `core/orchestrator.py:179-183` — sets `PARTNER_REVISION_REQ` status when `revision_requested=True`, stalling the pipeline.
 
-**Fix:** Partner prompt must approve with explicit, itemised disclaimers when standards are not met. Citation errors → disclaimer appended. Incomplete sections → disclaimer appended. Never `revision_requested=True` from Partner except for structural incompleteness that prevents any assessment (< 1 finding). PM can still request revisions. Partner never does after the first attempt.
+**PM vs Partner division (confirmed Session 051 design review):**
+- PM: quality gate. CAN set `revision_requested=True` for structural/factual gaps. Loops back to Junior. Has revision round limits (MAX_REVISION_ROUNDS).
+- Partner: sign-off agent. NEVER sets `revision_requested=True`. Reviews regulatory accuracy + evidence chain. Always approves with itemised conditions/disclaimers. Consultant decides how to act on conditions.
 
-- [ ] PFIX-01 `agents/partner_agent.py` — update system prompt: remove all blocking/rejection language; replace with "approve with conditions" logic; itemised disclaimer format: "CONDITION [n]: [section] — [issue] — [required action before client presentation]"
-- [ ] PFIX-02 `workflows/frm_risk_register.py` — update Partner call handling: `revision_requested=False` path always proceeds to final report; conditions stored in pipeline artifact
-- [ ] PFIX-03 Smoke verify: run FRM knowledge_only — confirm Partner output has `approved: True`, conditions listed, final report generated
+- [x] PFIX-01 `agents/partner/prompts.py` — Remove "If rejecting: set approved=false" from APPROVAL RULES. Replace with "ALWAYS approve — set approved=true. List all deficiencies in conditions[] as itemised disclaimers." Remove "If revision is needed, set revision_requested=true" line. Add: "revision_requested is ALWAYS false — Partner never sends work to revision." Fix live mode section: "grounds for rejection" → "append disclaimer to conditions[]".
+- [x] PFIX-02 `agents/partner/agent.py` — Fix `_enforce_evidence_chains()`: replace `approved=False` / `revision_requested=True` override with disclaimer appended to `conditions[]` and `review_notes`. Keep `approved=True`, `revision_requested=False`.
+- [x] PFIX-03 `tests/test_partner_agent.py` (new) — 8 tests: approved=True and revision_requested=False in all cases; disclaimer in conditions[] on chain failure; no-op when context is empty. 139/139 pass.
 
-**Security model:** No auth impact. Prompt change only.
-**Dependencies:** None. Build immediately.
+**Security model:** No auth impact. Prompt and logic change only. No new data access. Audit logging unchanged.
+**Dependencies:** None. Build immediately after DOCX-01 merge (done).
+
+#### AC — PFIX-01 (prompts.py)
+- [ ] `agents/partner/prompts.py` contains no instance of "If rejecting" or "set approved=false" in APPROVAL RULES
+- [ ] `agents/partner/prompts.py` contains no instance of "revision_requested=true" or "If revision is needed"
+- [ ] APPROVAL RULES explicitly state "ALWAYS approve — set approved=true"
+- [ ] APPROVAL RULES explicitly state "revision_requested is ALWAYS false"
+- [ ] Live mode section: "grounds for rejection" replaced with "append disclaimer to conditions[]"
+- [ ] Knowledge_only mode section unchanged (already correct — no regression)
+- [ ] Output format JSON template retains `revision_requested` field but with annotation "always false"
+
+#### AC — PFIX-02 (agent.py _enforce_evidence_chains)
+- [ ] `_enforce_evidence_chains()` never sets `output["approved"] = False`
+- [ ] `_enforce_evidence_chains()` never sets `output["revision_requested"] = True`
+- [ ] When evidence chain failures detected: disclaimer string appended to `output["conditions"][]`
+- [ ] When evidence chain failures detected: warning text appended to `output["review_notes"]`
+- [ ] `approved` remains `True` and `revision_requested` remains `False` after chain validation, regardless of failure count
+- [ ] When no evidence items or no finding chains: method is a no-op (unchanged behaviour)
+
+#### AC — PFIX-03 (tests)
+- [ ] `tests/test_partner_agent.py` exists with at minimum 2 passing tests
+- [ ] Test 1: mock LLM returns knowledge_only output with zero citations → `approved=True`, `revision_requested=False`
+- [ ] Test 2: mock evidence chain failure (LEAD_ONLY evidence) → `approved=True`, `revision_requested=False`, disclaimer present in `conditions[]`
+- [ ] All 131 existing tests still pass (no regression)
+
+#### AC — Integration (all PFIX tasks)
+- [ ] Run FRM knowledge_only end-to-end: pipeline completes, final report generated, no `PARTNER_REVISION_REQ` status set
+- [ ] Partner output artifact contains `approved: true`, `revision_requested: false`
+- [ ] If conditions present: each is a string starting with "CONDITION [n]:" format
+- [ ] Pipeline status in `state.json` reaches `partner_review_complete`, not `partner_revision_requested`
 
 ---
 
@@ -439,6 +473,16 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 - [ ] FOLDER-03 `pages/09_Due_Diligence.py` — same
 - [ ] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
 
+#### AC — FOLDER-01 through FOLDER-04 (all pages)
+- [ ] Clicking Run on any workflow page: `cases/{slug}/` directory exists on disk within 1 second, before the pipeline produces any output
+- [ ] `cases/{slug}/state.json` written at same moment with fields: `case_id`, `workflow`, `status: "running"`, `started_at` (ISO-8601)
+- [ ] If folder already exists (re-run same case): no error, no crash — operation is idempotent
+- [ ] If `case_id` is empty string or None at Run click: error message shown in UI, folder not created, pipeline not started
+- [ ] `state.json` is valid JSON (parseable); no partial writes (use atomic write pattern consistent with existing `file_tools.py`)
+- [ ] Applies to all 8 affected pages — verify each page listed in FOLDER-01 to FOLDER-04 has the pre-create call
+- [ ] No regression: existing pipeline behavior unchanged after folder pre-creation (pipeline still writes artifacts to same path)
+- [ ] Security: `case_id` passes through existing slug validator before use as folder name (path traversal already blocked by Pydantic validator — confirm it fires on this path)
+
 ---
 
 ### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [QUEUED — small]
@@ -455,6 +499,24 @@ Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitt
 - [ ] PROG-01 `streamlit_app/shared/pipeline.py` — implement chosen fix (A or B). Progress bar must never show red/full while pipeline is still running. On completion: show 100% briefly then replace with `st.success()`.
 - [ ] PROG-02 FRM-specific: calibrate or remove step counting for multi-module runs — each module's schema_retry and PM revision round adds 2–4 extra events; fixed `total_steps` cannot predict this.
 - [ ] PROG-03 Smoke verify: run FRM 2-module knowledge_only; confirm bar never turns red mid-run; confirm completion state is clear.
+
+#### AC — PROG-01 (pipeline.py)
+- [ ] **Option A chosen:** `st.progress()` removed from `run_in_status()`; replaced with `st.status()` spinner (or equivalent indeterminate indicator) — no step counting required
+  - *If Option B chosen instead:* progress value is capped at 0.95 until pipeline function returns; only then snaps to 1.0
+- [ ] Under no circumstance does the progress indicator show 100% / red / "complete" state while the pipeline function is still executing
+- [ ] On pipeline completion: indicator transitions to `st.success()` or equivalent green completion state
+- [ ] Forensic tip panel still visible during run (Sprint-UX-WAIT-01 — no regression)
+- [ ] `total_steps` parameter removed or marked deprecated if Option A implemented (dead code removed)
+
+#### AC — PROG-02 (FRM multi-module)
+- [ ] 2-module FRM run with at least 1 schema_retry event: progress indicator never shows red/full mid-run
+- [ ] 2-module FRM run with PM revision round: same — no red mid-run
+- [ ] FRM page does not pass `total_steps` to `run_in_status()` if Option A implemented (parameter unused)
+
+#### AC — PROG-03 (smoke verify — AK manual)
+- [ ] AK runs FRM 2-module knowledge_only: progress indicator never shows red while "Partner reviewing" text is visible
+- [ ] On completion: Done Zone appears, progress indicator shows success state (green / complete), not red
+- [ ] Single-module run (minimal case): same — no red mid-run, clear completion signal
 
 ---
 

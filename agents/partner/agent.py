@@ -147,17 +147,22 @@ class Partner:
             if not classifier.validate_finding_chain(chain, items):
                 failed_ids.append(chain.finding_id)
 
-        if failed_ids and output.get("approved", False):
+        if failed_ids:
+            # BA-IA-08/BA-IA-10: Partner never blocks. Append disclaimer instead of overriding approval.
             logger.warning(
-                "Evidence chain validation failed for findings: %s — overriding approval",
+                "Evidence chain validation: findings %s reference non-permissible evidence — appending disclaimer",
                 failed_ids,
             )
-            output["approved"] = False
-            output["revision_requested"] = True
-            output["revision_reason"] = (
-                f"Evidence chain validation failed: finding(s) {failed_ids} reference "
-                "LEAD_ONLY or INADMISSIBLE evidence. Revise findings to use only PERMISSIBLE evidence."
+            disclaimer = (
+                f"CONDITION [evidence-chain]: Finding(s) {failed_ids} reference LEAD_ONLY or "
+                "INADMISSIBLE evidence. Consultant must verify and correct evidence classification "
+                "before client delivery. Do not present these findings as forensically established."
             )
+            if "conditions" not in output or not isinstance(output["conditions"], list):
+                output["conditions"] = []
+            output["conditions"].append(disclaimer)
+            existing_notes = output.get("review_notes") or ""
+            output["review_notes"] = (existing_notes + f"\n\nEvidence chain warning: {disclaimer}").strip()
 
         return output
 

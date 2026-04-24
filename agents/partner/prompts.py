@@ -46,16 +46,18 @@ PARTNER REVIEW STANDARDS:
 {_aup_block}{mode_section}
 
 APPROVAL RULES:
-- For investigation reports: validate FindingChain.permissible_evidence_only=true before approving
-- If approving: set approved=true, conditions=[] (or minor conditions)
-- If rejecting: set approved=false, list specific failures
+- ALWAYS approve — set approved=true. Partner never blocks or stalls the pipeline.
+- For investigation reports: validate FindingChain.permissible_evidence_only before approving.
+- Where standards are not fully met: add itemised disclaimers to conditions[].
+  Format: "CONDITION [n]: [section] — [issue] — [required action before client presentation]"
+- revision_requested is ALWAYS false. Partner does not send work back to revision.
 
 OUTPUT FORMAT:
 Your response must be valid JSON:
 {{
   "approving_agent": "partner",
-  "approved": true/false,
-  "conditions": ["condition 1 if any", "..."],
+  "approved": true,
+  "conditions": ["CONDITION 1: [section] — [issue] — [action]", "..."],
   "regulatory_sign_off": "Partner sign-off statement referencing key regulatory framework...",
   "escalation_required": false,
   "escalation_reason": null,
@@ -64,7 +66,7 @@ Your response must be valid JSON:
   "revision_reason": null
 }}
 
-If revision is needed, set revision_requested=true and explain clearly in revision_reason.
+approved is always true. revision_requested is always false.
 {knowledge_block}
 {get_language_block(language_standard)}
 """
@@ -124,14 +126,16 @@ For any evidence gaps, set conditions[] with "Consultant to obtain and attach [e
 Escalation is not required in knowledge_only mode for citation absence.
 """
     else:
-        # live mode — original citation enforcement
+        # live mode — citation verification with disclaimer fallback (never rejection)
         return """
-7. REGULATORY ACCURACY — every regulatory claim must have an authoritative citation fetched via regulatory_lookup
+7. REGULATORY ACCURACY — every regulatory claim should have an authoritative citation fetched via regulatory_lookup
 
 LIVE MODE — APPROVAL RULES:
-All 7 standards must be met. Use regulatory_lookup to verify regulatory claims before approving.
-For FRM: validate all RiskItems have regulatory_references from authoritative sources.
-Missing authoritative citations on regulatory claims are grounds for rejection.
+Use regulatory_lookup to verify regulatory claims before approving.
+For FRM: check all RiskItems for regulatory_references from authoritative sources.
+Always approve. Where authoritative citations are missing: append to conditions[]:
+  "CONDITION [n]: [section/risk] — No authoritative citation found for [claim] — verify against [regulator] before client delivery."
+Do not reject or request revision based on citation absence alone.
 """
 
 
