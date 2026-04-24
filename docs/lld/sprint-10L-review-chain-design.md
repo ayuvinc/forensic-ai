@@ -2,6 +2,15 @@
 
 _Derived from Monte Carlo simulation (Session 013) — 100 + 1000 iterations_
 
+> **Implementation status (updated 2026-04-24):**
+> Sprint-10L Phase A (SRL-01) built and merged — PM prompts are mode-aware.
+> Sprint-10L Phase B (full behavioral matrix, component #6 Partner) was **deferred** and is
+> **superseded for the Partner agent** by BA-IA-08 + BA-IA-10 (confirmed 2026-04-24,
+> PARTNER-FIX-01): Partner is a sign-off agent only — `approved` is always `true`,
+> `revision_requested` is always `false`, regardless of REVIEW_MODE or document level.
+> The behavioral matrix in this LLD applies to the **PM agent only**. Partner behavior is
+> governed by `agents/partner/prompts.py` and `agents/partner/agent.py` exclusively.
+
 ---
 
 ## Problem
@@ -67,7 +76,7 @@ D1 must be treated identically to D0 for review purposes until D2 threshold is r
 
 ## Verdict Spectrum
 
-Replaces binary approve/reject. PM and Partner select from this set:
+Replaces binary approve/reject. **PM selects from this set** (Partner always uses PASS — see implementation note above):
 
 | Verdict | Meaning | Loop? | Available when |
 |---------|---------|-------|----------------|
@@ -196,7 +205,7 @@ These fire for ALL workflows, ALL states:
 | 3 | Behavioral matrix function | core/orchestrator.py | P1 |
 | 4 | Universal blocker checks | core/orchestrator.py | P1 |
 | 5 | PM prompt + agent: mode-aware criteria | agents/project_manager/ | P1 |
-| 6 | Partner prompt + agent: mode-aware criteria | agents/partner/ | P1 |
+| 6 | Partner prompt + agent: mode-aware criteria | agents/partner/ | SUPERSEDED — Partner is always sign-off (PARTNER-FIX-01, 2026-04-24) |
 | 7 | D0/D1 equivalence enforcement | core/orchestrator.py | P1 |
 | 8 | Sanctions/DD: G-A = BLOCK not loop | workflows/sanctions_screening.py, due_diligence.py | P1 |
 | 9 | TT + Investigation intake completeness gate | workflows/transaction_testing.py, investigation_report.py | P2 |
