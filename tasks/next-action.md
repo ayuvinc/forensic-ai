@@ -7,42 +7,36 @@ OPEN
 junior-dev
 
 ## NEXT_TASK
-**Session 051 (continued) — Build Sprint-FOLDER-01**
+**Session 051 (continued) — Build Sprint-UX-PROGRESS-01**
 
-Sprint-PARTNER-FIX-01 merged to main (QA_APPROVED 2026-04-24). 139 tests pass.
+Sprint-FOLDER-01 merged to main (QA_APPROVED 2026-04-24). 139 tests pass.
 
-**Build now — Sprint-FOLDER-01 (4 tasks, 8 pages):**
-1. FOLDER-01 `pages/02_Investigation.py` — pre-create case folder + write minimal state.json before `run_in_status()`
-2. FOLDER-02 `pages/06_FRM.py` — same
-3. FOLDER-03 `pages/09_Due_Diligence.py` — same
-4. FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
+**Build now — Sprint-UX-PROGRESS-01 (1 file: streamlit_app/shared/pipeline.py):**
 
-**Pattern:** In each workflow page, immediately before `run_in_status(...)`:
-```python
-from tools.file_tools import case_dir
-import json, datetime
-folder = case_dir(case_id)
-folder.mkdir(parents=True, exist_ok=True)
-state_file = folder / "state.json"
-if not state_file.exists():
-    state_file.write_text(json.dumps({
-        "case_id": case_id,
-        "workflow": workflow_type,
-        "status": "running",
-        "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
-    }))
-```
-Must use atomic write (`.tmp` then `os.replace()`) — consistent with `file_tools.py` pattern.
-Guard: if `case_id` is empty/None, show `st.error()` and return before creating folder.
-Security: `case_id` is slugified by Pydantic intake validator — path traversal already blocked.
+Option A chosen. Remove the `st.progress()` overlay from `run_in_status()`. The `st.status()` block already provides spinner (running) + green checkmark (complete). No step counting in UI.
 
-**Branch:** `feature/sprint-folder-01-pre-create-case-folder`
+**Exact changes to `streamlit_app/shared/pipeline.py`:**
+1. Remove `total_steps: int = 3` parameter from `run_in_status()` signature
+2. Remove docstring lines referencing `total_steps` (lines ~16-18 in module docstring)
+3. Remove `progress_bar = st.progress(0)` (line ~161)
+4. Remove `_advance_progress()` function (lines ~164-167)
+5. Remove `_advance_progress()` call inside `on_progress` (line ~179) — replace with inline `step_count[0] += 1`
+6. Remove `progress_bar.progress(1.0)` on pipeline success (line ~183)
+7. Keep `step_count = [0]` — still used for activity log `detail.steps`
 
-**After FOLDER-01:** Sprint-UX-PROGRESS-01 (progress bar fix — Option A: replace st.progress with st.status spinner).
+**What to keep unchanged:**
+- `st.status(label, expanded=True) as status` — provides the visual indicator
+- `status.update(label=..., state="complete")` on success
+- Forensic tip panel (UX-WAIT-01 regression prevention)
+- All activity logging, crash reporter, event log replay
+
+**Branch:** `feature/sprint-ux-progress-01-fix-progress-bar`
+
+**After UX-PROGRESS-01:** Sprint-INDEX-01 (foundation sprint, Tier 2).
 
 ## COMMAND
 ```
-/junior-dev build Sprint-FOLDER-01 (FOLDER-01/02/03/04)
+/junior-dev build Sprint-UX-PROGRESS-01 (PROG-01/02/03)
 ```
 
 ## COMPLETION STATUS
@@ -60,8 +54,8 @@ Sprint-UX-ERR-01:                100% ██████████ DONE
 Sprint-UX-WAIT-01:               100% ██████████ DONE
 Sprint-DOCX-01:                  100% ██████████ MERGED 2026-04-24
 Sprint-PARTNER-FIX-01:           100% ██████████ MERGED 2026-04-24
-Sprint-FOLDER-01:                0%  ░░░░░░░░░░ ACTIVE — Tier 1
-Sprint-UX-PROGRESS-01:           0%  ░░░░░░░░░░ QUEUED — Tier 1
+Sprint-FOLDER-01:                100% ██████████ MERGED 2026-04-24
+Sprint-UX-PROGRESS-01:           0%  ░░░░░░░░░░ ACTIVE — Tier 1
 Sprint-INDEX-01:                 0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation
 Sprint-PROCESS-01:               0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation (BA needed)
 Sprint-KB-02:                    0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation (content needed)
@@ -79,13 +73,11 @@ Sprint-CLI-ERR-01:               0%  ░░░░░░░░░░ QUEUED — T
 - BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files
 - BA-REQ-CLOSE-01: No Mark Complete/Close button yet
 - Sprint-KB-01 smoke check: DEFERRED (no API credit)
-- **API credits: limited** — all pipeline testing blocked until credits restored; FOLDER-01 has no API dependency (safe to build)
-- Recommendations coercion P1: RiskItem field validator looks for 'recommendation' key but model returns 'title' key — raw dicts still render in .md output. Fix in Sprint-KB-02 or standalone hotfix.
+- **API credits: limited** — PROGRESS-01 has no API dependency (pure UI fix; safe to build)
+- Recommendations coercion P1: RiskItem validator uses 'recommendation' key but model returns 'title' key — raw dicts still render in .md report. Fix in Sprint-KB-02 or standalone hotfix.
 
 ## CARRY_FORWARD_CONTEXT
-- Full application plan at `docs/app-plan.md` — authoritative sprint order, 7-layer gap analysis
-- Partner fix merged: pipeline can now complete without stalling at Partner stage
-- FOLDER-01 pattern: all 8 pages need the same pre-create block — batch FOLDER-04 across 5 pages in one commit
+- Three Tier 1 sprints completed this session: PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01 (active)
+- Tier 1 complete clears the path for Tier 2: INDEX-01 (foundation), PROCESS-01 (BA needed), KB-02 (content needed)
 - Sprint-INDEX-01 is the foundation for CHECKPOINT-01, SESSION-ENTRY-01, PROCESS-01 persistence
-- Project name = case folder (slugified). Engagement path: Engagements page sets it.
-- FRM pipeline: schema_retry fires on empty findings; double-retry graceful skip works; module index display fixed
+- UX-PROGRESS-01 is 1 file only — fastest sprint possible

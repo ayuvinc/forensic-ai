@@ -92,10 +92,10 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 ---
 
 > **AUTHORITATIVE SPRINT ORDER — see `docs/app-plan.md` for full plan.**
-> Tier 1: FOLDER-01, UX-PROGRESS-01.
+> Tier 1: UX-PROGRESS-01.
 > Tier 2: INDEX-01, PROCESS-01, KB-02. Tier 3: CHECKPOINT-01, CLOSE-01, EVIDENCE-01.
 > Tier 4: UX polish. Tier 5: Quality gates. Tier 6: Advanced features.
-> MERGED: DOCX-01 (2026-04-24), PARTNER-FIX-01 (2026-04-24).
+> MERGED: DOCX-01 (2026-04-24), PARTNER-FIX-01 (2026-04-24), FOLDER-01 (2026-04-24).
 
 ---
 
@@ -412,43 +412,34 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
-### Sprint-FOLDER-01 — Pre-create Case Folder on Run Click [READY_FOR_REVIEW]
+### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [PENDING]
 
-**Status:** READY_FOR_REVIEW — FOLDER-01/02/03/04 complete. 139 tests pass. Branch: feature/sprint-folder-01-pre-create-case-folder
-**Context:** Case folder is created when the first artifact is persisted (Junior draft). For a 3-module FRM run this means the folder doesn't exist until 2-4 min into the run. User expectation: folder visible in Finder immediately on clicking Run.
-**Fix:** In each workflow page, call `case_dir(case_id).mkdir(parents=True, exist_ok=True)` and write a minimal `state.json` ({case_id, workflow, status: "running", started_at}) immediately before `run_in_status(...)` is called.
+**Status:** PENDING — Option A chosen by Architect (Session 051).
+**Option A chosen:** Remove `st.progress()` overlay entirely. `st.status()` block already provides spinner (running) + green checkmark (complete). No step counting needed in UI.
+**Root cause:** `total_steps` is a fixed count calibrated for clean single-pass. Schema retry, PM revision, multi-module FRM all add extra `on_progress` events that overflow the bar → Streamlit clamps at 100% → red bar while pipeline still running.
 
-- [x] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
-- [x] FOLDER-02 `pages/06_FRM.py` — same
-- [x] FOLDER-03 `pages/09_Due_Diligence.py` — same
-- [x] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
+**Scope: 1 file — `streamlit_app/shared/pipeline.py` only.**
+No callers pass `total_steps` (grep confirmed). No page changes needed.
 
-#### AC — FOLDER-01 through FOLDER-04 (all pages)
-- [ ] Clicking Run on any workflow page: `cases/{slug}/` directory exists on disk within 1 second, before the pipeline produces any output
-- [ ] `cases/{slug}/state.json` written at same moment with fields: `case_id`, `workflow`, `status: "running"`, `started_at` (ISO-8601)
-- [ ] If folder already exists (re-run same case): no error, no crash — operation is idempotent
-- [ ] If `case_id` is empty string or None at Run click: error message shown in UI, folder not created, pipeline not started
-- [ ] `state.json` is valid JSON (parseable); no partial writes (use atomic write pattern consistent with existing `file_tools.py`)
-- [ ] Applies to all 8 affected pages — verify each page listed in FOLDER-01 to FOLDER-04 has the pre-create call
-- [ ] No regression: existing pipeline behavior unchanged after folder pre-creation (pipeline still writes artifacts to same path)
-- [ ] Security: `case_id` passes through existing slug validator before use as folder name (path traversal already blocked by Pydantic validator — confirm it fires on this path)
+**What to remove from `run_in_status()`:**
+- `total_steps: int = 3` parameter + docstring references
+- `progress_bar = st.progress(0)` (line ~161)
+- `_advance_progress()` function (lines ~164-167)
+- `_advance_progress()` call inside `on_progress` (line ~179)
+- `progress_bar.progress(1.0)` on pipeline success (line ~183)
 
----
+**What to keep:**
+- `step_count = [0]` — retained for activity log `detail.steps` metric
+- `step_count[0] += 1` inline inside `on_progress` (replaces `_advance_progress()`)
+- `st.status()` block — provides visual running/complete state
+- Forensic tip panel (UX-WAIT-01 — no regression)
+- All activity logging, crash reporter, event log
 
-### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [QUEUED — small]
+**Security model:** UI-only change. No auth, data, PII, or audit impact. `step_count` retained for activity log.
 
-**Status:** QUEUED — small fix, no design needed.
-**Observation Session 049:** Progress bar hits 100% (turns red) while pipeline is still running. Root cause: `total_steps` is calibrated for a clean single-pass run. Schema retry, PM revision requests, and multi-module FRM each add extra `on_progress` events that overflow the bar. Streamlit clamps at 100% and the bar turns red — misleading, implies failure.
-
-**Fix options (architect picks one at session open):**
-
-Option A — Indeterminate bar: replace `st.progress()` with Streamlit's native `st.status()` spinner for the outer pipeline container. No step counting needed. Already used inside `run_in_status()` — just remove the manual `st.progress` overlay.
-
-Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitted events and cap the display at 95% until the pipeline actually completes, then snap to 100%.
-
-- [ ] PROG-01 `streamlit_app/shared/pipeline.py` — implement chosen fix (A or B). Progress bar must never show red/full while pipeline is still running. On completion: show 100% briefly then replace with `st.success()`.
-- [ ] PROG-02 FRM-specific: calibrate or remove step counting for multi-module runs — each module's schema_retry and PM revision round adds 2–4 extra events; fixed `total_steps` cannot predict this.
-- [ ] PROG-03 Smoke verify: run FRM 2-module knowledge_only; confirm bar never turns red mid-run; confirm completion state is clear.
+- [ ] PROG-01 `streamlit_app/shared/pipeline.py` — remove st.progress overlay per Option A spec above
+- [ ] PROG-02 FRM-specific: no page changes needed (no callers pass total_steps — PROG-02 is already satisfied by PROG-01)
+- [ ] PROG-03 Smoke verify: AK runs FRM 2-module knowledge_only; confirm no red bar mid-run; confirm completion state clear
 
 #### AC — PROG-01 (pipeline.py)
 - [ ] **Option A chosen:** `st.progress()` removed from `run_in_status()`; replaced with `st.status()` spinner (or equivalent indeterminate indicator) — no step counting required

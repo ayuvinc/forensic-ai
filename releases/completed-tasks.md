@@ -542,3 +542,19 @@ Fix: Partner is a sign-off agent, not a quality gate. PM owns revision loops. Pa
 
 Security: No auth impact. Prompt and logic change only. No new data access. Audit logging unchanged.
 
+
+---
+
+## Sprint-FOLDER-01 — Pre-create Case Folder on Run Click (2026-04-24)
+
+**Branch:** feature/sprint-folder-01-pre-create-case-folder — merged to main
+**QA:** QA_APPROVED — 139/139 tests pass
+
+- [x] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
+- [x] FOLDER-02 `pages/06_FRM.py` — same
+- [x] FOLDER-03 `pages/09_Due_Diligence.py` — same
+- [x] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — batch
+
+Pattern: `case_dir(intake.case_id)` (creates dir via mkdir) + `write_state()` (atomic .tmp→os.replace) with `if not state.json exists` guard. Proposal got an inline `from datetime import datetime, timezone`. Policy/SOP injected at structure_proposal stage (no run_in_status).
+
+Security: path traversal blocked by case_dir() R-019 on every call. case_id empty guard enforced at button-click level. write_state updates cases/index.json atomically.

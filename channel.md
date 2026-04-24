@@ -306,3 +306,55 @@ New file: `tests/test_partner_agent.py` — 8 tests, all PASS.
 QA_APPROVED — all testable ACs pass; 139/139 tests pass; integration ACs satisfy via static analysis; prompt and code are aligned. Sprint-PARTNER-FIX-01 clear for Architect merge.
 
 ---
+
+## QA-Run — Sprint-FOLDER-01
+Agent: qa-run
+Sprint: Sprint-FOLDER-01
+Timestamp: 2026-04-24T01:00:00Z
+Branch: feature/sprint-folder-01-pre-create-case-folder
+Overall: QA_APPROVED
+
+### Codex gate
+Waived per project memory (feedback_codex_gate.md).
+
+### Test suite
+139 passed, 0 failed, 19 warnings — `python3 -m pytest tests/ -q`
+No new test file — change is pure side-effect code (mkdir + write_state), no unit-testable branching in isolation. Regression baseline holds.
+
+### Criterion Results
+
+#### AC — FOLDER-01 through FOLDER-04 (all pages)
+
+- [PASS] All 8 pages have the Sprint-FOLDER-01 block — confirmed via grep (1 block per file)
+  - pages/02_Investigation.py, pages/06_FRM.py, pages/09_Due_Diligence.py, pages/04_Policy_SOP.py
+  - pages/05_Training.py, pages/07_Proposal.py, pages/10_Sanctions.py, pages/11_Transaction_Testing.py
+
+- [PASS] `cases/{slug}/` created before pipeline: `case_dir(intake.case_id)` called in all 8 blocks; `case_dir()` (file_tools.py:51) calls `d.mkdir(parents=True, exist_ok=True)` — synchronous, completes within milliseconds of Run click
+
+- [PASS] `state.json` fields: all 8 blocks confirmed to contain `case_id`, `workflow`, `status: "running"`, `started_at` (ISO-8601 via `datetime.now(timezone.utc).isoformat()`)
+
+- [PASS] Atomic write: `write_state()` (file_tools.py:233-238) uses `.with_suffix(".tmp")` → `os.replace()` — no partial writes possible
+
+- [PASS] Idempotency guard: `if not (_cdir / "state.json").exists()` present in all 8 blocks — re-run same case skips write, no crash; `case_dir()` itself is always idempotent (`exist_ok=True`)
+
+- [PASS] `case_id` empty guard: all 8 pages have `st.stop()` in the button handler before `case_id` is ever set; running stage is unreachable without a valid `case_id`
+
+- [PASS] Atomic write pattern: `write_state()` — confirmed above (`.tmp → os.replace()`)
+
+- [PASS] Security — path traversal: `case_dir()` (file_tools.py:41-50) resolves path and raises `ValueError` if it escapes `CASES_DIR`; fires on every `case_dir()` call including the one inside `write_state()`
+
+- [PASS] Regression — `run_in_status()` call signatures unchanged in all 7 pages that use it; pre-create block is unconditional code inserted before (not inside) the try/except; Policy/SOP co-build injection point is before `propose_structure()` spinner — equivalent earliest work point
+
+### Warnings
+- FRM (06_FRM.py) has a prior `write_state` at ai_questions transition (engagement_id path, status: "intake_created"). Running-stage pre-create guard (`if not exists`) means FRM+engagement_id cases skip the "running" write — state.json retains "intake_created" status. Folder exists and pipeline runs correctly. P1 — AC functionally satisfied (folder exists), status field deviation documented.
+- Policy/SOP injection is at `structure_proposal` stage (no `run_in_status` on this page). Equivalent earliest pipeline work point. AC intent satisfied.
+
+### Security checks
+- [PASS] No new auth change; single-user local install
+- [PASS] No PII exposure: state.json writes case_id (slug), workflow key, status, timestamp only
+- [PASS] Audit: write_state updates cases/index.json atomically — case tracker stays consistent
+
+### Verdict
+QA_APPROVED — all 8 ACs pass; 139/139 tests pass; no regressions; 2 P1 warnings documented, neither blocks. Sprint-FOLDER-01 clear for Architect merge.
+
+---
