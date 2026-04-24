@@ -1,7 +1,7 @@
 """Pipeline runner for Streamlit pages.
 
 run_in_status() wraps any workflow function in a st.status block with
-severity-tagged live log entries and a progress bar.
+severity-tagged live log entries.
 
 Each PipelineEvent renders as:
   CRITICAL → branded left-border div (severity-critical CSS class)
@@ -12,10 +12,8 @@ Agent internal IDs are mapped to user-facing labels via _AGENT_LABELS.
 Events are stored in st.session_state["pipeline_log_events"] so the
 failure expander can display them if the pipeline errors.
 
-Progress bar:
-  total_steps defaults to 3 (Junior → PM → Partner).
-  Each on_progress call increments the step counter by 1.
-  Callers can pass total_steps=N for workflows with more steps (e.g. FRM).
+Visual progress: st.status() provides the spinner (running) and green
+checkmark (complete) — no manual st.progress() overlay needed.
 """
 
 from __future__ import annotations
@@ -117,15 +115,11 @@ def run_in_status(
     label: str,
     fn: Callable,
     *args,
-    total_steps: int = 3,
     _engagement_id: str = "",
     _case_id: str = "",
     **kwargs,
 ) -> Any:
     """Call fn(*args, on_progress=<callback>, **kwargs) inside st.status.
-
-    Adds a st.progress() bar above the status block that increments on each
-    on_progress call and reaches 100% when the pipeline completes.
 
     The on_progress callback accepts PipelineEvent or plain str.
     Plain strings are auto-wrapped as PipelineEvent(severity='INFO', agent='pipeline').
@@ -157,15 +151,8 @@ def run_in_status(
     except Exception:
         pass
 
-    # Progress bar — sits above the status block (UX-F-03)
-    progress_bar = st.progress(0)
+    # step_count tracks events for activity log detail.steps — no UI progress bar
     step_count = [0]
-
-    def _advance_progress() -> None:
-        step_count[0] += 1
-        pct = min(step_count[0] / max(total_steps, 1), 1.0)
-        progress_bar.progress(pct)
-
     result = None
 
     with st.status(label, expanded=True) as status:
@@ -176,11 +163,10 @@ def run_in_status(
             # Store event for failure log
             st.session_state["pipeline_log_events"].append(event)
             _render_event(st, event)
-            _advance_progress()
+            step_count[0] += 1
 
         try:
             result = fn(*args, on_progress=on_progress, **kwargs)
-            progress_bar.progress(1.0)
             status.update(label=f"{label} — complete", state="complete")
             # ACT-02: log pipeline complete
             try:

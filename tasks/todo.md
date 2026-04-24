@@ -414,7 +414,7 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [PENDING]
 
-**Status:** PENDING — Option A chosen by Architect (Session 051).
+**Status:** READY_FOR_REVIEW — PROG-01/02 complete. 139 tests pass. Branch: feature/sprint-ux-progress-01-fix-progress-bar. PROG-03 is AK manual smoke verify.
 **Option A chosen:** Remove `st.progress()` overlay entirely. `st.status()` block already provides spinner (running) + green checkmark (complete). No step counting needed in UI.
 **Root cause:** `total_steps` is a fixed count calibrated for clean single-pass. Schema retry, PM revision, multi-module FRM all add extra `on_progress` events that overflow the bar → Streamlit clamps at 100% → red bar while pipeline still running.
 
@@ -437,8 +437,8 @@ No callers pass `total_steps` (grep confirmed). No page changes needed.
 
 **Security model:** UI-only change. No auth, data, PII, or audit impact. `step_count` retained for activity log.
 
-- [ ] PROG-01 `streamlit_app/shared/pipeline.py` — remove st.progress overlay per Option A spec above
-- [ ] PROG-02 FRM-specific: no page changes needed (no callers pass total_steps — PROG-02 is already satisfied by PROG-01)
+- [x] PROG-01 `streamlit_app/shared/pipeline.py` — remove st.progress overlay per Option A spec above
+- [x] PROG-02 FRM-specific: no page changes needed (no callers pass total_steps — PROG-02 is already satisfied by PROG-01)
 - [ ] PROG-03 Smoke verify: AK runs FRM 2-module knowledge_only; confirm no red bar mid-run; confirm completion state clear
 
 #### AC — PROG-01 (pipeline.py)
