@@ -37,16 +37,27 @@ def render_done_zone(
     """
     st.success(f"{workflow_label} complete — Case ID: `{case_id}`")
 
-    # Download button
+    # Download buttons — docx left (primary), md right (secondary) per ux-specs.md:386
     if report_path.exists():
         report_text = report_path.read_text(encoding="utf-8")
         safe_client = client_name.replace(" ", "_")
-        st.download_button(
-            label=f"Download {workflow_label} report (.md)",
-            data=report_text,
-            file_name=f"{workflow_label.replace(' ', '_')}_{safe_client}_{case_id}.md",
-            mime="text/markdown",
-        )
+        docx_path = report_path.with_suffix(".docx")
+        col_docx, col_md = st.columns(2)
+        if docx_path.exists():
+            with col_docx:
+                st.download_button(
+                    label="Download Word document",
+                    data=docx_path.read_bytes(),
+                    file_name=f"{workflow_label.replace(' ', '_')}_{safe_client}_{case_id}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+        with col_md:
+            st.download_button(
+                label="Download Markdown backup",
+                data=report_text,
+                file_name=f"{workflow_label.replace(' ', '_')}_{safe_client}_{case_id}.md",
+                mime="text/markdown",
+            )
 
         # Inline preview (UX-010)
         with st.expander("Preview report", expanded=False):

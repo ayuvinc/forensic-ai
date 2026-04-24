@@ -83,6 +83,11 @@ if st.session_state.san_stage == "intake":
     client_name = project_meta.get("client_name", "") if project_meta else ""
     if not client_name:
         client_name = st.text_input("Client name *", key="san_client_name_manual")
+    project_name = st.text_input(
+        "Project name *", key="san_project_name_manual",
+        placeholder="e.g. ABC Sanctions Screening 2024",
+        help="Used as the folder name for all outputs from this engagement.",
+    )
 
     if knowledge_only and not acknowledged:
         st.info("Acknowledge the warning above to proceed.")
@@ -91,13 +96,15 @@ if st.session_state.san_stage == "intake":
         engine_result = _san_engine.run()
 
         if engine_result is not None and client_name.strip():
-            import uuid as _uuid
             from schemas.case import CaseIntake
+            from tools.file_tools import slugify_project_name
+
+            if not project_name.strip():
+                st.error("Project name is required.")
+                st.stop()
 
             values = engine_result["values"]
-            case_id = engagement_id if engagement_id else (
-                f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
-            )
+            case_id = engagement_id if engagement_id else slugify_project_name(project_name)
 
             nationalities_raw = values.get("nationalities", "")
             nationalities = [n.strip() for n in nationalities_raw.split(",") if n.strip()] if nationalities_raw else []
@@ -106,6 +113,7 @@ if st.session_state.san_stage == "intake":
 
             intake = CaseIntake(
                 case_id=case_id,
+                project_name=project_name.strip(),
                 client_name=client_name.strip(),
                 industry="",
                 primary_jurisdiction=values.get("jurisdiction", "UAE"),
@@ -253,11 +261,22 @@ elif st.session_state.san_stage == "done":
 
     report_path = get_final_report_path(intake.case_id)
     if report_path.exists():
-        st.download_button(
-            label="Download screening report (.md)",
-            data=report_path.read_text(encoding="utf-8"),
-            file_name=f"Sanctions_{intake.client_name}_{intake.case_id}.md",
-            mime="text/markdown",
-        )
+        docx_path = report_path.with_suffix(".docx")
+        col_docx, col_md = st.columns(2)
+        if docx_path.exists():
+            with col_docx:
+                st.download_button(
+                    label="Download Word document",
+                    data=docx_path.read_bytes(),
+                    file_name=f"Sanctions_{intake.client_name}_{intake.case_id}.docx",
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                )
+        with col_md:
+            st.download_button(
+                label="Download Markdown backup",
+                data=report_path.read_text(encoding="utf-8"),
+                file_name=f"Sanctions_{intake.client_name}_{intake.case_id}.md",
+                mime="text/markdown",
+            )
     st.markdown(f"**Case ID:** `{intake.case_id}`")
     st.markdown(f"**Location:** `cases/{intake.case_id}/`")

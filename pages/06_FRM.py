@@ -146,15 +146,24 @@ if st.session_state.frm_stage == "intake":
     client_name = project_meta.get("client_name", "") if project_meta else ""
     if not client_name:
         client_name = st.text_input("Client name *", key="frm_client_name_manual")
+    project_name = st.text_input(
+        "Project name *", key="frm_project_name_manual",
+        placeholder="e.g. ABC AML Review 2024",
+        help="Used as the folder name for all outputs from this engagement.",
+    )
 
     st.divider()
 
     engine_result = _frm_engine.run()
 
     if engine_result is not None and client_name.strip():
-        import uuid as _uuid
         from datetime import datetime, timezone
         from schemas.case import CaseIntake
+        from tools.file_tools import slugify_project_name
+
+        if not project_name.strip():
+            st.error("Project name is required.")
+            st.stop()
 
         values = engine_result["values"]
 
@@ -177,11 +186,10 @@ if st.session_state.frm_stage == "intake":
             selected_modules = sorted(selected_set | missing_deps)
             st.warning(f"Module(s) {auto_added} added automatically — required by the selected modules.")
 
-        case_id = engagement_id if engagement_id else (
-            f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
-        )
+        case_id = engagement_id if engagement_id else slugify_project_name(project_name)
         intake = CaseIntake(
             case_id=case_id,
+            project_name=project_name.strip(),
             client_name=client_name.strip(),
             industry=values.get("industry", "").strip(),
             primary_jurisdiction=values.get("jurisdiction", "UAE"),

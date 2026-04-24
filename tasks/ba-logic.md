@@ -8,6 +8,52 @@ _Populated via /ba discovery session — 2026-04-04_
 
 ## Business Logic Decisions
 
+[2026-04-24] BA-REQ-PROCESS-01: Every forensic/risk workflow (FRM, Investigation, Transaction Testing, Due Diligence) requires a Process Understanding stage populated before any AI analysis runs. Without it, AI output is generic industry-level analysis. With it, findings are client-specific and evidenced against the client's own documented procedures.
+
+**What it captures:**
+- How does THIS client's business process actually work (procurement, payroll, AML, financial reporting — relevant to the workflow type)?
+- What written controls exist (policies, SOPs, approved procedures)?
+- What did stakeholders say (management interviews, process walkthrough notes, prior audit findings)?
+- What systems/technology are in use (relevant to data availability and evidence tracing)?
+
+**Three input modes (all optional but cumulative — more inputs = more specific output):**
+1. Document upload: client uploads policies, SOPs, org charts, prior audit reports → AI extracts structured process understanding
+2. Guided form: structured questions specific to the workflow type (see per-workflow spec below)
+3. Stakeholder notes: interview transcripts or meeting notes → AI extracts key statements and process admissions
+
+**Output:** `process_context.json` in the case folder. Injected into every agent call as context. If absent, all findings carry `context_gap: true` flag and a disclaimer: "Finding based on industry-standard assumptions — verify against client-specific procedures before presenting."
+
+**Per-workflow required questions (guided form):**
+
+FRM — minimum 6 questions:
+1. What does the organisation do and how does it generate revenue? (scope the control environment)
+2. What written policies and SOPs are in place? (upload or name them)
+3. Who are the key decision-makers and what do they approve? (org structure, approval thresholds)
+4. What systems process financial transactions / handle customer data? (technology landscape)
+5. Have there been prior audits, regulatory examinations, or internal reviews? If so, what were the key findings?
+6. Are there any known control weaknesses or areas of concern management has identified?
+
+Investigation — minimum 6 questions (tailored to fraud type at intake):
+*Procurement fraud:* How does the procurement process work from requisition to payment? Who approves POs at each threshold? Who maintains the vendor master? What system is used?
+*Payroll fraud:* How are new employees onboarded and authorised in payroll? Who approves changes to salaries / bank details? What system processes payroll?
+*Expense fraud:* What is the expense claim and approval process? What are the approval thresholds and who holds them?
+*AML/Financial crime:* What products/services does the entity offer? What customer types does it serve? What is the transaction volume and average value?
+*General:* What documents and systems are available for review? What access can be provided?
+
+Transaction Testing — minimum 4 questions:
+1. What is the end-to-end transaction lifecycle for the population being tested? (from initiation to settlement/posting)
+2. What approval controls exist at each stage and who holds them?
+3. What data extract is available (system, format, period)?
+4. What is the "normal" transaction pattern (value ranges, frequency, counterparty types)?
+
+Due Diligence — minimum 4 questions:
+1. What is the target's primary business model and revenue sources?
+2. Who are the beneficial owners and key management?
+3. What jurisdictions does the target operate in and what regulatory licences does it hold?
+4. What are the key customer and vendor relationships?
+
+**Rationale:** The Project_FRM_test run produced 6 findings — all technically correct at an industry level, but not verified against ABC Inc's actual control environment. With process context, findings become: "Client's AML policy (v2.1) covers CDD but contains no EDD procedures — specific documented gap against DFSA AML Module requirement 3.4.3." Without it: "Client may not have EDD procedures — should be verified." The difference is the difference between a useful deliverable and a compliance-template exercise.
+
 [2026-04-23] BA-REQ-FORMATTING-01: All workflow outputs must generate a Word (.docx) file as the primary deliverable. A "Preferred output format" selector (Word / Markdown / both) must be present in every intake form. Word formatting quality is a prime requirement across all workflows: Sanctions memo, Investigation report, FRM risk register, DD report, Policy/SOP, Training material, Proposal, TT report. python-docx is already in requirements.txt — the gap is the intake selector and consistent formatting quality across all workflows.
 Rationale: Client deliverables must be professionally formatted. Maher works in Word. Raw markdown is not a client-facing format.
 

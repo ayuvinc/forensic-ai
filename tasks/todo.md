@@ -5,7 +5,7 @@ Status:         OPEN
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-23T16:59:37Z — state transition by MCP server
+Last updated:   2026-04-24T03:39:21Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -89,6 +89,111 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 
 ---
 
+---
+
+> **AUTHORITATIVE SPRINT ORDER — see `docs/app-plan.md` for full plan.**
+> Tier 0: DOCX-01 merge. Tier 1: PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01.
+> Tier 2: INDEX-01, PROCESS-01, KB-02. Tier 3: CHECKPOINT-01, CLOSE-01, EVIDENCE-01.
+> Tier 4: UX polish. Tier 5: Quality gates. Tier 6: Advanced features.
+
+---
+
+### Sprint-PARTNER-FIX-01 — Fix Partner Prompt to Never Block [TIER 1 — build first]
+
+**Status:** QUEUED — 2 tasks. BA-IA-08 (confirmed Session 022) and CLAUDE.md both specify Partner never blocks. Current Partner prompts reject drafts and set `revision_requested=True`, causing pipelines to exit with no final report.
+
+**Root cause:** Partner prompts across all workflows contain blocking language ("reject if X") that overrides the CLAUDE.md constraint.
+
+**Fix:** Partner prompt must approve with explicit, itemised disclaimers when standards are not met. Citation errors → disclaimer appended. Incomplete sections → disclaimer appended. Never `revision_requested=True` from Partner except for structural incompleteness that prevents any assessment (< 1 finding). PM can still request revisions. Partner never does after the first attempt.
+
+- [ ] PFIX-01 `agents/partner_agent.py` — update system prompt: remove all blocking/rejection language; replace with "approve with conditions" logic; itemised disclaimer format: "CONDITION [n]: [section] — [issue] — [required action before client presentation]"
+- [ ] PFIX-02 `workflows/frm_risk_register.py` — update Partner call handling: `revision_requested=False` path always proceeds to final report; conditions stored in pipeline artifact
+- [ ] PFIX-03 Smoke verify: run FRM knowledge_only — confirm Partner output has `approved: True`, conditions listed, final report generated
+
+**Security model:** No auth impact. Prompt change only.
+**Dependencies:** None. Build immediately.
+
+---
+
+### Sprint-STARTUP-01 — Application Startup Reliability + Discoverability [TIER 1]
+
+**Status:** QUEUED — observation Session 050.
+
+**Observations:**
+1. **Wrong entry point confusion** — `streamlit run app.py` is the correct command but `streamlit_app/app.py` and other paths are easy to try and all fail silently. No README-level discoverability of the correct command.
+2. **Startup reliability unknown** — app may crash on cold start due to missing firm_profile, missing .env, import errors on optional dependencies, or session bootstrap failures. No structured startup health check exists.
+3. **No startup script** — `run.py` exists at root but it launches the CLI, not Streamlit. A consultant opening the product for the first time has no obvious path to the UI.
+
+**Fix options:**
+- Add a `start.sh` (one line: `streamlit run app.py`) at repo root — removes all ambiguity
+- Add startup health check in `app.py` bootstrap: verify .env loaded, API keys present, firm_profile readable; display a clear setup prompt if not
+- Add `Makefile` target: `make run` → `streamlit run app.py`
+
+- [ ] STARTUP-01 Create `start.sh` at repo root: `#!/bin/bash\nstreamlit run app.py`
+- [ ] STARTUP-02 `app.py` bootstrap — add pre-flight check: if `.env` missing or `ANTHROPIC_API_KEY` not set, show `st.error()` with setup instructions before rendering any page
+- [ ] STARTUP-03 Update `README.md` — add one-line "Run the app" section at top: `bash start.sh` or `streamlit run app.py`
+- [ ] STARTUP-04 Smoke verify: cold start from clean terminal, confirm app loads to home page without errors
+
+---
+
+### Sprint-KB-02 — Knowledge Base Regulatory Expansion [TIER 2]
+
+**Status:** QUEUED — content + prompt wiring. No new code architecture needed. Knowledge files follow existing `knowledge/` pattern.
+
+**Context:** The AI currently fetches regulatory content via live Tavily lookups. This is unreliable — the Project_FRM_test run cited the wrong UAE AML law because the model confused two laws in a live search result. Embedded regulatory understanding is more durable than citation lookup. Citation lookup becomes a verification step, not the analytical foundation.
+
+**Files to create:**
+- [ ] KB2-01 `knowledge/regulatory/uae_aml.md` — UAE Federal Decree-Law No. 20 of 2018 + Cabinet Decision No. 10 of 2019: what it requires, expected controls, evidence of non-compliance, goAML obligations, DFSA AML Module, ADGM FSRA rules
+- [ ] KB2-02 `knowledge/regulatory/india_pmla.md` — PMLA 2002, PML Rules 2005, FIU-IND obligations: CDD/EDD requirements, STR/CTR/PTR reporting, RBI Master Directions on KYC, sectoral regulator matrix
+- [ ] KB2-03 `knowledge/regulatory/coso_framework.md` — COSO 2013 components, 17 principles, common control gaps by component, evidence of control failure per principle
+- [ ] KB2-04 `knowledge/fraud/acfe_typologies.md` — ACFE fraud tree: 90 schemes, red flags per scheme, evidence patterns, typical concealment methods, detection procedures
+- [ ] KB2-05 Inject into FRM and Investigation agent prompts: load relevant knowledge files into system prompt based on workflow + jurisdiction + industry
+- [ ] KB2-06 Smoke verify: FRM UAE run — confirm output cites Federal Decree-Law No. 20 of 2018 without a live lookup
+
+**Note:** Content for KB2-01 through KB2-04 should be written by an AI pass in a knowledge-building session, not manually. Budget one session for KB2-01/02 (regulatory) and one for KB2-03/04 (frameworks).
+
+---
+
+### Sprint-PROCESS-01 — Process Understanding Stage [TIER 2 — needs BA logic before build]
+
+**Status:** QUEUED — BA logic required before any code. See BA-REQ-PROCESS-01 in tasks/ba-logic.md.
+
+**Design confirmed Session 050.** Every forensic/risk workflow requires process context before analysis can produce case-specific findings. Without it, output is generic industry-level analysis. With it, findings are client-specific: "Client's documented procurement SOP section 4.3 requires dual approval above AED 50,000 — Vendor 0247's POs bypassed this control."
+
+**What it is:** A structured intake stage added to each workflow, populated before the pipeline runs. Output is `process_context.json` in the case folder, injected into every agent call.
+
+**Three input modes:**
+1. Document upload (richest) — client uploads procurement policy, AML framework, org chart → AI extracts structured process understanding
+2. Guided intake form — structured questions specific to the workflow type
+3. Stakeholder notes — interview transcripts or meeting notes uploaded → AI extracts key statements and process admissions
+
+**Workflows in scope:** FRM, Investigation, Transaction Testing, Due Diligence.
+**Not in scope for this sprint:** Policy/SOP, Training, Proposal (no process context required for those).
+
+**Pre-build gate:** BA-REQ-PROCESS-01 must be written in tasks/ba-logic.md specifying exact questions per workflow before Junior Dev writes any intake code.
+
+**Tasks (written after BA logic confirmed):** TBD — estimated ~12 tasks across intake, schema, prompts, document extraction.
+
+---
+
+### Sprint-CLOSE-01 — Engagement Mark Complete / Close [TIER 3 — needs BA design]
+
+**Status:** QUEUED — BA-REQ-CLOSE-01 confirmed Session 049. BA design of closure state machine required before build.
+
+**What's missing:** No UI trigger to move a case or engagement to a terminal state. The state machine has `OWNER_APPROVED` but Maher has no button to press. Cases stay "running" indefinitely.
+
+**Design needed:** What does close mean for each workflow? What gets locked on close? Does closure require a final download? Can a closed case be reopened?
+
+---
+
+### Sprint-EVIDENCE-01 — Sanctions Per-Hit Evidence Capture [TIER 3 — needs BA design]
+
+**Status:** QUEUED — BA-REQ-SANCTIONS-EVIDENCE-01 confirmed Session 049. Schema design required.
+
+**What's missing:** Sanctions hits have no per-hit evidence attachment. Required fields per hit: copy/screenshot of source record, URL + access timestamp, reviewer determination (confirmed / false positive / inconclusive). Knowledge_only hits must be labelled "model-generated baseline — not verified."
+
+---
+
 ### Sprint-KB-01 — Firm Knowledge Base Embedding [READY_FOR_REVIEW]
 
 **Status:** READY_FOR_REVIEW — Session 043. All tasks KB-01..04 complete. 131 tests pass.
@@ -155,6 +260,35 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
+### Sprint-UX-NAV-01 — Pinned Sidebar Navigation [QUEUED — UX/UI + designer]
+
+**Status:** QUEUED — requires UX design before build.
+**Observation:** Left sidebar restructures on every page navigation. Some pages inject their own sidebar sections (e.g. Persona Review adds MONITOR / SETTINGS / WORKFLOWS blocks); others show a bare nav. The result is a shifting, unpredictable left panel that breaks user orientation.
+**OBS reference:** OBS-04 (smoke test Session 048) + confirmed on all pages Session 049.
+**Goal:** Pinned, consistent sidebar across all 17 pages. Navigation structure never shifts — only the active-page indicator changes.
+
+**Design work needed before build (UX/UI + designer):**
+- Define the canonical sidebar sections and their fixed order (e.g. NAVIGATION / ACTIVE PROJECT / QUICK ACTIONS / SETTINGS)
+- Define what content is always visible vs. context-sensitive (e.g. active engagement banner)
+- Decide how per-page sidebar additions (Persona Review workflow list) are handled — modal, expander, or secondary panel
+- Produce a wireframe / component spec before any code is written
+
+**Build scope (after design approved):**
+
+- [ ] NAV-00 UX spec: produce canonical sidebar layout wireframe. All 17 pages reviewed. Sign-off from AK before build begins.
+
+- [ ] NAV-01 Create `streamlit_app/shared/sidebar.py` — `render_sidebar(st, active_page: str)` renders the full pinned sidebar. Takes `active_page` to highlight the current entry. All sidebar content moves here; individual pages call this function and add nothing directly to `st.sidebar`.
+
+- [ ] NAV-02 Audit all 17 pages — remove any `st.sidebar.*` calls that are not in `render_sidebar()`. Exceptions must be explicitly approved (e.g. "Start New Case" sidebar button — inline or move to main area).
+
+- [ ] NAV-03 Persona Review (03) sidebar restructure: move WORKFLOWS section out of sidebar into main content area (tab or expander). Sidebar returns to standard pinned layout on this page.
+
+- [ ] NAV-04 Regression: all 17 pages render without sidebar shift. Active-page highlight correct on each. No state bleed from sidebar between pages.
+
+**Dependencies:** NAV-00 (design) must be done before NAV-01. Sprint-UX-WIRE-01 can run in parallel (different concern).
+
+---
+
 ### Sprint-UX-WIRE-01 — Interaction Sophistication [UNBLOCKED — after ERR-01]
 
 **Status:** READY. AK decision 2026-04-23: sophistication problem is interaction wiring, not visual design. Colors/fonts stay GoodWork as-is. The root cause of "feels like it'll fall apart" is: (1) every button causes a full page rerun, (2) no inline feedback on saves, (3) forms dump all fields at once, (4) session state bleeds between pages, (5) stage transitions are abrupt jumps.
@@ -206,6 +340,222 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 - [ ] STREAM-01 Update `streamlit_app/shared/pipeline.py:run_in_status()` — replace `st.spinner` with `st.status(expanded=True)`. Each `on_progress` call appends a `st.write()` line inside the status block with agent name + message. Status label updates to "complete" or "failed" on exit.
 - [ ] STREAM-02 Calibrate `total_steps` per workflow — investigation (6), FRM per-module (4 per module), others (3). Pass from each workflow page to `run_in_status(total_steps=N)`.
+
+---
+
+### Sprint-DOCX-01 — .docx Download Buttons [Session 049]
+
+**Status:** READY_FOR_REVIEW — all code complete. DOCX-03 (AK smoke verify) pending.
+**Branch:** feature/sprint-docx-01-download-buttons
+**Commits:** 0bc9f4d (DOCX buttons), 1b05849 (recommendations fix), 7b028f8 (project name + industry + error log)
+
+- [x] DOCX-01 `streamlit_app/shared/done_zone.py` — st.columns(2), docx left "Download Word document", md right "Download Markdown backup"
+- [x] DOCX-02 `pages/04_Policy_SOP.py` — same 2-column pattern
+- [x] DOCX-02b `pages/05_Training.py` — same 2-column pattern
+- [x] DOCX-02c `pages/07_Proposal.py` — same 2-column pattern
+- [x] DOCX-02d `pages/10_Sanctions.py` — same 2-column pattern
+- [x] DOCX-02e `pages/11_Transaction_Testing.py` — same 2-column pattern
+- [ ] DOCX-03 Smoke verify — AK runs FRM knowledge_only end-to-end; confirms both buttons appear, .docx opens in Word
+
+**Ad-hoc fixes this session (unplanned, committed same branch):**
+- [x] `schemas/artifacts.py` — JuniorDraft.recommendations: coerce dict → str before validation (model was returning structured dicts)
+- [x] `workflows/frm_risk_register.py` — HookVetoError from validate_schema now caught in module loop; retried once with schema_retry=True
+- [x] `streamlit_app/shared/hybrid_intake.py` — Industry / sector changed from free-text to selectbox (18 options) across all 5 workflow configs
+- [x] `tools/file_tools.py` — slugify_project_name() utility added
+- [x] `schemas/case.py` — project_name: Optional[str] field added to CaseIntake
+- [x] `streamlit_app/shared/intake.py` — generic_intake_form() now asks for Project name; uses slug as case_id
+- [x] All 7 HybridIntakeEngine pages — Project name * field added; slug used as case folder name
+- [x] `streamlit_app/shared/crash_reporter.py` — structured logs/error_log.jsonl append on every crash (category, class, page, workflow)
+
+#### AC — DOCX-03
+- [ ] At least one workflow (FRM knowledge_only preferred) run end-to-end; both download buttons visible in Done Zone
+- [ ] `.docx` file opens in Word or LibreOffice without corruption error
+- [ ] `.md` file downloads correctly with "Download Markdown backup" label
+- [ ] No page crash during or after workflow run on any of the 8 affected pages
+- [ ] Regression: pages that do NOT use done_zone.py (PPT Pack, Due Diligence standalone) unaffected
+
+---
+
+### Sprint-UPLOAD-01 — Document Upload with Type Classification [QUEUED]
+
+**Status:** QUEUED — design needed before build.
+**Context:** Every workflow intake should allow document upload where each file is tagged with its document type. The type label tells the model what it is reading (e.g. "Engagement letter", "Bank statement") rather than leaving it to infer from filename. Currently some pages have untyped bulk uploaders; others have none.
+**BA sign-off needed:** Document type taxonomy per workflow before build begins.
+**Dependencies:** None. Can run in parallel with UX sprints.
+
+**Scope (architect to confirm at session open):**
+
+- [ ] UPLOAD-00 Design: define per-workflow document type lists. Examples:
+  - Investigation: Engagement letter, Bank statement, Audit report, Corporate registry extract, Correspondence, Transaction records, Other
+  - FRM: Engagement letter, Policy document, Org chart, Board minutes, Prior audit report, Regulatory correspondence, Other
+  - DD: Engagement letter, Corporate registry extract, Passport / ID, Financial statements, Legal filings, Media article, Other
+  - Policy/SOP: Existing policy (gap analysis), Regulatory guidance, Industry standard, Other
+  - Sanctions: Engagement letter, Identity document, Corporate registry extract, Other
+  - TT: Bank statement, General ledger, Invoice, Contract, Supporting document, Other
+
+- [ ] UPLOAD-01 Create shared `render_document_uploader(st, workflow_id, session_key)` in `streamlit_app/shared/upload.py`:
+  - `st.file_uploader` for multiple files (pdf, docx, txt, xlsx — existing types)
+  - For each uploaded file: inline `st.selectbox("Document type", DOC_TYPES[workflow_id])` keyed per filename
+  - Returns `list[{file, doc_type, filename}]`
+  - Replaces all existing bare `st.file_uploader` calls across workflow pages
+
+- [ ] UPLOAD-02 Wire type labels into DocumentManager registration — store `doc_type` alongside the file path so agents receive "Bank statement: Q1_2024.xlsx" in context rather than just "Q1_2024.xlsx"
+
+- [ ] UPLOAD-03 Update agent prompts to use doc_type label when referencing uploaded documents
+
+- [ ] UPLOAD-04 Smoke verify: upload a file on Investigation page, confirm type label appears in pipeline log / context passed to junior agent
+
+---
+
+### Sprint-DRAFT-01 — Interim Draft Access [QUEUED]
+
+**Status:** QUEUED — architect design needed.
+**Context:** The artifact versioning system already writes Junior draft (v1), PM-reviewed draft (v2), and Partner-signed output to `cases/{project}/` on every pipeline run. These files exist on disk but are invisible in the UI. Two layers of value: (1) access to partial results if pipeline crashes; (2) live module-by-module output during long FRM runs.
+**Highest value:** FRM multi-module — up to 20 min total runtime, each module's output should appear as it completes rather than one final dump.
+
+**Layer 1 — Artifact access in Case Tracker (quick win, no pipeline change):**
+
+- [ ] DRAFT-01 `pages/12_Case_Tracker.py` — in the case detail expander, scan `cases/{project}/` for all `*.v1.json`, `*.v2.json` artifacts and list them as downloadable files with human-readable labels (e.g. "Junior draft — Module 2 FRM", "PM-reviewed draft — Investigation"). Existing `build_case_index()` already knows the folder; just add artifact scan.
+- [ ] DRAFT-02 Add "Partial results available" badge on Case Tracker rows where pipeline status = `pipeline_error` but at least one vN artifact exists — Maher can recover partial output without re-running.
+
+**Layer 2 — Live module output during FRM run (stream to UI as each module completes):**
+
+- [ ] DRAFT-03 `workflows/frm_risk_register.py` — after each module's partner sign-off, write a `module_{N}_interim.json` to the case folder containing that module's risk items and summary. This is a lightweight append alongside existing artifact writes.
+- [ ] DRAFT-04 `pages/06_FRM.py` running stage — use `@st.fragment` or `st.rerun()` to render completed modules as they arrive. Each completed module shows a collapsed `st.expander` with its risk count and top findings. Pipeline continues in the same status block.
+- [ ] DRAFT-05 Smoke verify: run FRM 2-module knowledge_only, confirm Module 1 results appear before Module 2 completes.
+
+**Dependencies:** DRAFT-03/04 depend on Sprint-UX-WIRE-01 (@st.fragment patterns). DRAFT-01/02 are independent.
+
+---
+
+### Sprint-FOLDER-01 — Pre-create Case Folder on Run Click [QUEUED — small fix]
+
+**Status:** QUEUED — small, implement after Sprint-DOCX-01 merge.
+**Context:** Case folder is created when the first artifact is persisted (Junior draft). For a 3-module FRM run this means the folder doesn't exist until 2-4 min into the run. User expectation: folder visible in Finder immediately on clicking Run.
+**Fix:** In each workflow page, call `case_dir(case_id).mkdir(parents=True, exist_ok=True)` and write a minimal `state.json` ({case_id, workflow, status: "running", started_at}) immediately before `run_in_status(...)` is called.
+
+- [ ] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
+- [ ] FOLDER-02 `pages/06_FRM.py` — same
+- [ ] FOLDER-03 `pages/09_Due_Diligence.py` — same
+- [ ] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
+
+---
+
+### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [QUEUED — small]
+
+**Status:** QUEUED — small fix, no design needed.
+**Observation Session 049:** Progress bar hits 100% (turns red) while pipeline is still running. Root cause: `total_steps` is calibrated for a clean single-pass run. Schema retry, PM revision requests, and multi-module FRM each add extra `on_progress` events that overflow the bar. Streamlit clamps at 100% and the bar turns red — misleading, implies failure.
+
+**Fix options (architect picks one at session open):**
+
+Option A — Indeterminate bar: replace `st.progress()` with Streamlit's native `st.status()` spinner for the outer pipeline container. No step counting needed. Already used inside `run_in_status()` — just remove the manual `st.progress` overlay.
+
+Option B — Dynamic step ceiling: instead of a fixed `total_steps`, count emitted events and cap the display at 95% until the pipeline actually completes, then snap to 100%.
+
+- [ ] PROG-01 `streamlit_app/shared/pipeline.py` — implement chosen fix (A or B). Progress bar must never show red/full while pipeline is still running. On completion: show 100% briefly then replace with `st.success()`.
+- [ ] PROG-02 FRM-specific: calibrate or remove step counting for multi-module runs — each module's schema_retry and PM revision round adds 2–4 extra events; fixed `total_steps` cannot predict this.
+- [ ] PROG-03 Smoke verify: run FRM 2-module knowledge_only; confirm bar never turns red mid-run; confirm completion state is clear.
+
+---
+
+### Sprint-INDEX-01 — Pipeline State Index [QUEUED — foundation for checkpoint + resume]
+
+**Status:** QUEUED — no UI, no pipeline redesign. Additive only.
+**Design confirmed Session 050.**
+
+**What it is:** A `pipeline_index.json` written to each case folder alongside existing artifacts. The `persist_artifact` hook updates it after every successful agent write. The pipeline reads it at startup and skips stages already marked complete. Solves resume-on-failure and is the foundation for Sprint-CHECKPOINT-01 (human review panel) and Sprint-SESSION-ENTRY-01 (session log).
+
+**Schema:**
+```json
+{
+  "case_id": "...",
+  "workflow": "frm_risk_register",
+  "scope": ["module_2", "module_4"],
+  "stages": {
+    "module_2_draft":    { "status": "complete",  "artifact": "junior_output.v2.json", "completed_at": "..." },
+    "module_2_review":   { "status": "complete",  "artifact": "pm_review.v2.json" },
+    "module_2_signoff":  { "status": "rejected",  "artifact": "partner_approval.v1.json" },
+    "module_4_draft":    { "status": "failed",    "artifact": null, "error": "empty_findings_after_retry" },
+    "executive_summary": { "status": "pending" },
+    "final_report":      { "status": "pending" }
+  },
+  "milestone_artifacts": [],
+  "human_corrections":   {},
+  "last_updated": "..."
+}
+```
+
+**Milestone artifact:** When all selected module drafts reach `status: complete`, the index fires a cheap (Haiku) summarization call and writes `milestone_summary_v1.json` — a "6 risks identified across 2 modules, 3 high, 4 medium. Regulatory mapping pending." document. Not a final report. An intermediate deliverable Maher can act on.
+
+**Tasks:**
+- [ ] INDEX-01 `tools/pipeline_index.py` — `PipelineIndex` class: `load(case_id)`, `update_stage(stage, status, artifact)`, `fire_milestone(case_id, summary)`. Atomic write (`.tmp` swap). Schema validated with Pydantic.
+- [ ] INDEX-02 `core/hooks.py` — `persist_artifact` hook calls `PipelineIndex.update_stage()` after every successful artifact write.
+- [ ] INDEX-03 `workflows/frm_risk_register.py` — on pipeline start, load index; skip stages already `status: complete`; write milestone when all module drafts done.
+- [ ] INDEX-04 `workflows/investigation.py` — same pattern.
+- [ ] INDEX-05 Smoke verify: run FRM knowledge_only, kill mid-run, restart — confirm resumes from last complete stage, does not re-run completed modules.
+
+**Security model:** index is case-local, no PII beyond what's already in artifacts, append-only writes, atomic swap prevents corruption.
+**Dependencies:** None. Can build immediately after Sprint-DOCX-01 merges.
+
+---
+
+### Sprint-CHECKPOINT-01 — Human Review Panel + Interim Downloads [QUEUED — after Sprint-INDEX-01]
+
+**Status:** QUEUED — depends on Sprint-INDEX-01 (needs pipeline_index milestone events).
+**Design confirmed Session 050.**
+
+**What it is:** At each pipeline milestone, the UI surfaces the interim artifact inline for Maher to review and correct before the pipeline continues. This is the human checkpoint layer — the step that makes outputs professionally defensible.
+
+**Two modes:**
+1. **Inline review panel** — editable `st.text_area` pre-populated with milestone artifact content. `st.columns(2)` download buttons (Word + Markdown) alongside. "Accept as-is" or "Save corrections and continue."
+2. **Offline download** — .docx and .md available at every milestone, not just final output.
+
+**Corrections flow:** Human edits stored in `pipeline_index.human_corrections[stage]`. Next stage context includes: "Consultant reviewed this draft and applied the following corrections: [...]". Injected via existing context dict mechanism — no pipeline architecture change.
+
+**Tasks:**
+- [ ] CHKPT-01 `streamlit_app/shared/pipeline.py` — add `milestone_review()` function: reads pipeline_index milestone, renders inline review panel, blocks on user confirmation, writes corrections to index.
+- [ ] CHKPT-02 `pages/06_FRM.py` — insert `milestone_review()` call between module identification stage and risk assessment stage.
+- [ ] CHKPT-03 `pages/02_Investigation.py` — same, at evidence inventory → finding synthesis boundary.
+- [ ] CHKPT-04 Interim download buttons — `st.columns(2)` docx + md at every milestone panel (not just Done Zone).
+- [ ] CHKPT-05 Smoke verify: FRM knowledge_only, confirm milestone panel appears, corrections round-trip into next stage context, download buttons work.
+
+**Security model:** human_corrections stored locally in pipeline_index, no external transmission, corrections are plain text (no code execution), no XSS surface (Streamlit handles escaping).
+**Dependencies:** Sprint-INDEX-01 complete.
+
+---
+
+### Sprint-SESSION-ENTRY-01 — Session Log with Engagement / Workflow Entry [QUEUED — after Sprint-INDEX-01, needs wireframe]
+
+**Status:** QUEUED — navigation model change. Needs designer wireframe (NAV-00 pattern) before code.
+**Design confirmed Session 050.**
+
+**What it is:** When Maher opens any workflow page, he first sees active in-progress cases for that workflow (reading from pipeline_index files across all case folders). He can resume an existing case or start a new one. Session log replaces the current blank intake-first experience.
+
+**Paired with:** pipeline_index.json (Sprint-INDEX-01) provides the state. Case Tracker (page 12) becomes the full session log view.
+
+**Pre-build gate:** NAV-00 wireframe required. Do not build without it.
+
+---
+
+### Sprint-UX-WAIT-01 — Pipeline Wait Screen Activity [QUEUED — no API needed]
+
+**Status:** QUEUED — pure UI, no API calls, can build while credits are low.
+**Observation Session 049:** Pipeline wait screen is blank text. User wants something to engage with during 2–4 minute runs.
+
+**Design:**
+- Add a rotating "forensic insight" panel inside the `st.status()` container
+- Draw from a static list of ~20 forensic / AML / fraud tips (hardcoded, no API)
+- Use `st.empty()` + a loop with `time.sleep(4)` in the status callback — or show one random tip on load (simpler, no threading complexity)
+- Simple option: on pipeline start, pick one random tip and display it as `st.info()` below the spinner. Tip rotates on page refresh / rerun but not within the same run.
+- Complex option (opt-in): background thread updates `st.empty()` every 4 seconds — requires Streamlit thread safety care
+
+**Architect decision before build:** simple (one tip on load) vs rotating (thread-based). Rotating is more engaging but has thread safety complexity in Streamlit.
+
+- [ ] WAIT-01 Add `FORENSIC_TIPS` list (20 entries) to `streamlit_app/shared/pipeline.py`
+- [ ] WAIT-02 Render one randomly selected tip inside `run_in_status()` via `st.info()` below the status container — updates on each rerun, stable within a run
+- [ ] WAIT-03 Smoke verify: FRM knowledge_only run — tip appears on pipeline start, does not cause errors
+
+**Security model:** static content only, no user input, no PII. No auth impact.
 
 ---
 

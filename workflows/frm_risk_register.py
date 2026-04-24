@@ -24,7 +24,7 @@ from rich.console import Console
 from rich.prompt import Prompt
 
 from config import get_model
-from core.hook_engine import HookEngine
+from core.hook_engine import HookEngine, HookVetoError
 from core.orchestrator import Orchestrator, PipelineError, RevisionLimitError
 from core.tool_registry import ToolRegistry
 from schemas.artifacts import FRMDeliverable, FRMModuleOutput, RiskItem
@@ -91,9 +91,10 @@ def run_frm_pipeline(
     from rich.console import Console as _Console
     _err_console = _Console()
 
-    for module_num in selected_modules:
+    total_modules = len(selected_modules)
+    for module_idx, module_num in enumerate(selected_modules, start=1):
         module_name = FRM_MODULES.get(module_num, f"Module {module_num}")
-        on_progress(f"[Module {module_num}/{len(selected_modules)}] {module_name}...")
+        on_progress(f"[Module {module_idx}/{total_modules}] {module_name}...")
 
         # FR-02: inject stakeholder context when engagement_id is set
         stakeholder_context = ""
@@ -142,7 +143,21 @@ def run_frm_pipeline(
 
         try:
             on_progress(f"  Consultant drafting Module {module_num}...")
-            junior_output = junior(module_intake.model_dump(), {**context, "role": "junior"})
+            try:
+                junior_output = junior(module_intake.model_dump(), {**context, "role": "junior"})
+            except HookVetoError as _schema_err:
+                # validate_schema blocked the draft (e.g. empty findings). Retry once with error injected.
+                on_progress(f"  Schema validation failed — retrying Module {module_num}...")
+                try:
+                    junior_output = junior(module_intake.model_dump(), {
+                        **context,
+                        "role": "junior",
+                        "schema_retry": True,
+                        "schema_error": str(_schema_err),
+                    })
+                except HookVetoError:
+                    on_progress(f"  Skipping Module {module_num} — could not generate findings after retry.")
+                    continue
 
             on_progress(f"  PM reviewing Module {module_num}...")
             pm_output = pm(junior_output["output"], {**context, "role": "pm"})
@@ -240,7 +255,7 @@ def run_frm_finalize(
     deliverable = FRMDeliverable(
         case_id=intake.case_id,
         modules_completed=completed_modules,
-        risk_register=risk_items,
+        risk_register=[r.model_dump() if hasattr(r, "model_dump") else r for r in risk_items],
         executive_summary=exec_summary,
         content_en=content_en,
         citations=citations,

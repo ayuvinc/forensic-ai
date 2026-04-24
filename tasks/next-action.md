@@ -1,49 +1,46 @@
 # NEXT ACTION
 
 ## SESSION
-CLOSED
+OPEN
 
 ## NEXT_PERSONA
 architect
 
 ## NEXT_TASK
-**Session 049: Fix 01_Scope.py rename + sprint selection (priority reorder needed)**
+**Session 051 — Sprint-DOCX-01 merge + Sprint-PARTNER-FIX-01 build + Sprint-PROCESS-01 BA sign-off**
 
-Session 048 completed:
-- Page load smoke test: 19/19 P0 PASS, QA_APPROVED, zero crashes
-- Sprint-UX-ERR-01 error boundaries confirmed working across all 17 pages
-- 3 new BA requirements captured from live smoke test:
-  - BA-REQ-FORMATTING-01: Word (.docx) output + format selector in every intake (prime requirement)
-  - BA-REQ-CLOSE-01: "Mark Complete / Close" button on all engagements, workflows, cases
-  - BA-REQ-SANCTIONS-EVIDENCE-01: Evidence capture per citation hit (copy, URL, timestamp, per-hit determination)
-- Results: releases/smoke-test-page-load-check-20260423.md
-- ba-logic.md updated with all 3 requirements
+Session 050 completed on branch `feature/sprint-docx-01-download-buttons`:
 
-**Outstanding items — architect must resolve at session open:**
+**Immediate on session open:**
+1. AK confirms DOCX-03 (download buttons visible in FRM Done Zone) — call PASS or FAIL
+2. Architect merges `feature/sprint-docx-01-download-buttons` → main
+3. Build Sprint-PARTNER-FIX-01 (2-3 tasks, fixes broken Partner prompt, no design needed)
+4. Write BA logic for Sprint-PROCESS-01 per-workflow questionnaires and confirm with AK
+5. Plan Sprint-INDEX-01 build session
 
-1. **01_Scope.py prefix collision** — rename pages/01_Scope.py to pages/17_Scope.py (or confirm number). Quick fix, no logic changes. Must do before next sprint.
+**Sprint priority order (see `docs/app-plan.md` for full plan):**
+- Tier 1 (fix broken): PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01
+- Tier 2 (foundation): INDEX-01, PROCESS-01, KB-02
+- Tier 3 (quality): CHECKPOINT-01, CLOSE-01, EVIDENCE-01
+- Tier 4 (UX polish): UPLOAD-01, NAV-01, SESSION-ENTRY-01, WIRE-01, STREAM-01
+- Tier 5 (quality gates): SMOKE-01, CLI-ERR-01
+- Tier 6 (advanced): IA-04, STAGE-01, Phase 7
 
-2. **Sprint priority reorder** — three new BA requirements change the queue. Architect must re-evaluate:
-   - BA-REQ-FORMATTING-01 (.docx output) affects ALL workflows — high user impact
-   - BA-REQ-CLOSE-01 (close button) affects Engagements + Case Tracker — medium impact
-   - BA-REQ-SANCTIONS-EVIDENCE-01 (evidence chain) — compliance-critical, aligns with R-NEW-13
-   - Original queue: Sprint-SMOKE-01 → Sprint-UX-WIRE-01 → Sprint-UX-STREAM-01
-   - New question: does .docx sprint move above SMOKE-01 given it was called a prime requirement?
-
-3. **P1 observations from smoke test** (full list in releases/smoke-test-page-load-check-20260423.md):
-   - Page 00 label "Setting" → "Setup"
-   - Page 02 label "Investigation Report" → "Investigation" (OBS-02 long deferred)
-   - Persona Review sidebar restructure (WORKFLOWS injected into main sidebar)
-   - Page dimming on state transitions → Sprint-UX-WIRE-01
-   - Sanctions disposition hits not shown inline before memo generation
-   - Workspace needs list-to-select UI
-   - Setup page slow to load
+**Session 050 work committed (all on feature branch, not yet merged):**
+- FRM schema_retry double-failure: graceful module skip (was crashing pipeline)
+- FRM module sequencing display: [Module 1/2], [Module 2/2] (was [Module 4/2])
+- Forensic tip panel during pipeline runs (Sprint-UX-WAIT-01 DONE)
+- docs/product-packaging.md: Human checkpoint layer positioning insight
+- Sprint-INDEX-01, CHECKPOINT-01, SESSION-ENTRY-01 tasks written
+- Sprint-PARTNER-FIX-01, KB-02, PROCESS-01, CLOSE-01, EVIDENCE-01 tasks written
+- BA-REQ-PROCESS-01 written in tasks/ba-logic.md
+- docs/app-plan.md: full application plan, 7 layers, sprint sequence, gap analysis
 
 ## COMMAND
 ```
-/session-open session_id=049
+AK: run FRM workflow in browser → confirm both download buttons appear in Done Zone → report PASS/FAIL
+Then: /architect to merge branch + build Sprint-PARTNER-FIX-01
 ```
-Then: confirm 01_Scope.py rename + architect sprint priority decision
 
 ## COMPLETION STATUS
 
@@ -56,30 +53,39 @@ Sprint-IA-01/02/03/04:           100% ██████████ DONE
 Sprint-KB-01:                    100% ██████████ MERGED — smoke check deferred
 Sprint-QUAL-01:                  100% ██████████ DONE
 ARCH-SIM-01/02:                  100% ██████████ DONE
-Sprint-UX-ERR-01:                100% ██████████ DONE — confirmed by smoke test
-Page load smoke test:            100% ██████████ QA_APPROVED Session 048
-Sprint-SMOKE-01 (formal suite):  0% ░░░░░░░░░░ QUEUED
-Sprint-DOCX-01 (.docx output):   0% ░░░░░░░░░░ NEW — priority TBD
-Sprint-UX-WIRE-01:               0% ░░░░░░░░░░ QUEUED
-Sprint-UX-STREAM-01:             0% ░░░░░░░░░░ QUEUED
+Sprint-UX-ERR-01:                100% ██████████ DONE
+Sprint-UX-WAIT-01:               100% ██████████ DONE
+Sprint-DOCX-01:                  90% █████████░ CODE DONE — DOCX-03 smoke pending
+Sprint-PARTNER-FIX-01:           0%  ░░░░░░░░░░ QUEUED — Tier 1
+Sprint-FOLDER-01:                0%  ░░░░░░░░░░ QUEUED — Tier 1
+Sprint-UX-PROGRESS-01:           0%  ░░░░░░░░░░ QUEUED — Tier 1
+Sprint-INDEX-01:                 0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation
+Sprint-PROCESS-01:               0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation (BA needed)
+Sprint-KB-02:                    0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation (content needed)
+Sprint-CHECKPOINT-01:            0%  ░░░░░░░░░░ QUEUED — Tier 3
+Sprint-CLOSE-01:                 0%  ░░░░░░░░░░ QUEUED — Tier 3 (BA needed)
+Sprint-EVIDENCE-01:              0%  ░░░░░░░░░░ QUEUED — Tier 3 (BA needed)
+Sprint-SMOKE-01:                 0%  ░░░░░░░░░░ QUEUED — Tier 5
+Sprint-UX-WIRE-01:               0%  ░░░░░░░░░░ QUEUED — Tier 4
+Sprint-UX-STREAM-01:             0%  ░░░░░░░░░░ QUEUED — Tier 4
+Sprint-CLI-ERR-01:               0%  ░░░░░░░░░░ QUEUED — Tier 5 (design needed)
 ```
 
-## CARRY_FORWARD_CONTEXT
-
-Session 048 P1 observations (full detail in smoke test report):
-- OBS-01: Page 00 label "Setting" not "Setup"
-- OBS-02: Page 02 label "Investigation Report" not "Investigation" (long deferred)
-- OBS-03: 01_Scope / 01_Engagements prefix collision — must rename
-- OBS-04: Persona Review sidebar restructure when page loads
-- OBS-05: Full page dims on state transitions — Sprint-UX-WIRE-01
-- OBS-06: Sanctions disposition hits not shown inline
-- OBS-07: No verifiable evidence per citation in Sanctions memo
-- OBS-08: No .docx output — BA-REQ-FORMATTING-01
-- OBS-09: No close/complete button — BA-REQ-CLOSE-01
-- OBS-10: Workspace needs list UI
-- OBS-11: Setup page slow to load
-
 ## BLOCKERS_AND_ENV_LIMITATIONS
-- Sprint-KB-01 smoke check: DEFERRED (no API credit); CLI only, RESEARCH_MODE=knowledge_only
 - R-NEW-13 OPEN: evidence-chain enforcement prompt-only — production cases blocked
-- BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files until resolved
+- BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files
+- BA-REQ-CLOSE-01: No Mark Complete/Close button yet
+- Sprint-KB-01 smoke check: DEFERRED (no API credit)
+- DOCX-03: .docx download unverified until AK runs complete workflow
+- **API credits: exhausted as of 2026-04-23** — all pipeline testing blocked until credits restored
+- **Partner prompt BROKEN**: blocks delivery instead of flagging — fix before any output is used in production
+
+## CARRY_FORWARD_CONTEXT
+- Full application plan at `docs/app-plan.md` — authoritative sprint order, 7-layer gap analysis, design debt register
+- BA-REQ-PROCESS-01 written — process understanding stage designed, per-workflow questions specified, ready for build after BA sign-off
+- Partner fix is 2-3 prompt changes — highest priority after DOCX-01 merge
+- Sprint-INDEX-01 is the foundation for CHECKPOINT-01, SESSION-ENTRY-01, PROCESS-01 persistence — build it early
+- Project name = case folder (slugified). Engagement path: Engagements page sets it.
+- Industry field: 18-option selectbox on all workflows
+- FRM pipeline: schema_retry fires on empty findings; double-retry graceful skip now works; module index display fixed
+- Error log at logs/error_log.jsonl accumulates every crash with category

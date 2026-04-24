@@ -144,6 +144,12 @@ def generic_intake_form(st, workflow_id: str, title: str):
     placeholder  = _DESCRIPTION_PLACEHOLDERS.get(workflow_id, "Describe the engagement scope")
 
     with st.form(key=f"intake_{workflow_id}"):
+        project_name = st.text_input(
+            "Project name *",
+            placeholder="e.g. ABC AML Review 2024",
+            help="Used as the folder name for all outputs from this engagement.",
+            key=f"project_name_{workflow_id}",
+        )
         # P9-UI-02: lock client_name when coming from an active engagement
         if project_meta:
             st.text_input(
@@ -166,6 +172,7 @@ def generic_intake_form(st, workflow_id: str, title: str):
         return None
 
     missing = [f for f, v in [
+        ("Project name", project_name),
         ("Client name", client_name),
         ("Industry", industry),
         ("Engagement description", description),
@@ -177,16 +184,15 @@ def generic_intake_form(st, workflow_id: str, title: str):
 
     # P9-09a/c: when continuing an active engagement, use the project slug as
     # case_id so all artifacts land in the correct A-F project folder.
+    from tools.file_tools import slugify_project_name
     if engagement_id:
         case_id = engagement_id
     else:
-        case_id = (
-            f"{__import__('datetime').datetime.now().strftime('%Y%m%d')}"
-            f"-{uuid.uuid4().hex[:6].upper()}"
-        )
+        case_id = slugify_project_name(project_name)
 
     return CaseIntake(
         case_id=case_id,
+        project_name=project_name.strip(),
         client_name=client_name.strip(),
         industry=industry.strip(),
         primary_jurisdiction=primary_jurisdiction.strip(),

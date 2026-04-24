@@ -20,8 +20,33 @@ Progress bar:
 
 from __future__ import annotations
 
+import random
 from dataclasses import dataclass
 from typing import Callable, Any, Literal, Union
+
+# Rotating forensic insights shown while the pipeline runs — no API needed.
+_FORENSIC_TIPS: list[str] = [
+    "**Benford's Law:** In naturally occurring datasets ~30% of leading digits are 1. Significant deviations often reveal fabricated figures in expense or revenue records.",
+    "**Round-number bias:** Genuine transactions cluster at exact round amounts less than 5% of the time. Fabricated ones cluster at 40–60% — a primary red flag in expense fraud testing.",
+    "**Just-below-threshold pattern:** Transactions consistently landing just under approval or reporting limits are a core indicator in procurement and expense fraud.",
+    "**Fraud triangle:** Pressure, opportunity, and rationalisation predict over 85% of internal fraud cases. Controls that remove opportunity are the most cost-effective intervention.",
+    "**ACFE benchmark:** Organisations lose an estimated 5% of revenue to fraud annually. The median case loss is $117,000 — and the median duration before detection is 12 months.",
+    "**Ghost employee detection:** Duplicate NIC/TIN numbers, salary paid to dormant accounts, and addresses matching active employees are primary indicators in payroll fraud.",
+    "**AML layering:** The layering phase — structuring deposits, wire transfers, and shell company interposition — is the most technically complex step in money laundering.",
+    "**Vendor master review:** Duplicate bank accounts, P.O. Box-only addresses, and vendor addresses matching employee addresses are highest-yield fraud detection procedures.",
+    "**Digital metadata:** File creation timestamps, access logs, and email headers are often more evidential than content — they can directly contradict a stated timeline.",
+    "**Chain of custody:** Forensic evidence handling requires every transfer to be logged with time, handler, and purpose. Gaps in custody can render evidence inadmissible.",
+    "**UAE AML law:** Federal Law No. 20 of 2018 requires goAML reporting within 30 days of a suspicious transaction. Delayed reporting is itself a compliance risk.",
+    "**Cognitive load technique:** Asking subjects to recall events in reverse chronological order significantly increases cognitive load for fabricated accounts — a validated interview method.",
+    "**IFRS 15 risk:** Revenue recognition is a common earnings manipulation target. Channel stuffing, bill-and-hold arrangements, and side letters are primary schemes.",
+    "**Sanctions fuzzy matching:** Name-matching algorithms must handle aliases, transliterations, and date-of-birth variations. Tuning thresholds affects both false positives and misses.",
+    "**FATF 40 Recommendations:** These form the international AML standard. Jurisdictions are assessed via Mutual Evaluation Reports — published findings can directly affect client risk ratings.",
+    "**Asset tracing:** Cross-border recovery relies on MLATs (Mutual Legal Assistance Treaties). International information requests average 6–18 months — plan litigation timelines accordingly.",
+    "**Shell company indicators:** Nominee directors, bearer shares, and registered-agent-only addresses are common concealment structures in asset misappropriation cases.",
+    "**Expert witness standard:** The forensic accountant's duty is to the court, not the client. Independence is a prerequisite for any finding relied upon in legal proceedings.",
+    "**Early detection impact:** Cases detected within the first 6 months have median losses 60% lower than cases running over 24 months. Control monitoring frequency directly affects outcome.",
+    "**COSO control framework:** Segregation of duties, physical access controls, and independent reconciliations are the three most cost-effective preventive controls for small-entity fraud risk.",
+]
 
 
 @dataclass
@@ -113,6 +138,10 @@ def run_in_status(
     # Initialise log buffer in session state (persists across reruns for failure display)
     st.session_state["pipeline_log_events"] = []
     st.caption("Estimated time: 2–4 minutes depending on module count and research mode.")
+
+    # Show a random forensic insight while the pipeline runs — no API needed
+    tip = random.choice(_FORENSIC_TIPS)
+    st.info(f"While you wait — **Forensic insight:** {tip}")
 
     # ACT-02: log pipeline start
     try:

@@ -206,6 +206,41 @@ This means any investment in the pipeline — new service lines, better prompts,
 
 ---
 
+## Product Positioning Insight — Human Checkpoint Layer (2026-04-24)
+
+**Design direction confirmed by AK, Session 050.**
+
+The pipeline review chain is currently AI → AI → AI (junior → PM → partner). Maher is in the loop only at intake and final output. The correct design inserts Maher at every meaningful stage boundary — which is where his professional judgment actually matters.
+
+**The human checkpoint layer:**
+At each pipeline milestone (e.g., module identification complete, risk assessment complete), the UI pauses and surfaces the interim artifact inline. Maher reads it, edits it directly or downloads it for offline review, then clicks "Continue." His corrections are stored in `pipeline_index.json` as `human_corrections` and injected as context into every subsequent stage.
+
+**Two modes:**
+1. **Inline review panel** — artifact displayed in UI as editable text, download buttons alongside, "Accept as-is" or "Save corrections and continue."
+2. **Offline download** — .docx and .md at every milestone, not just at final output. Maher reviews externally, pastes corrections on return.
+
+**Why this is the core product differentiator:**
+"AI that writes forensic reports" is a commodity. "AI-augmented workbench where the consultant's judgment is embedded at every stage" is a professional tool. With human checkpoints:
+- The output is defensible because a qualified professional reviewed and corrected each stage, not just the final report
+- Errors are caught early — not after 6 agents have run. The wrong-UAE-law error in Project_FRM_test (Federal Law No. 8 of 2004 cited as AML law) would have been caught by Maher in 30 seconds at the identification stage
+- The AI does research and structure; Maher does professional judgment; the system weaves them together
+- This directly resolves the CLAUDE.md concern about mixing "full-pipeline reviewed workflows with assisted single-pass generators" — the human checkpoint IS the review step that makes it professionally defensible
+
+**The "visible to anyone" extension (long-term):**
+A second reviewer (engagement manager, partner) can access the interim artifact panel and add their own comments before Maher approves. This is the collaboration layer — not for now, but it's where the checkpoint architecture naturally extends.
+
+**Implications for shipping models:**
+- Model 1/2 (solo): human checkpoints = Maher's own review, built-in quality gate
+- Model 3 (co-work): second reviewer comments before the lead consultant approves — genuine team collaboration
+- Model 4 (enterprise): tiered approval — junior submits to manager, manager reviews checkpoint, partner signs off — mirrors how actual forensic firms operate
+
+**Paired with pipeline_index.json:**
+The human checkpoint layer sits on top of the index infrastructure. The index tracks what stages are done; human corrections are stored in the index alongside stage status; the session log reads the index to show "Module 2 identification complete — reviewed by Maher, 2 corrections applied."
+
+**Sprint assignment:** Sprint-INDEX-01 (pipeline_index infrastructure) → Sprint-CHECKPOINT-01 (inline review panel + interim downloads).
+
+---
+
 ## Product Positioning Insight — Co-Build Mode (2026-04-23)
 
 **Decision confirmed by AK, Session 041.**

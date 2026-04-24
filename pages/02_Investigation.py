@@ -102,6 +102,11 @@ if st.session_state.inv_stage == "intake":
     client_name = project_meta.get("client_name", "") if project_meta else ""
     if not client_name:
         client_name = st.text_input("Client name *", key="inv_client_name_manual")
+    project_name = st.text_input(
+        "Project name *", key="inv_project_name_manual",
+        placeholder="e.g. ABC Fraud Investigation 2024",
+        help="Used as the folder name for all outputs from this engagement.",
+    )
 
     st.divider()
 
@@ -176,10 +181,11 @@ if st.session_state.inv_stage == "intake":
             from streamlit_app.shared.intake import get_project_dm
             from schemas.case import CaseIntake
 
-            # Build case_id: use engagement slug when in project context (P9-09a/c)
-            case_id = engagement_id if engagement_id else (
-                f"{datetime.now().strftime('%Y%m%d')}-{_uuid.uuid4().hex[:6].upper()}"
-            )
+            from tools.file_tools import slugify_project_name as _slug
+            if not project_name.strip():
+                st.error("Project name is required.")
+                st.stop()
+            case_id = engagement_id if engagement_id else _slug(project_name)
 
             # Build description — AUP and Custom prefixes for pipeline detection
             if inv_type_label == "Agreed-Upon Procedures (AUP)":
@@ -195,6 +201,7 @@ if st.session_state.inv_stage == "intake":
 
             intake = CaseIntake(
                 case_id=case_id,
+                project_name=project_name.strip(),
                 client_name=client_name.strip(),
                 industry=industry.strip(),
                 primary_jurisdiction=jurisdiction,
