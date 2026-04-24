@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Literal, Optional
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from schemas.research import Citation
 
 
@@ -118,6 +118,17 @@ class RiskItem(BaseModel):
     recommendations: list[str] = []   # COSO/ACFE/ISO 37001 or novel
     regulatory_references: list[Citation] = []
     framework_references: list[str] = []
+
+    @field_validator("recommendations", "red_flags", "existing_controls", "control_gaps", "framework_references", mode="before")
+    @classmethod
+    def coerce_str_lists(cls, v: object) -> object:
+        if not isinstance(v, list):
+            return v
+        return [
+            item.get("recommendation") or item.get("text") or item.get("value") or str(item)
+            if isinstance(item, dict) else item
+            for item in v
+        ]
 
     @model_validator(mode="after")
     def compute_risk_rating(self) -> "RiskItem":

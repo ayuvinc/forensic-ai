@@ -255,7 +255,7 @@ def run_frm_finalize(
     deliverable = FRMDeliverable(
         case_id=intake.case_id,
         modules_completed=completed_modules,
-        risk_register=risk_items,
+        risk_register=[r.model_dump() if hasattr(r, "model_dump") else r for r in risk_items],
         executive_summary=exec_summary,
         content_en=content_en,
         citations=citations,

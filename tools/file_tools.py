@@ -454,6 +454,7 @@ def write_final_report(
 
     # Write Markdown (unchanged from pre-RD-03)
     target = final_dir / f"final_report.{language}.md"
+    final_dir.mkdir(parents=True, exist_ok=True)
     tmp    = target.with_suffix(".tmp")
     tmp.write_text(content, encoding="utf-8")
     os.replace(tmp, target)

@@ -211,3 +211,36 @@ None — Streamlit app; no custom CSS layout in wired pages.
 - frm_intake_form appears in 2 comment lines in 06_FRM.py (docstring + code comment). Not an import. AC satisfied.
 - date_range validation in TT now enforced at engine confirmation step (required field), not at Run click. Behaviour preserved, stage shifted earlier. Acceptable.
 - Training TRAINING_TOPICS/TARGET_AUDIENCES dicts reconstructed as inverted maps (key→label) for running-stage expander display.
+
+---
+
+## QA — Sprint-DOCX-01 — AC Written (Mode A)
+Agent: qa
+Sprint: Sprint-DOCX-01
+Timestamp: 2026-04-23T07:30:00Z
+Status: AC_WRITTEN — awaiting junior-dev build + qa-run
+
+### QA Implementation Flag — DOCX-01
+**Severity: HIGH — junior-dev must read before implementing**
+
+Task description says: "add [docx button] after the existing .md download button."
+ux-specs.md:386 says: `st.columns(2)` layout — `.docx` LEFT (primary, label "Download Word document"), `.md` RIGHT (secondary, label "Download Markdown backup").
+
+These conflict. The correct implementation follows ux-specs.md:386. Junior-dev must:
+1. Remove the existing single-column `.md` button block from `done_zone.py`
+2. Replace it with `col_docx, col_md = st.columns(2)` inside the `if report_path.exists():` gate
+3. Render docx button in `col_docx` (only if `docx_path.exists()`)
+4. Render md button in `col_md` (always, label "Download Markdown backup")
+5. Use label "Download Word document" for docx — NOT `f"Download {workflow_label} report (.docx)"`
+
+Same 2-column pattern applies to DOCX-02 through DOCX-02e on individual pages.
+
+### AC summary
+Full AC written inline in tasks/todo.md under each task (DOCX-01 through DOCX-03).
+Key pass/fail gates:
+- Two-column layout present (not stacked single-column)
+- docx LEFT, md RIGHT
+- Labels exactly "Download Word document" / "Download Markdown backup"
+- docx absent → left column empty, md still renders, no crash
+- Regression: "Start Another" reset + workpaper button unaffected (DOCX-01)
+- All 8 affected pages checked (3 via done_zone.py, 5 individually)
