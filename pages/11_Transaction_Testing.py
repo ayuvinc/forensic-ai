@@ -233,6 +233,17 @@ elif st.session_state.tt_stage == "running":
         else:
             st.error(f"Failed to register {r['name']}: {r.get('error', 'unknown error')}")
 
+    # Sprint-FOLDER-01: pre-create case folder so it's visible on disk before pipeline runs
+    from tools.file_tools import write_state as _write_state
+    _cdir = case_dir(intake.case_id)
+    if not (_cdir / "state.json").exists():
+        _write_state(intake.case_id, {
+            "case_id":    intake.case_id,
+            "workflow":   "transaction_testing",
+            "status":     "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+
     from workflows.transaction_testing import run_transaction_testing_workflow
 
     try:

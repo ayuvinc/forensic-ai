@@ -337,6 +337,17 @@ elif st.session_state.ps_stage == "structure_proposal":
         "Once confirmed, the AI drafts each section for your review."
     )
 
+    # Sprint-FOLDER-01: pre-create case folder so it's visible on disk before pipeline runs
+    from tools.file_tools import write_state as _write_state
+    _cdir = case_dir(intake.case_id)
+    if not (_cdir / "state.json").exists():
+        _write_state(intake.case_id, {
+            "case_id":    intake.case_id,
+            "workflow":   "policy_sop",
+            "status":     "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+
     if "ps_proposed_sections" not in st.session_state:
         with st.spinner("Proposing document structure..."):
             from workflows.policy_sop_cobuild import propose_structure

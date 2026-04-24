@@ -105,6 +105,18 @@ elif st.session_state.prop_stage == "running":
     with st.expander("Intake Summary", expanded=False):
         st.write(f"**Prospect:** {params['prospect_name']} | **Contact:** {params.get('contact_person', '—')}")
 
+    # Sprint-FOLDER-01: pre-create case folder so it's visible on disk before pipeline runs
+    from datetime import datetime, timezone
+    from tools.file_tools import write_state as _write_state
+    _cdir = case_dir(intake.case_id)
+    if not (_cdir / "state.json").exists():
+        _write_state(intake.case_id, {
+            "case_id":    intake.case_id,
+            "workflow":   "client_proposal",
+            "status":     "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+
     from workflows.client_proposal import run_client_proposal_workflow
 
     try:
