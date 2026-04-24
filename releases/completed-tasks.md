@@ -558,3 +558,19 @@ Security: No auth impact. Prompt and logic change only. No new data access. Audi
 Pattern: `case_dir(intake.case_id)` (creates dir via mkdir) + `write_state()` (atomic .tmp→os.replace) with `if not state.json exists` guard. Proposal got an inline `from datetime import datetime, timezone`. Policy/SOP injected at structure_proposal stage (no run_in_status).
 
 Security: path traversal blocked by case_dir() R-019 on every call. case_id empty guard enforced at button-click level. write_state updates cases/index.json atomically.
+
+---
+
+## Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix (2026-04-24)
+
+**Branch:** feature/sprint-ux-progress-01-fix-progress-bar — merged to main
+**QA:** QA_APPROVED — 139/139 tests pass
+**Option A:** Remove st.progress() overlay. st.status() provides spinner + green checkmark.
+
+Root cause: fixed total_steps calibrated for clean single-pass. Schema retry, PM revision, multi-module FRM all emit extra on_progress events → bar clamped at 100% → red while running.
+
+- [x] PROG-01 `streamlit_app/shared/pipeline.py` — removed total_steps param, progress_bar, _advance_progress(); step_count retained for activity log detail.steps
+- [x] PROG-02 No page changes needed (no callers passed total_steps)
+- [ ] PROG-03 AK manual smoke verify — deferred to next live pipeline run
+
+Security: UI-only. No auth, data, PII, or audit impact.

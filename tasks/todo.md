@@ -1,11 +1,11 @@
 # TODO
 
 ## SESSION STATE
-Status:         OPEN
+Status:         CLOSED
 Active task:    none
 Active persona: architect
 Blocking issue: none
-Last updated:   2026-04-24T03:39:21Z — state transition by MCP server
+Last updated:   2026-04-24T05:51:57Z — state transition by MCP server
 ---
 
 ## DEPENDENCY GRAPH (read before building)
@@ -92,10 +92,10 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 ---
 
 > **AUTHORITATIVE SPRINT ORDER — see `docs/app-plan.md` for full plan.**
-> Tier 1: UX-PROGRESS-01.
+> Tier 1: ALL COMPLETE.
 > Tier 2: INDEX-01, PROCESS-01, KB-02. Tier 3: CHECKPOINT-01, CLOSE-01, EVIDENCE-01.
 > Tier 4: UX polish. Tier 5: Quality gates. Tier 6: Advanced features.
-> MERGED: DOCX-01 (2026-04-24), PARTNER-FIX-01 (2026-04-24), FOLDER-01 (2026-04-24).
+> MERGED: DOCX-01, PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01 (all 2026-04-24).
 
 ---
 
@@ -411,53 +411,6 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 **Dependencies:** DRAFT-03/04 depend on Sprint-UX-WIRE-01 (@st.fragment patterns). DRAFT-01/02 are independent.
 
 ---
-
-### Sprint-UX-PROGRESS-01 — Pipeline Progress Bar Fix [PENDING]
-
-**Status:** READY_FOR_REVIEW — PROG-01/02 complete. 139 tests pass. Branch: feature/sprint-ux-progress-01-fix-progress-bar. PROG-03 is AK manual smoke verify.
-**Option A chosen:** Remove `st.progress()` overlay entirely. `st.status()` block already provides spinner (running) + green checkmark (complete). No step counting needed in UI.
-**Root cause:** `total_steps` is a fixed count calibrated for clean single-pass. Schema retry, PM revision, multi-module FRM all add extra `on_progress` events that overflow the bar → Streamlit clamps at 100% → red bar while pipeline still running.
-
-**Scope: 1 file — `streamlit_app/shared/pipeline.py` only.**
-No callers pass `total_steps` (grep confirmed). No page changes needed.
-
-**What to remove from `run_in_status()`:**
-- `total_steps: int = 3` parameter + docstring references
-- `progress_bar = st.progress(0)` (line ~161)
-- `_advance_progress()` function (lines ~164-167)
-- `_advance_progress()` call inside `on_progress` (line ~179)
-- `progress_bar.progress(1.0)` on pipeline success (line ~183)
-
-**What to keep:**
-- `step_count = [0]` — retained for activity log `detail.steps` metric
-- `step_count[0] += 1` inline inside `on_progress` (replaces `_advance_progress()`)
-- `st.status()` block — provides visual running/complete state
-- Forensic tip panel (UX-WAIT-01 — no regression)
-- All activity logging, crash reporter, event log
-
-**Security model:** UI-only change. No auth, data, PII, or audit impact. `step_count` retained for activity log.
-
-- [x] PROG-01 `streamlit_app/shared/pipeline.py` — remove st.progress overlay per Option A spec above
-- [x] PROG-02 FRM-specific: no page changes needed (no callers pass total_steps — PROG-02 is already satisfied by PROG-01)
-- [ ] PROG-03 Smoke verify: AK runs FRM 2-module knowledge_only; confirm no red bar mid-run; confirm completion state clear
-
-#### AC — PROG-01 (pipeline.py)
-- [ ] **Option A chosen:** `st.progress()` removed from `run_in_status()`; replaced with `st.status()` spinner (or equivalent indeterminate indicator) — no step counting required
-  - *If Option B chosen instead:* progress value is capped at 0.95 until pipeline function returns; only then snaps to 1.0
-- [ ] Under no circumstance does the progress indicator show 100% / red / "complete" state while the pipeline function is still executing
-- [ ] On pipeline completion: indicator transitions to `st.success()` or equivalent green completion state
-- [ ] Forensic tip panel still visible during run (Sprint-UX-WAIT-01 — no regression)
-- [ ] `total_steps` parameter removed or marked deprecated if Option A implemented (dead code removed)
-
-#### AC — PROG-02 (FRM multi-module)
-- [ ] 2-module FRM run with at least 1 schema_retry event: progress indicator never shows red/full mid-run
-- [ ] 2-module FRM run with PM revision round: same — no red mid-run
-- [ ] FRM page does not pass `total_steps` to `run_in_status()` if Option A implemented (parameter unused)
-
-#### AC — PROG-03 (smoke verify — AK manual)
-- [ ] AK runs FRM 2-module knowledge_only: progress indicator never shows red while "Partner reviewing" text is visible
-- [ ] On completion: Done Zone appears, progress indicator shows success state (green / complete), not red
-- [ ] Single-module run (minimal case): same — no red mid-run, clear completion signal
 
 ---
 

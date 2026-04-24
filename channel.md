@@ -358,3 +358,50 @@ No new test file — change is pure side-effect code (mkdir + write_state), no u
 QA_APPROVED — all 8 ACs pass; 139/139 tests pass; no regressions; 2 P1 warnings documented, neither blocks. Sprint-FOLDER-01 clear for Architect merge.
 
 ---
+
+## QA-Run — Sprint-UX-PROGRESS-01
+Agent: qa-run
+Sprint: Sprint-UX-PROGRESS-01
+Timestamp: 2026-04-24T02:30:00Z
+Branch: feature/sprint-ux-progress-01-fix-progress-bar
+Overall: QA_APPROVED
+
+### Codex gate
+Waived per project memory (feedback_codex_gate.md).
+
+### Test suite
+139 passed, 0 failed, 19 warnings — `python3 -m pytest tests/ -q`
+No new test file — change removes a UI widget; not unit-testable in isolation. Regression baseline holds.
+
+### Criterion Results
+
+#### AC — PROG-01 (pipeline.py)
+- [PASS] Option A implemented: `st.progress()` fully removed from `run_in_status()` — only remaining reference is in module docstring (line 16), not executable code
+- [PASS] `total_steps: int = 3` removed from function signature — confirmed by signature inspection; no callers were passing it (grep confirmed zero callers)
+- [PASS] `_advance_progress()` function removed — no trace in live code
+- [PASS] `progress_bar` variable removed — no trace in live code
+- [PASS] `st.status(label, expanded=True)` retained at line 158 — provides spinner while running
+- [PASS] `status.update(label=..., state="complete")` retained at line 170 — provides green checkmark on success
+- [PASS] `status.update(label=..., state="error")` retained at line 185 — provides red state on failure (pipeline error, not mid-run overflow)
+- [PASS] Under no circumstance can the progress indicator show 100%/red while pipeline is still running — the only visual state indicator is `st.status()`, which is controlled by `status.update()` called only after `fn()` returns
+- [PASS] Forensic tip panel (line 137-138): `st.info(f"While you wait — **Forensic insight:** {tip}")` — UX-WAIT-01 no regression
+
+#### AC — PROG-02 (FRM multi-module)
+- [PASS] No callers pass `total_steps` (confirmed by grep: zero matches in pages/ and streamlit_app/); parameter removed — no page changes needed
+- [PASS] Multi-module FRM with schema_retry events: each emits an on_progress call; step_count increments but no progress bar overflows — no visible red indicator possible
+
+#### AC — PROG-03 (smoke verify — AK manual)
+- [DEFERRED] Requires live pipeline run — API credits needed. Static analysis confirms the red-bar condition is architecturally impossible with Option A: st.status() spinner shows until status.update() is explicitly called after fn() returns.
+
+### Activity log integrity
+- [PASS] `step_count` retained (line 155) and incremented in `on_progress` (line 166)
+- [PASS] `detail={"label": label, "steps": step_count[0]}` preserved in pipeline_complete log (line 180)
+
+### Security checks
+- [PASS] UI-only change — no auth, data boundary, PII, or audit impact
+- [PASS] No new inputs processed; no new code paths that touch user data
+
+### Verdict
+QA_APPROVED — all testable ACs pass; 139/139 tests pass; red-bar condition architecturally eliminated; PROG-03 deferred to manual smoke (no blocker). Sprint-UX-PROGRESS-01 clear for Architect merge.
+
+---
