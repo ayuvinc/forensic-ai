@@ -164,6 +164,17 @@ elif st.session_state.san_stage == "running":
         )
         st.warning(f"[{warn.agent}] {warn.message}")
 
+    # Sprint-FOLDER-01: pre-create case folder so it's visible on disk before pipeline runs
+    from tools.file_tools import write_state as _write_state
+    _cdir = case_dir(intake.case_id)
+    if not (_cdir / "state.json").exists():
+        _write_state(intake.case_id, {
+            "case_id":    intake.case_id,
+            "workflow":   "sanctions_screening",
+            "status":     "running",
+            "started_at": datetime.now(timezone.utc).isoformat(),
+        })
+
     from workflows.sanctions_screening import run_sanctions_screening_workflow
 
     try:
