@@ -412,16 +412,16 @@ No `FirmKnowledgeEngine` calls inside any agent prompt builder.
 
 ---
 
-### Sprint-FOLDER-01 — Pre-create Case Folder on Run Click [QUEUED — small fix]
+### Sprint-FOLDER-01 — Pre-create Case Folder on Run Click [READY_FOR_REVIEW]
 
-**Status:** QUEUED — small, implement after Sprint-DOCX-01 merge.
+**Status:** READY_FOR_REVIEW — FOLDER-01/02/03/04 complete. 139 tests pass. Branch: feature/sprint-folder-01-pre-create-case-folder
 **Context:** Case folder is created when the first artifact is persisted (Junior draft). For a 3-module FRM run this means the folder doesn't exist until 2-4 min into the run. User expectation: folder visible in Finder immediately on clicking Run.
 **Fix:** In each workflow page, call `case_dir(case_id).mkdir(parents=True, exist_ok=True)` and write a minimal `state.json` ({case_id, workflow, status: "running", started_at}) immediately before `run_in_status(...)` is called.
 
-- [ ] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
-- [ ] FOLDER-02 `pages/06_FRM.py` — same
-- [ ] FOLDER-03 `pages/09_Due_Diligence.py` — same
-- [ ] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
+- [x] FOLDER-01 `pages/02_Investigation.py` — pre-create folder + write minimal state.json before `run_in_status()`
+- [x] FOLDER-02 `pages/06_FRM.py` — same
+- [x] FOLDER-03 `pages/09_Due_Diligence.py` — same
+- [x] FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
 
 #### AC — FOLDER-01 through FOLDER-04 (all pages)
 - [ ] Clicking Run on any workflow page: `cases/{slug}/` directory exists on disk within 1 second, before the pipeline produces any output
