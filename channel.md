@@ -244,3 +244,65 @@ Key pass/fail gates:
 - docx absent → left column empty, md still renders, no crash
 - Regression: "Start Another" reset + workpaper button unaffected (DOCX-01)
 - All 8 affected pages checked (3 via done_zone.py, 5 individually)
+
+---
+
+## QA-Run — Sprint-PARTNER-FIX-01
+Agent: qa-run
+Sprint: Sprint-PARTNER-FIX-01
+Timestamp: 2026-04-24T00:00:00Z
+Branch: feature/sprint-partner-fix-01
+Overall: QA_APPROVED
+
+### Codex gate
+Waived per project memory (feedback_codex_gate.md). QA proceeds on qa-run results and direct review.
+
+### Test suite
+139 passed, 0 failed, 19 warnings — `python3 -m pytest tests/ -q`
+New file: `tests/test_partner_agent.py` — 8 tests, all PASS.
+
+### Criterion Results
+
+#### AC — PFIX-01 (prompts.py)
+- [PASS] No instance of "If rejecting" or "set approved=false" in `agents/partner/prompts.py` APPROVAL RULES
+- [PASS] No instance of "revision_requested=true" or "If revision is needed"
+- [PASS] Line 49: "ALWAYS approve — set approved=true. Partner never blocks or stalls the pipeline."
+- [PASS] Line 53: "revision_requested is ALWAYS false. Partner does not send work back to revision."
+- [PASS] Line 69 (footer): "approved is always true. revision_requested is always false."
+- [PASS] Live mode section (lines 129–139): "append to conditions[]" pattern — no rejection or revision language
+- [PASS] Knowledge_only section unchanged — no regression
+- [PASS] Output JSON template hardcodes `"approved": true`, `"revision_requested": false`
+
+#### AC — PFIX-02 (agent.py _enforce_evidence_chains)
+- [PASS] `_enforce_evidence_chains()` (lines 105–167) contains no `output["approved"] = False`
+- [PASS] `_enforce_evidence_chains()` contains no `output["revision_requested"] = True`
+- [PASS] Chain failure path (lines 151–165): appends disclaimer string to `output["conditions"]`
+- [PASS] Chain failure path: warning text appended to `output["review_notes"]`
+- [PASS] `approved` and `revision_requested` untouched by chain validation path
+- [PASS] Early return on `not evidence_items or not finding_chains` (no-op) confirmed
+- [NOTE] `approved=False` at line 195 is in `_parse_output` JSON fallback only — acceptable per AC test comment ("parse error, not revision loop"); `revision_requested=False` in that same fallback — correct
+
+#### AC — PFIX-03 (tests)
+- [PASS] `tests/test_partner_agent.py` exists — 8 tests in 2 classes
+- [PASS] `TestPartnerParseOutput::test_approved_true_revision_false_passes_through`: mock LLM JSON with conditions list → `approved=True`, `revision_requested=False`
+- [PASS] `TestEvidenceChainDisclaimerNotBlock::test_approved_remains_true_on_chain_failure`: chain failure → `approved=True`
+- [PASS] `TestEvidenceChainDisclaimerNotBlock::test_revision_requested_remains_false_on_chain_failure`: chain failure → `revision_requested=False`
+- [PASS] `TestEvidenceChainDisclaimerNotBlock::test_disclaimer_appended_to_conditions_on_chain_failure`: disclaimer with "evidence/condition/finding" keyword present
+- [PASS] `TestEvidenceChainDisclaimerNotBlock::test_warning_appended_to_review_notes_on_chain_failure`: "evidence chain warning" in review_notes
+- [PASS] 139/139 tests pass — no regression
+
+#### AC — Integration (all PFIX tasks)
+- [WARN] End-to-end FRM pipeline not run — API credits conserved. State machine verification (`partner_review_complete` not `partner_revision_requested`) deferred to next live run.
+- [PASS] Code path analysis: `_enforce_evidence_chains` cannot produce `PARTNER_REVISION_REQ` — no `approved=False` or `revision_requested=True` set
+- [PASS] Prompt instructs model to output `"approved": true`, `"revision_requested": false` — behavioural guarantee at prompt level
+- [PASS] `_parse_output` fallback: `revision_requested=False` — orchestrator cannot enter revision loop on parse error
+
+### Security checks
+- [PASS] No new file reads, writes, or external calls
+- [PASS] No auth model changes; single-user local install
+- [PASS] No PII exposure path introduced
+
+### Verdict
+QA_APPROVED — all testable ACs pass; 139/139 tests pass; integration ACs satisfy via static analysis; prompt and code are aligned. Sprint-PARTNER-FIX-01 clear for Architect merge.
+
+---

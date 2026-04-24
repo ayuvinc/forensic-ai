@@ -92,60 +92,10 @@ Sprint-UX-ERR-01 — ARCHIVED to releases/completed-tasks.md (QA_APPROVED Sessio
 ---
 
 > **AUTHORITATIVE SPRINT ORDER — see `docs/app-plan.md` for full plan.**
-> Tier 0: DOCX-01 merge. Tier 1: PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01.
+> Tier 1: FOLDER-01, UX-PROGRESS-01.
 > Tier 2: INDEX-01, PROCESS-01, KB-02. Tier 3: CHECKPOINT-01, CLOSE-01, EVIDENCE-01.
 > Tier 4: UX polish. Tier 5: Quality gates. Tier 6: Advanced features.
-
----
-
-### Sprint-PARTNER-FIX-01 — Fix Partner Prompt to Never Block [TIER 1 — build first]
-
-**Status:** READY_FOR_REVIEW — PFIX-01/02/03 complete. 139 tests pass. Branch: feature/sprint-partner-fix-01
-
-**Root cause (confirmed Session 051):**
-- `agents/partner/prompts.py` — APPROVAL RULES contain "If rejecting: set approved=false" and "If revision is needed, set revision_requested=true". Live mode section explicitly calls missing citations "grounds for rejection".
-- `agents/partner/agent.py` `_enforce_evidence_chains()` — directly overrides `approved=False` and `revision_requested=True` when evidence chains fail. This is the hard block path.
-- Orchestrator `core/orchestrator.py:179-183` — sets `PARTNER_REVISION_REQ` status when `revision_requested=True`, stalling the pipeline.
-
-**PM vs Partner division (confirmed Session 051 design review):**
-- PM: quality gate. CAN set `revision_requested=True` for structural/factual gaps. Loops back to Junior. Has revision round limits (MAX_REVISION_ROUNDS).
-- Partner: sign-off agent. NEVER sets `revision_requested=True`. Reviews regulatory accuracy + evidence chain. Always approves with itemised conditions/disclaimers. Consultant decides how to act on conditions.
-
-- [x] PFIX-01 `agents/partner/prompts.py` — Remove "If rejecting: set approved=false" from APPROVAL RULES. Replace with "ALWAYS approve — set approved=true. List all deficiencies in conditions[] as itemised disclaimers." Remove "If revision is needed, set revision_requested=true" line. Add: "revision_requested is ALWAYS false — Partner never sends work to revision." Fix live mode section: "grounds for rejection" → "append disclaimer to conditions[]".
-- [x] PFIX-02 `agents/partner/agent.py` — Fix `_enforce_evidence_chains()`: replace `approved=False` / `revision_requested=True` override with disclaimer appended to `conditions[]` and `review_notes`. Keep `approved=True`, `revision_requested=False`.
-- [x] PFIX-03 `tests/test_partner_agent.py` (new) — 8 tests: approved=True and revision_requested=False in all cases; disclaimer in conditions[] on chain failure; no-op when context is empty. 139/139 pass.
-
-**Security model:** No auth impact. Prompt and logic change only. No new data access. Audit logging unchanged.
-**Dependencies:** None. Build immediately after DOCX-01 merge (done).
-
-#### AC — PFIX-01 (prompts.py)
-- [ ] `agents/partner/prompts.py` contains no instance of "If rejecting" or "set approved=false" in APPROVAL RULES
-- [ ] `agents/partner/prompts.py` contains no instance of "revision_requested=true" or "If revision is needed"
-- [ ] APPROVAL RULES explicitly state "ALWAYS approve — set approved=true"
-- [ ] APPROVAL RULES explicitly state "revision_requested is ALWAYS false"
-- [ ] Live mode section: "grounds for rejection" replaced with "append disclaimer to conditions[]"
-- [ ] Knowledge_only mode section unchanged (already correct — no regression)
-- [ ] Output format JSON template retains `revision_requested` field but with annotation "always false"
-
-#### AC — PFIX-02 (agent.py _enforce_evidence_chains)
-- [ ] `_enforce_evidence_chains()` never sets `output["approved"] = False`
-- [ ] `_enforce_evidence_chains()` never sets `output["revision_requested"] = True`
-- [ ] When evidence chain failures detected: disclaimer string appended to `output["conditions"][]`
-- [ ] When evidence chain failures detected: warning text appended to `output["review_notes"]`
-- [ ] `approved` remains `True` and `revision_requested` remains `False` after chain validation, regardless of failure count
-- [ ] When no evidence items or no finding chains: method is a no-op (unchanged behaviour)
-
-#### AC — PFIX-03 (tests)
-- [ ] `tests/test_partner_agent.py` exists with at minimum 2 passing tests
-- [ ] Test 1: mock LLM returns knowledge_only output with zero citations → `approved=True`, `revision_requested=False`
-- [ ] Test 2: mock evidence chain failure (LEAD_ONLY evidence) → `approved=True`, `revision_requested=False`, disclaimer present in `conditions[]`
-- [ ] All 131 existing tests still pass (no regression)
-
-#### AC — Integration (all PFIX tasks)
-- [ ] Run FRM knowledge_only end-to-end: pipeline completes, final report generated, no `PARTNER_REVISION_REQ` status set
-- [ ] Partner output artifact contains `approved: true`, `revision_requested: false`
-- [ ] If conditions present: each is a string starting with "CONDITION [n]:" format
-- [ ] Pipeline status in `state.json` reaches `partner_review_complete`, not `partner_revision_requested`
+> MERGED: DOCX-01 (2026-04-24), PARTNER-FIX-01 (2026-04-24).
 
 ---
 

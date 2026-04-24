@@ -1229,6 +1229,31 @@ Each workflow's intake schema must separate structured fields (typed enums/lists
 
 ---
 
+### BA-IA-10 — PM vs Partner Responsibility Division
+- Status: CONFIRMED — AK Session 051 (design review during smoke test)
+
+**AK decision:** PM and Partner have distinct and non-overlapping review responsibilities. This division must be enforced in prompts and code.
+
+**PM (Project Manager):**
+- Quality gate. Reviews completeness, structure, logical coherence, and factual consistency.
+- CAN set `revision_requested=True` for critical/major structural or factual gaps.
+- Loops back to Junior Analyst. Subject to `MAX_REVISION_ROUNDS` limits.
+- CANNOT approve a structurally incomplete deliverable.
+- In knowledge_only mode: accepts best-effort output; flags gaps in `open_questions[]`, does not loop for missing citations alone.
+
+**Partner:**
+- Sign-off agent. Reviews regulatory accuracy, evidence chain integrity, and professional defensibility.
+- NEVER sets `revision_requested=True`. Pipeline must always proceed past Partner.
+- Always approves. Where standards are not met: appends itemised section-level disclaimers to `conditions[]`.
+- Disclaimer format: "CONDITION [n]: [section] — [issue] — [required action before client presentation]"
+- Consultant reviews all conditions before client delivery. Maher decides what to address.
+
+**Why this matters:** PM catches drafts that aren't ready for review. Partner catches deliverables that need caveats but must still be delivered. These are two different problems. Conflating them causes Partner to act as a second PM — blocking instead of signing off.
+
+**Impact on code:** See Sprint-PARTNER-FIX-01. Partner prompt + `_enforce_evidence_chains()` must enforce this division.
+
+---
+
 ### BA-IA-09 — Policy/SOP Guided Co-Build Mode
 - Status: CONFIRMED — AK Session 041
 

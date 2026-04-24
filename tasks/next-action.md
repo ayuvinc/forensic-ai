@@ -4,42 +4,45 @@
 OPEN
 
 ## NEXT_PERSONA
-architect
+junior-dev
 
 ## NEXT_TASK
-**Session 051 — Sprint-DOCX-01 merge + Sprint-PARTNER-FIX-01 build + Sprint-PROCESS-01 BA sign-off**
+**Session 051 (continued) — Build Sprint-FOLDER-01**
 
-Session 050 completed on branch `feature/sprint-docx-01-download-buttons`:
+Sprint-PARTNER-FIX-01 merged to main (QA_APPROVED 2026-04-24). 139 tests pass.
 
-**Immediate on session open:**
-1. AK confirms DOCX-03 (download buttons visible in FRM Done Zone) — call PASS or FAIL
-2. Architect merges `feature/sprint-docx-01-download-buttons` → main
-3. Build Sprint-PARTNER-FIX-01 (2-3 tasks, fixes broken Partner prompt, no design needed)
-4. Write BA logic for Sprint-PROCESS-01 per-workflow questionnaires and confirm with AK
-5. Plan Sprint-INDEX-01 build session
+**Build now — Sprint-FOLDER-01 (4 tasks, 8 pages):**
+1. FOLDER-01 `pages/02_Investigation.py` — pre-create case folder + write minimal state.json before `run_in_status()`
+2. FOLDER-02 `pages/06_FRM.py` — same
+3. FOLDER-03 `pages/09_Due_Diligence.py` — same
+4. FOLDER-04 `pages/04_Policy_SOP.py`, `05_Training.py`, `07_Proposal.py`, `10_Sanctions.py`, `11_Transaction_Testing.py` — same pattern, batch commit
 
-**Sprint priority order (see `docs/app-plan.md` for full plan):**
-- Tier 1 (fix broken): PARTNER-FIX-01, FOLDER-01, UX-PROGRESS-01
-- Tier 2 (foundation): INDEX-01, PROCESS-01, KB-02
-- Tier 3 (quality): CHECKPOINT-01, CLOSE-01, EVIDENCE-01
-- Tier 4 (UX polish): UPLOAD-01, NAV-01, SESSION-ENTRY-01, WIRE-01, STREAM-01
-- Tier 5 (quality gates): SMOKE-01, CLI-ERR-01
-- Tier 6 (advanced): IA-04, STAGE-01, Phase 7
+**Pattern:** In each workflow page, immediately before `run_in_status(...)`:
+```python
+from tools.file_tools import case_dir
+import json, datetime
+folder = case_dir(case_id)
+folder.mkdir(parents=True, exist_ok=True)
+state_file = folder / "state.json"
+if not state_file.exists():
+    state_file.write_text(json.dumps({
+        "case_id": case_id,
+        "workflow": workflow_type,
+        "status": "running",
+        "started_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    }))
+```
+Must use atomic write (`.tmp` then `os.replace()`) — consistent with `file_tools.py` pattern.
+Guard: if `case_id` is empty/None, show `st.error()` and return before creating folder.
+Security: `case_id` is slugified by Pydantic intake validator — path traversal already blocked.
 
-**Session 050 work committed (all on feature branch, not yet merged):**
-- FRM schema_retry double-failure: graceful module skip (was crashing pipeline)
-- FRM module sequencing display: [Module 1/2], [Module 2/2] (was [Module 4/2])
-- Forensic tip panel during pipeline runs (Sprint-UX-WAIT-01 DONE)
-- docs/product-packaging.md: Human checkpoint layer positioning insight
-- Sprint-INDEX-01, CHECKPOINT-01, SESSION-ENTRY-01 tasks written
-- Sprint-PARTNER-FIX-01, KB-02, PROCESS-01, CLOSE-01, EVIDENCE-01 tasks written
-- BA-REQ-PROCESS-01 written in tasks/ba-logic.md
-- docs/app-plan.md: full application plan, 7 layers, sprint sequence, gap analysis
+**Branch:** `feature/sprint-folder-01-pre-create-case-folder`
+
+**After FOLDER-01:** Sprint-UX-PROGRESS-01 (progress bar fix — Option A: replace st.progress with st.status spinner).
 
 ## COMMAND
 ```
-AK: run FRM workflow in browser → confirm both download buttons appear in Done Zone → report PASS/FAIL
-Then: /architect to merge branch + build Sprint-PARTNER-FIX-01
+/junior-dev build Sprint-FOLDER-01 (FOLDER-01/02/03/04)
 ```
 
 ## COMPLETION STATUS
@@ -55,9 +58,9 @@ Sprint-QUAL-01:                  100% ██████████ DONE
 ARCH-SIM-01/02:                  100% ██████████ DONE
 Sprint-UX-ERR-01:                100% ██████████ DONE
 Sprint-UX-WAIT-01:               100% ██████████ DONE
-Sprint-DOCX-01:                  90% █████████░ CODE DONE — DOCX-03 smoke pending
-Sprint-PARTNER-FIX-01:           0%  ░░░░░░░░░░ QUEUED — Tier 1
-Sprint-FOLDER-01:                0%  ░░░░░░░░░░ QUEUED — Tier 1
+Sprint-DOCX-01:                  100% ██████████ MERGED 2026-04-24
+Sprint-PARTNER-FIX-01:           100% ██████████ MERGED 2026-04-24
+Sprint-FOLDER-01:                0%  ░░░░░░░░░░ ACTIVE — Tier 1
 Sprint-UX-PROGRESS-01:           0%  ░░░░░░░░░░ QUEUED — Tier 1
 Sprint-INDEX-01:                 0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation
 Sprint-PROCESS-01:               0%  ░░░░░░░░░░ QUEUED — Tier 2 Foundation (BA needed)
@@ -76,16 +79,13 @@ Sprint-CLI-ERR-01:               0%  ░░░░░░░░░░ QUEUED — T
 - BA-REQ-SANCTIONS-EVIDENCE-01: Sanctions output not evidenced — do not use for real compliance files
 - BA-REQ-CLOSE-01: No Mark Complete/Close button yet
 - Sprint-KB-01 smoke check: DEFERRED (no API credit)
-- DOCX-03: .docx download unverified until AK runs complete workflow
-- **API credits: exhausted as of 2026-04-23** — all pipeline testing blocked until credits restored
-- **Partner prompt BROKEN**: blocks delivery instead of flagging — fix before any output is used in production
+- **API credits: limited** — all pipeline testing blocked until credits restored; FOLDER-01 has no API dependency (safe to build)
+- Recommendations coercion P1: RiskItem field validator looks for 'recommendation' key but model returns 'title' key — raw dicts still render in .md output. Fix in Sprint-KB-02 or standalone hotfix.
 
 ## CARRY_FORWARD_CONTEXT
-- Full application plan at `docs/app-plan.md` — authoritative sprint order, 7-layer gap analysis, design debt register
-- BA-REQ-PROCESS-01 written — process understanding stage designed, per-workflow questions specified, ready for build after BA sign-off
-- Partner fix is 2-3 prompt changes — highest priority after DOCX-01 merge
-- Sprint-INDEX-01 is the foundation for CHECKPOINT-01, SESSION-ENTRY-01, PROCESS-01 persistence — build it early
+- Full application plan at `docs/app-plan.md` — authoritative sprint order, 7-layer gap analysis
+- Partner fix merged: pipeline can now complete without stalling at Partner stage
+- FOLDER-01 pattern: all 8 pages need the same pre-create block — batch FOLDER-04 across 5 pages in one commit
+- Sprint-INDEX-01 is the foundation for CHECKPOINT-01, SESSION-ENTRY-01, PROCESS-01 persistence
 - Project name = case folder (slugified). Engagement path: Engagements page sets it.
-- Industry field: 18-option selectbox on all workflows
-- FRM pipeline: schema_retry fires on empty findings; double-retry graceful skip now works; module index display fixed
-- Error log at logs/error_log.jsonl accumulates every crash with category
+- FRM pipeline: schema_retry fires on empty findings; double-retry graceful skip works; module index display fixed

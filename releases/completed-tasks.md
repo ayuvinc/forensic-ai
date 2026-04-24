@@ -524,3 +524,21 @@ Security: crash report captures exception + sanitised session context only. `ses
 
 131 tests pass.
 
+---
+
+## Sprint-PARTNER-FIX-01 — Fix Partner Prompt to Never Block (2026-04-24)
+
+**Branch:** feature/sprint-partner-fix-01 — merged to main
+**QA:** QA_APPROVED — 139/139 tests pass
+**BA authority:** BA-IA-08 + BA-IA-10
+
+Root cause: Partner prompt contained "If rejecting: set approved=false" and `_enforce_evidence_chains()` hard-overrode approved=False on evidence failures, stalling the pipeline.
+
+Fix: Partner is a sign-off agent, not a quality gate. PM owns revision loops. Partner always approves with itemised disclaimers; Consultant decides how to act on conditions.
+
+- [x] PFIX-01 `agents/partner/prompts.py` — APPROVAL RULES rewritten to always-approve + disclaimer model. Live mode: "grounds for rejection" → "append disclaimer to conditions[]". Footer: "approved is always true. revision_requested is always false."
+- [x] PFIX-02 `agents/partner/agent.py` `_enforce_evidence_chains()` — removed approved=False/revision_requested=True override; replaced with disclaimer appended to conditions[] and review_notes.
+- [x] PFIX-03 `tests/test_partner_agent.py` (new) — 8 tests in 2 classes: approved=True and revision_requested=False guaranteed in all non-parse-error paths; disclaimer in conditions[] on chain failure; no-op on empty context.
+
+Security: No auth impact. Prompt and logic change only. No new data access. Audit logging unchanged.
+
