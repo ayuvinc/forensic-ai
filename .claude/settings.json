@@ -63,12 +63,7 @@
     "PostToolUse": [
       {
         "matcher": "Write|Edit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash scripts/hooks/set-teach-me-flag.sh"
-          }
-        ]
+        "hooks": []
       },
       {
         "matcher": "Bash",
@@ -94,10 +89,6 @@
           {
             "type": "command",
             "command": "bash scripts/hooks/guard-boundary-flags.sh"
-          },
-          {
-            "type": "command",
-            "command": "bash scripts/hooks/auto-teach.sh"
           }
         ]
       }
